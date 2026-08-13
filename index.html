@@ -1088,6 +1088,7 @@ body.light-mode .c-media-btn-inline { background: rgba(0,0,0,0.04); border-color
 #commentSheet.visible { transform: translateX(0); }
 #commentSheetHandle { display: none; }
 #commentSheetHeader {
+  position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 14px;
   padding: calc(12px + env(safe-area-inset-top,0px)) 16px 12px; flex-shrink: 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -1561,6 +1562,7 @@ body.light-mode button[onclick*="toggleSettingsPanel"] { background: rgba(0,0,0,
 body.light-mode .fl-sheet { background: rgba(248,248,252,0.98); border-color: rgba(0,0,0,0.09); }
 body.light-mode .fl-sheet-handle { background: rgba(0,0,0,0.15); }
 body.light-mode .fl-sheet-title { color: #0d0d0d; border-bottom-color: rgba(0,0,0,0.09); }
+body.light-mode #msgsFilterTraySheet { background: rgba(248,248,252,0.98) !important; border-color: rgba(0,0,0,0.1) !important; }
 body.light-mode .fl-item { border-bottom-color: rgba(0,0,0,0.06); }
 body.light-mode .fl-name { color: #0d0d0d; }
 body.light-mode .fl-handle { color: rgba(0,0,0,0.5); }
@@ -3190,7 +3192,6 @@ body.light-mode .modal {
     0 -1px 0 rgba(0,0,0,0.06) inset,
     0 24px 80px rgba(0,0,0,0.16) !important;
 }
-body:not(.light-mode) #commentSheet,
 body:not(.light-mode) .fl-sheet {
   background: rgba(14,14,20,0.75) !important;
   backdrop-filter: blur(20px) saturate(160%) !important;
@@ -3200,7 +3201,6 @@ body:not(.light-mode) .fl-sheet {
     0 1px 0 rgba(255,255,255,0.14) inset,
     0 -16px 48px rgba(0,0,0,0.60) !important;
 }
-body.light-mode #commentSheet,
 body.light-mode .fl-sheet {
   background: rgba(255,255,255,0.65) !important;
   backdrop-filter: blur(24px) saturate(240%) !important;
@@ -3210,6 +3210,8 @@ body.light-mode .fl-sheet {
     0 1px 0 rgba(255,255,255,0.97) inset,
     0 -16px 48px rgba(0,0,0,0.12) !important;
 }
+body:not(.light-mode) #commentSheet { background: var(--bg) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
+body.light-mode #commentSheet { background: var(--bg) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
 
 /* ══════════════════════
    PROFILE STATS WIDGET
@@ -5967,6 +5969,7 @@ function handleNavBrandClick() {
   document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   const homeTab = document.getElementById('tab-home');
   if (homeTab) homeTab.classList.add('active');
+  _currentActiveTab = 'home';
   if (typeof renderPosts === 'function') {
     renderPosts();
   } else if (typeof loadPosts === 'function') {
@@ -6061,10 +6064,10 @@ async function _ppSetReaction(postId, iconKey) {
 function _ppUpdateAllCardInstances(postId, likes, reactions, myKey) {
   const myReaction = reactions[myKey];
   const liked = likes.includes(myKey) || likes.includes(currentUser);
-  ['ppcard-', 'ppowncard-', 'feedppcard-'].forEach(function(prefix) {
-    const card = document.getElementById(prefix + postId);
+  ['ppcard-', 'ppowncard-', 'feedppcard-', 'commentSheetSourcePost-'].forEach(function(prefix) {
+    const card = prefix === 'commentSheetSourcePost-' ? document.getElementById('commentSheetSourcePost') : document.getElementById(prefix + postId);
     if (!card) return;
-    const btn = card.querySelector('[data-pp-like]');
+    const btn = card.querySelector('[data-pp-like="' + postId + '"]');
     if (!btn) return;
     btn.style.color = liked ? 'var(--gold)' : 'var(--text2)';
     const iconSlot = btn.querySelector('.pp-like-icon');
@@ -7073,6 +7076,24 @@ function loadFeed() {
 }
 
 let _loadPostsInFlight = false;
+// True from script start until the very first loadPosts() call this page
+// load has finished (success or failure). Distinct from _loadPostsInFlight,
+// which is only true *during* a fetch — this covers the gap before the
+// first fetch has even been kicked off, e.g. a stray renderPosts() call
+// from an early auth-state or sync listener. Without this, that stray call
+// would see posts=[] and _loadPostsInFlight=false and paint the real
+// "Nothing here yet" empty state, which only self-corrects once the actual
+// fetch finishes later — the "wait long enough and it pops up" bug.
+window._appBooting = true;
+// Safety net: if loadPosts() is never reached (early boot error, blocked
+// script, etc.) don't leave the skeleton spinning forever — fall back to
+// the real empty/error state after a generous timeout.
+setTimeout(() => {
+  if (window._appBooting) {
+    window._appBooting = false;
+    if (typeof renderPosts === 'function') renderPosts();
+  }
+}, 15000);
 
 // ── Pending write retry queue (survives network hiccups in APK) ──────────────
 // Stores failed SB.upsert calls so they can be retried on next successful load
@@ -7312,27 +7333,41 @@ async function loadPosts() {
       _pageIds.length ? SB.query('comments', `?post_id=in.(${_pageIds.map(encodeURIComponent).join(',')})&order=time.asc`) : [],
       _pageIds.length ? SB.query('reactions', `?post_id=in.(${_pageIds.map(encodeURIComponent).join(',')})`) : []
     ]);
-    // Everything below is non-critical to first paint — fire it off but
-    // don't make the feed wait on it.
-    getAllAccounts().then(function(accts) {
-      void accts;
-      getProfilePosts(OWNER_KEY).catch(()=>{});
-      if (currentUser) {
-        const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
-        getProfilePosts(usernameKey).catch(()=>{});
+    // ── Load everything the first paint actually needs together, instead of
+    // firing accounts / For You / Following as uncoordinated background
+    // promises that each call renderPosts() whenever they happen to resolve.
+    // That old pattern is exactly why the feed used to flash "Nothing here
+    // yet" or blank avatars: _appBooting turned off the moment postsData
+    // arrived, so if accounts/profile-posts were still one tick behind, the
+    // very next repaint (from whichever of them resolved first) ran with
+    // _appBooting already false and no loading guard left to fall back on.
+    // Awaiting all four together means the first real (non-skeleton) paint
+    // only happens once posts, accounts, and both profile-post feeds are
+    // actually ready — matching "load once, load well."
+    const [, accts] = await Promise.all([
+      Promise.all([
+        typeof _refreshForYouProfilePosts === 'function' ? _refreshForYouProfilePosts() : Promise.resolve(),
+        currentUser && typeof _refreshFollowingProfilePosts === 'function' ? _refreshFollowingProfilePosts() : Promise.resolve()
+      ]),
+      getAllAccounts().catch(() => [])
+    ]);
+    getProfilePosts(OWNER_KEY).catch(()=>{});
+    if (currentUser) {
+      const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+      getProfilePosts(usernameKey).catch(()=>{});
+    }
+    // Pre-warm other profiles' posts well after the feed is already visible
+    setTimeout(() => {
+      if (_cache['all_accounts'] && _cache['all_accounts'].length) {
+        const builtInKeys = new Set(['the predictor','odds master','bet analytics','the_predictor','odds_master','bet_analytics']);
+        const toWarm = _cache['all_accounts'].filter(a => {
+          const u = (a.username||'').toLowerCase();
+          return u !== OWNER_KEY && u !== OWNER_USER.toLowerCase() && !builtInKeys.has(u) && !a.is_built_in;
+        }).slice(0, 30);
+        Promise.all(toWarm.map(a => getProfilePosts(a.username).catch(()=>{}))).catch(()=>{});
       }
-      // Pre-warm other profiles' posts well after the feed is already visible
-      setTimeout(() => {
-        if (_cache['all_accounts'] && _cache['all_accounts'].length) {
-          const builtInKeys = new Set(['the predictor','odds master','bet analytics','the_predictor','odds_master','bet_analytics']);
-          const toWarm = _cache['all_accounts'].filter(a => {
-            const u = (a.username||'').toLowerCase();
-            return u !== OWNER_KEY && u !== OWNER_USER.toLowerCase() && !builtInKeys.has(u) && !a.is_built_in;
-          }).slice(0, 30);
-          Promise.all(toWarm.map(a => getProfilePosts(a.username).catch(()=>{}))).catch(()=>{});
-        }
-      }, 4000);
-    }).catch(function(){});
+    }, 4000);
+    void accts;
 
     posts = (postsData || []).map(p => {
       const pComments = (commentsData || []).filter(c => c.post_id === p.id).map(c => ({
@@ -7405,6 +7440,7 @@ async function loadPosts() {
     if (!posts.length) posts = [];
   } finally {
     _loadPostsInFlight = false;
+    window._appBooting = false; // first-ever load attempt is done — safe to show a real empty state now
     window._postsLastLoaded = Date.now(); // stamp for AI context freshness check
   }
 
@@ -7424,6 +7460,9 @@ async function loadPosts() {
   // ── Clear render fingerprint so fresh Supabase data always repaints ──
   const _pc = document.getElementById('postsContainer');
   if (_pc) _pc._lastFingerprint = null;
+  // By this point posts, accounts, and both profile-post feeds have already
+  // resolved together above — this is genuinely the first complete paint,
+  // not a partial one that another late-arriving fetch has to patch up.
   renderPosts();
   // Dismiss the shared Dynamic Island loading state
   if (typeof window._endLiveIsland === 'function') window._endLiveIsland('feedRefresh');
@@ -7431,9 +7470,6 @@ async function loadPosts() {
   refreshNotifBadge();
   if (currentUser) syncNotifsFromSupabase().catch(()=>{});
   renderTopBanner();
-  // Merge in everyone's profile posts for "For You" / "Following" home feed tabs
-  if (typeof _refreshForYouProfilePosts === 'function') _refreshForYouProfilePosts();
-  if (currentUser && typeof _refreshFollowingProfilePosts === 'function') _refreshFollowingProfilePosts();
 }
 
 async function setBin(record) {
@@ -7570,11 +7606,11 @@ async function getProfilePosts(username) {
       }
     }
     return {
-      id: p.id, text: p.body,
+      id: p.id, text: p.body, body: p.body, username: p.username || dbKey,
       // Filter out legacy {hasData:true} placeholders left by old strip logic — these have no dataUrl
       media: (p.media || []).filter(m => m && (m.dataUrl || m.url || m.src)),
       visibility: p.visibility || 'public', comments: mergedComments,
-      likes: p.likes || [], pp_likes: p.pp_likes || p.likes || [], time: p.timestamp,
+      likes: p.likes || [], pp_likes: p.pp_likes || p.likes || [], time: p.timestamp, timestamp: p.timestamp,
       commentsOn: p.comments_on !== false,
       reactions: (p.pp_reactions && typeof p.pp_reactions === 'object') ? p.pp_reactions : {}
     };
@@ -7615,6 +7651,33 @@ async function _refreshForYouProfilePosts() {
     let rows = await SB.query('profile_posts', '?order=timestamp.desc&limit=150') || [];
     rows = rows.filter(p => p.id !== '__probe__' && (p.visibility === 'public' || !p.visibility));
     const accounts = _cache['acct_by_username'] || {};
+    // Warm _ppCache per-author from this same fetch, so opening the comment
+    // overlay on a For You post never has to fall back to the thin
+    // feed-item-only seed (or worse, wait for a profile visit) just to get
+    // real comments/reactions — the full row is already sitting right here.
+    if (!window._ppCache) window._ppCache = {};
+    const _byAuthor = {};
+    rows.forEach(p => { (_byAuthor[p.username] || (_byAuthor[p.username] = [])).push(p); });
+    Object.keys(_byAuthor).forEach(function(username) {
+      const ownerKey = (username || '').toLowerCase();
+      const mapped = _byAuthor[username].map(p => ({
+        id: p.id, text: p.body, body: p.body, username: p.username,
+        media: (p.media || []).filter(m => m && (m.dataUrl || m.url || m.src)),
+        visibility: p.visibility || 'public',
+        comments: p.pp_comments || [],
+        likes: p.likes || [], pp_likes: p.pp_likes || p.likes || [],
+        time: p.timestamp, timestamp: p.timestamp,
+        commentsOn: p.comments_on !== false,
+        reactions: (p.pp_reactions && typeof p.pp_reactions === 'object') ? p.pp_reactions : {}
+      }));
+      // Don't clobber a cache entry that's still fresh (< 60s, same convention
+      // getProfilePosts uses) — a live profile visit's data can include local
+      // optimistic edits this bulk fetch doesn't know about yet.
+      const existing = window._ppCache[ownerKey];
+      if (!existing || !existing._ts || (Date.now() - existing._ts >= 60000)) {
+        window._ppCache[ownerKey] = { data: mapped, _ts: Date.now() };
+      }
+    });
     window._forYouProfilePosts = rows.map(p => {
       const stored = accounts[p.username] || accounts[(p.username||'').replace(/_/g,' ')];
       const displayName = (stored && stored.display_name) || p.username;
@@ -7634,7 +7697,16 @@ async function _refreshForYouProfilePosts() {
         reactions: (p.pp_reactions && typeof p.pp_reactions === 'object') ? p.pp_reactions : {}
       };
     });
-  } catch(e) { console.warn('[For You feed] refresh failed:', e); }
+    window._forYouFeedFetchFailed = false;
+  } catch(e) {
+    console.warn('[For You feed] refresh failed:', e);
+    // Distinguish "genuinely no posts" from "couldn't reach Supabase" — without
+    // this, a failed fetch here silently left _forYouProfilePosts as whatever
+    // it was before (often still empty on a slow/flaky connection) and the
+    // feed painted the real "Nothing here yet" empty state, which reads as
+    // "there's nothing to see" when the true state was "we couldn't check."
+    window._forYouFeedFetchFailed = true;
+  }
   if (typeof renderPosts === 'function') renderPosts();
 }
 
@@ -8438,8 +8510,8 @@ async function submitReply(postId, commentId, _prefillText) {
 // they're replying to — mirrors the reference screenshot's layout.
 function _buildCommentSourcePostHTML(post, isProfilePost) {
   if (!post) return '';
-  const authorKey = isProfilePost ? (post.username || '') : (post.username || OWNER_USER);
-  const isOwnerPost = !isProfilePost || (post.username || '').toLowerCase() === OWNER_KEY;
+  const authorKey = post.username || post.user || OWNER_USER;
+  const isOwnerPost = (authorKey || '').toLowerCase() === OWNER_KEY;
   const displayName = isOwnerPost ? OWNER_USER : (displayNameFor ? displayNameFor(authorKey) : authorKey);
   const pic = isOwnerPost ? ownerPic() : (picFor(authorKey) || null);
   const avi = _aviHtml(pic, displayName, 42);
@@ -8455,6 +8527,26 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
   const commentCount = isProfilePost ? (post.comments||[]).length : (post.comments||[]).length;
   const matchLine = (post.match) ? `<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">${escHtml(post.match)}</div>` : '';
   const pickLine = (post.pick) ? `<div style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:6px;">${escHtml(post.pick)}${post.odds ? ' @ ' + escHtml(String(post.odds)) : ''}</div>` : '';
+  // Working like button: profile posts route through the reaction-picker/_ppSetReaction
+  // flow, main-feed posts through react(id, defaultEmoji) — previously this was a static
+  // <span>, so tapping it did nothing.
+  let likeBtnHtml;
+  if (isProfilePost) {
+    const myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser||'').toLowerCase());
+    const reactions = (post.reactions && typeof post.reactions === 'object') ? post.reactions : {};
+    const myReaction = reactions[myKey];
+    const liked = (post.likes||[]).includes(myKey) || (post.likes||[]).includes(currentUser);
+    // Reuses the same data-pp-like button markup as other profile-post cards, so the
+    // existing global tap (like) / long-press (reaction picker) handler wires it up
+    // automatically — no separate onclick needed.
+    likeBtnHtml = _ppLikeButtonHTML(String(post.id), liked, myReaction, likeCount);
+  } else {
+    const defaultEmoji = (typeof EMOJIS !== 'undefined' && EMOJIS[0]) || 'fire';
+    const myRKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser||'').toLowerCase());
+    const reactedEmoji = Object.keys(post.reactions||{}).find(e => (post.reactions[e]||[]).includes(myRKey));
+    const liked = !!reactedEmoji;
+    likeBtnHtml = `<button onclick="event.stopPropagation();react('${escHtml(String(post.id))}','${reactedEmoji || defaultEmoji}')" style="display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);font-size:12.5px;color:${liked?'var(--gold)':'var(--text3)'};"><svg width="14" height="14" viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>${likeCount > 0 ? ' ' + likeCount : ' Like'}</button>`;
+  }
   return `
   <div style="cursor:default;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -8468,8 +8560,8 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
     ${bodyText ? `<div style="font-size:15.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;margin-bottom:8px;">${renderMentions ? renderMentions(escHtml(bodyText)) : linkify(escHtml(bodyText))}</div>` : ''}
     ${mediaHtml}
     <div style="display:flex;align-items:center;gap:18px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);color:var(--text3);font-size:12.5px;">
-      ${likeCount > 0 ? `<span>❤️ ${likeCount}</span>` : ''}
-      ${commentCount > 0 ? `<span>💬 ${commentCount}</span>` : ''}
+      ${likeBtnHtml}
+      <span style="display:inline-flex;align-items:center;gap:5px;color:var(--gold);font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comment${commentCount > 0 ? ' · ' + commentCount : ''}</span>
     </div>
   </div>`;
 }
@@ -8485,6 +8577,59 @@ var _overlaySwipeStartY = 0;
 
 function openCommentOverlay(postId) {
   if (!postId) return;
+  // "For You"/"Following" home-feed items include other users' profile
+  // posts, tagged with a synthetic id like "pp_<username>_<realId>" and
+  // _isProfilePost:true (see _refreshForYouProfilePosts/_refreshFollowingProfilePosts).
+  // Those aren't in the main `posts` array at all, so looking them up there
+  // always failed — the overlay opened with an undefined post (blank "?"
+  // avatar, no display name) and no comments, even though the post has
+  // comments. Detect that case and hand off to the profile-post overlay,
+  // warming _ppCache first (same pattern _openPostByIdFromLink uses for
+  // shared links) since the author's posts may never have been fetched.
+  const feedItem = (window._forYouProfilePosts || []).find(p => String(p.id) === String(postId))
+    || (window._followingProfilePosts || []).find(p => String(p.id) === String(postId));
+  if (feedItem && feedItem._isProfilePost && feedItem.postId) {
+    const realPostId = feedItem.postId;
+    const ownerKey = (feedItem.authorKey || '').toLowerCase();
+    const hasCached = window._ppCache && window._ppCache[ownerKey] &&
+      (window._ppCache[ownerKey].data || []).find(p => String(p.id) === String(realPostId));
+    if (hasCached) {
+      openProfilePostCommentOverlay(realPostId);
+      return;
+    }
+    // Not cached yet — warm _ppCache from the feed item's own data first
+    // (instant, no network) so comments/avatar show right away, then
+    // refresh from Supabase in the background in case it's stale.
+    if (!window._ppCache) window._ppCache = {};
+    const existing = (window._ppCache[ownerKey] && window._ppCache[ownerKey].data) || [];
+    if (!existing.find(p => String(p.id) === String(realPostId))) {
+      existing.push({
+        id: realPostId,
+        username: feedItem.authorKey,
+        body: feedItem.text,
+        media: feedItem.media,
+        timestamp: feedItem.time,
+        comments: feedItem.comments || [],
+        likes: feedItem.likes || [],
+        comments_on: feedItem.commentsOn !== false,
+        pp_reactions: feedItem.reactions || {}
+      });
+    }
+    window._ppCache[ownerKey] = { data: existing, _ts: Date.now() };
+    openProfilePostCommentOverlay(realPostId);
+    SB.query('profile_posts', `?id=eq.${encodeURIComponent(realPostId)}&select=*`).then(rows => {
+      const fresh = rows && rows[0];
+      if (!fresh) return;
+      const arr = (window._ppCache[ownerKey] && window._ppCache[ownerKey].data) || [];
+      const idx = arr.findIndex(p => String(p.id) === String(realPostId));
+      if (idx > -1) arr[idx] = fresh; else arr.push(fresh);
+      window._ppCache[ownerKey] = { data: arr, _ts: Date.now() };
+      // Only re-render if the user is still looking at this same post
+      if (_overlayPostId === '__pp__' + String(realPostId)) openProfilePostCommentOverlay(realPostId);
+    }).catch(() => {});
+    return;
+  }
+
   _overlayPostId = String(postId);
   const post = posts.find(p => String(p.id) === _overlayPostId);
   const overlay = document.getElementById('commentOverlay');
@@ -9292,7 +9437,7 @@ function _doRenderPosts() {
     return;
   }
   if (!filtered.length) {
-    const isLoading = typeof _loadPostsInFlight !== 'undefined' && _loadPostsInFlight;
+    const isLoading = (typeof _loadPostsInFlight !== 'undefined' && _loadPostsInFlight) || window._appBooting;
     if (isLoading) {
       // Show skeleton cards while fetching — no blank screen
       container.innerHTML = _buildFeedSkeleton(4, 'predictions');
@@ -9322,6 +9467,15 @@ function _doRenderPosts() {
     if (hasAnyDisplayablePosts) {
       // Posts exist but filter is too narrow — don't show the empty-state, show a gentle hint
       container.innerHTML = `<div class="empty"><div class="empty-sub" style="margin-top:24px;">No posts match this filter right now.</div></div>`;
+      return;
+    }
+    // If the profile-posts fetch actually failed (network error, not a
+    // real "zero posts" result) and the "For You" tab is what's showing,
+    // say so honestly instead of claiming there's nothing to see — a
+    // failed fetch and a genuinely empty feed are different situations
+    // and shouldn't share the same message.
+    if (activeFilter === 'all' && window._forYouFeedFetchFailed) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Couldn't load feed</div><div class="empty-sub">Check your connection and try again.</div><button onclick="if(typeof _refreshForYouProfilePosts==='function')_refreshForYouProfilePosts();if(typeof loadPosts==='function')loadPosts();" style="margin-top:14px;font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Retry</button></div>`;
       return;
     }
     container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M2 12h20"/></svg></div><div class="empty-title">Nothing here yet</div><div class="empty-sub">Check back soon — Social Plus posts every morning.</div><button onclick="window.location.reload()" style="margin-top:14px;font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload Feed</button></div>`;
@@ -10807,7 +10961,18 @@ async function renderChatMessages() {
       (currentUser||'').toLowerCase()
     ].includes((_lastMsg.sender||'').toLowerCase()));
   const _shouldScrollToBottom = wasAtBottom || _lastMsgIsMine;
-  const _myKeyR=(localStorage.getItem('ka_username_key')||'').toLowerCase();
+  // BUGFIX: this used to compare only against localStorage's ka_username_key/
+  // ka_user and `currentUser`, but outgoing messages are stamped with
+  // _myUsernameKey() — which returns OWNER_KEY ('plusofficial') for the
+  // owner account regardless of what's cached in those fields. Any mismatch
+  // there (owner account, or ka_username_key just being unset/stale) made
+  // every message — sent AND received — fail the "is this mine" check and
+  // render as "theirs", i.e. everything left-aligned like one long left-hand
+  // conversation instead of a normal two-sided chat. Routing _myKeyR through
+  // _myUsernameKey() (same function that stamps outgoing messages) instead
+  // of re-deriving it by hand fixes this at the source — it already
+  // resolves to OWNER_KEY for the owner session specifically.
+  const _myKeyR = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key')||'')).toLowerCase();
   const _myDispR=(localStorage.getItem('ka_user')||'').toLowerCase();
   const _myCurR=(currentUser||'').toLowerCase();
   const _isLightR = document.body.classList.contains('light-mode');
@@ -11379,6 +11544,14 @@ function closeUserProfile() {
       document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
       const mt = document.getElementById('tab-messages');
       if (mt) mt.classList.add('active');
+      // BUGFIX: this closes back to the Messages tab without going through
+      // tabSwitch(), so _currentActiveTab (the "same tab tapped twice?"
+      // tracker) never got told we're on Messages. Left stale, the next real
+      // tap on any tab button — often Home — could wrongly look like a
+      // repeat tap on whatever tab _currentActiveTab last pointed to, and
+      // pop the "Refresh this page?" prompt for no reason. Every place that
+      // sets the active tab outside of tabSwitch() needs to also update this.
+      _currentActiveTab = 'messages';
       break;
     }
     case 'explore': {
@@ -11392,6 +11565,7 @@ function closeUserProfile() {
       document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
       const et = document.getElementById('tab-search');
       if (et) et.classList.add('active');
+      _currentActiveTab = 'search';
       break;
     }
     case 'suggested': {
@@ -11411,12 +11585,14 @@ function closeUserProfile() {
       document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
       const at = document.getElementById('tab-notifs');
       if (at) at.classList.add('active');
+      _currentActiveTab = 'notifs';
       break;
     }
     case 'profile': {
       const pp = document.getElementById('profileOverlay');
       if (pp) { pp.classList.add('open'); pp.style.display = 'flex'; }
       document.body.style.overflow = 'hidden';
+      _currentActiveTab = 'profile';
       break;
     }
     default:
@@ -11424,6 +11600,7 @@ function closeUserProfile() {
       document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
       const ht = document.getElementById('tab-home');
       if (ht) ht.classList.add('active');
+      _currentActiveTab = 'home';
       break;
   }
 }
@@ -13853,15 +14030,6 @@ async function deleteConversation(convKey) {
   await new Promise(resolve => _islandConfirm('Remove this conversation?', resolve, { title: 'Delete chat?', icon: '🗑️', confirmLabel: 'Delete' }));
   delete _chatCache[convKey];
   try { localStorage.removeItem('ka_chat_' + convKey); } catch(e) {}
-  // Also strip this conv out of the cached inbox list immediately, so a
-  // reopen before the next network fetch can't show it again from stale cache.
-  try {
-    const cacheKey = 'ka_convs_' + _myUsernameKey();
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (cached && cached.length) {
-      localStorage.setItem(cacheKey, JSON.stringify(cached.filter(c => c.key !== convKey)));
-    }
-  } catch(e) {}
   renderMsgsInbox();
   // Wait for the actual server delete before confirming — silently swallowing
   // this let failed deletes look successful while the row survived and
@@ -17394,10 +17562,10 @@ async function sendAIMessageWithImage(imageSrc) {
 
     if (imgB64) {
       // Use Anthropic API with vision
-      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const resp = await fetch('/api/groq', {
         method: 'POST',
       mode: 'cors',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
@@ -17419,10 +17587,10 @@ async function sendAIMessageWithImage(imageSrc) {
 
     // Fallback to Groq with image URL in context
     if (!reply) {
-      const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const aiRes = await fetch('/api/groq', {
         method: 'POST',
       mode: 'cors',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           max_tokens: 600,
@@ -18846,24 +19014,19 @@ function _maybeShowSignInForGuest() {
 
 // ── PAGE INIT ──
 document.addEventListener('DOMContentLoaded', async () => {
-  // Default is LIGHT MODE for everyone, always — adaptive theme is opt-in only,
-  // never auto-enabled on first launch. Previously first launch (no ka_adapt_system
-  // set yet) defaulted to onAdaptSystemToggle(true), which silently turned
-  // adaptive-to-system ON and could hand a brand new user dark mode without them
-  // ever choosing it.
+  // Default: auto-follow the OS light/dark setting on first launch, unless
+  // the user has explicitly set a preference (adaptive on, or a manual
+  // theme choice) previously.
   if (localStorage.getItem('ka_adapt_system') === '1') {
     // User explicitly turned adaptive theme on previously — respect that
     onAdaptSystemToggle(true);
+  } else if (localStorage.getItem('ka_theme')) {
+    // User has manually chosen a theme before (adaptive off) — respect it
+    applyTheme(localStorage.getItem('ka_theme') === 'light');
   } else {
-    // Default (first launch, or adaptive explicitly off): always light mode,
-    // regardless of what the OS is set to.
-    applyTheme(true);
-    // Per spec: if the device's OS is currently in LIGHT mode, suggest turning
-    // on adaptive theme (so the app will automatically track the OS going
-    // forward, light or dark) via a dismissible banner with a one-tap button.
-    if (_systemThemeQuery && _systemThemeQuery.matches === true) {
-      setTimeout(function(){ _maybeShowAdaptThemeSuggestion(); }, 1200);
-    }
+    // First launch, no preference recorded yet: follow the OS.
+    var _prefersLight = _systemThemeQuery && _systemThemeQuery.matches === true;
+    applyTheme(_prefersLight);
   }
   if (localStorage.getItem('ka_glass') === '0') toggleGlassMorphism(false);
   if (localStorage.getItem('ka_nav_style') === 'classic') applyNavStyle(false); else applyNavStyle(true);
@@ -18984,11 +19147,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadPosts();
   if (typeof _consumePendingDeepLink === 'function') _consumePendingDeepLink();
+
+  // ── Prefetch other tabs in the background right after the home feed is
+  // ready, so Messages/Connect/Channels are instant when tapped instead of
+  // showing "Loading…" and fetching live at that moment. Each of these
+  // functions already writes through to localStorage/_cache (cache-first
+  // pattern), so calling them now just warms that cache against hidden DOM;
+  // no visible UI shows the intermediate "Loading" state since the relevant
+  // overlays aren't open yet. Fire-and-forget — never block boot on this.
+  (function _prefetchSecondaryTabs() {
+    if (!currentUser) return;
+    setTimeout(() => {
+      try { if (typeof renderMessagesPageContent === 'function') renderMessagesPageContent(); } catch(e) {}
+      try { if (typeof renderExploreSuggested === 'function') renderExploreSuggested(); } catch(e) {}
+      try { if (typeof renderExploreChannels === 'function') renderExploreChannels(); } catch(e) {}
+      try { if (typeof _populateMsgsStoriesBar === 'function') _populateMsgsStoriesBar(); } catch(e) {}
+    }, 400); // small delay so the home feed's own paint/animations aren't competing for the main thread
+  })();
   (async function purgeBuiltIns() {
+    // One-time cleanup of legacy built-in demo accounts. This used to run
+    // unconditionally on every single boot — 6 accounts × up to 3 retry
+    // attempts each = up to 18 "Failed to fetch" warnings logged every time
+    // the app loaded, even though the accounts were deleted ages ago.
+    //
+    // Now: (1) skipped entirely once it's ever gotten through a pass, and
+    // (2) each delete only tries ONCE here (no 3x retry loop) — a DELETE on
+    // an already-gone row is a harmless no-op to Supabase either way, so
+    // retrying it isn't buying anything, just multiplying log spam when
+    // offline. The flag is set after one full pass regardless of individual
+    // outcomes, so a device that's offline this boot simply tries again
+    // next boot instead of hammering retries forever in the same session.
+    const PURGE_FLAG = 'ka_builtin_purge_done_v1';
+    if (localStorage.getItem(PURGE_FLAG)) return;
     const builtInUsernames = ['the predictor', 'odds master', 'bet analytics', 'the_predictor', 'odds_master', 'bet_analytics'];
+    // Deliberately NOT using SB.delete() here — it retries 3x per call and
+    // console.warns on every attempt, which is exactly the noise this fix
+    // is trying to eliminate. A single silent best-effort fetch per account
+    // is enough: this is disposable cleanup of accounts that are almost
+    // certainly already gone, not a write anything depends on succeeding.
     for (const u of builtInUsernames) {
-      try { await SB.delete('accounts', 'username=eq.' + encodeURIComponent(u)); } catch(e) {}
+      try {
+        await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(u)}`, {
+          method: 'DELETE',
+          headers: { ...SB.headers, 'Prefer': 'return=minimal' }
+        });
+      } catch(e) { /* offline or unreachable — silently skip, try again next boot */ }
     }
+    try { localStorage.setItem(PURGE_FLAG, '1'); } catch(e) {}
     try {
       let lsAccts = JSON.parse(localStorage.getItem('ka_db_accounts') || '[]');
       const before = lsAccts.length;
@@ -20132,10 +20337,10 @@ async function sendAIMessage() {
       }
     }
 
-    const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const aiRes = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         max_tokens: 800,
@@ -20282,7 +20487,6 @@ closeChat = function() {
   const returnTo = chatReturnTarget;
   chatReturnTarget = null;
   if (returnTo === 'messages') {
-    _msgsLastFetch = 0; // force fresh render so page content fully reloads
     openMessagesPage();
   } else if (returnTo === 'profile') {
     const upo = document.getElementById('uprofileOverlay');
@@ -20431,18 +20635,37 @@ closeChat = function() {
       <input id="msgSearchInput" placeholder="Search messages…" oninput="filterMsgSearch(this.value)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
     </div>
     <!-- Stories / Status bar (horizontal scroll) -->
-    <div style="padding:4px 0 12px;border-bottom:1px solid rgba(255,255,255,0.07);">
+    <div style="padding:4px 0 12px;">
       <div id="msgsStoriesBar" style="display:flex;gap:14px;overflow-x:auto;padding:0 18px;scrollbar-width:none;-ms-overflow-style:none;">
         <!-- Populated dynamically by _populateMsgsStoriesBar() -->
       </div>
     </div>
-    <!-- Chat-list filter pills: Recent (all) / Personal (DMs only) / Groups only —
-         each pill shows a small unread-count badge when there's anything unread
-         in that bucket. -->
-    <div style="padding:10px 18px 0;display:flex;gap:8px;">
-      <button id="msgsFilterPill-recent" onclick="_setMsgsListFilter('recent')" class="_msgs-filter-pill _msgs-filter-pill-active" style="font-family:var(--font);font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;display:inline-flex;align-items:center;gap:6px;">Recent<span id="msgsFilterCount-recent" class="_msgs-filter-count" style="display:none;"></span></button>
-      <button id="msgsFilterPill-personal" onclick="_setMsgsListFilter('personal')" class="_msgs-filter-pill" style="font-family:var(--font);font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;">Personal<span id="msgsFilterCount-personal" class="_msgs-filter-count" style="display:none;"></span></button>
-      <button id="msgsFilterPill-groups" onclick="_setMsgsListFilter('groups')" class="_msgs-filter-pill" style="font-family:var(--font);font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;">Group Chats<span id="msgsFilterCount-groups" class="_msgs-filter-count" style="display:none;"></span></button>
+    <!-- Chat-list filter: was three always-visible pills (Recent/Personal/
+         Group Chats) crammed in a row; now a single trigger that opens a
+         bottom tray, so the row doesn't compete for space and there's
+         nothing to cramp or wrap on a narrow screen. The divider sits
+         directly under this row, same as before. -->
+    <div style="padding:10px 18px 12px;display:flex;border-bottom:1px solid rgba(255,255,255,0.07);">
+      <button id="msgsFilterTrigger" onclick="_openMsgsFilterTray()" style="font-family:var(--font);font-size:13px;font-weight:700;padding:8px 16px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;display:inline-flex;align-items:center;gap:7px;">
+        <span id="msgsFilterTriggerLabel">Recent</span>
+        <span id="msgsFilterTriggerCount" class="_msgs-filter-count" style="display:none;background:rgba(0,0,0,0.25);color:#000;"></span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <!-- Hidden — kept so _setMsgsListFilter/_refreshMsgsFilterCounts (which
+           target these ids) don't need to change, only the visible UI does. -->
+      <div style="display:none;">
+        <button id="msgsFilterPill-recent" onclick="_setMsgsListFilter('recent')" class="_msgs-filter-pill _msgs-filter-pill-active">Recent<span id="msgsFilterCount-recent" class="_msgs-filter-count"></span></button>
+        <button id="msgsFilterPill-personal" onclick="_setMsgsListFilter('personal')" class="_msgs-filter-pill">Personal<span id="msgsFilterCount-personal" class="_msgs-filter-count"></span></button>
+        <button id="msgsFilterPill-groups" onclick="_setMsgsListFilter('groups')" class="_msgs-filter-pill">Group Chats<span id="msgsFilterCount-groups" class="_msgs-filter-count"></span></button>
+      </div>
+    </div>
+  </div>
+  <!-- Messages filter tray (bottom sheet) -->
+  <div id="msgsFilterTrayOverlay" onclick="if(event.target===this)_closeMsgsFilterTray()" style="display:none;position:fixed;inset:0;z-index:10700;background:rgba(0,0,0,0.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;">
+    <div id="msgsFilterTraySheet" style="background:rgba(20,20,24,0.97);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:22px 22px 0 0;width:100%;max-width:480px;padding:10px 16px calc(24px + env(safe-area-inset-bottom));border:1px solid rgba(255,255,255,0.12);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6);transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);">
+      <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.2);margin:6px auto 14px;"></div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);padding:0 6px 12px;">Filter conversations</div>
+      <div id="msgsFilterTrayOptions" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
   </div>
   <div style="flex:1;overflow-y:auto;max-width:620px;width:100%;margin:0 auto;padding:14px 16px 100px;" id="messagesPageContent"></div>
@@ -21151,10 +21374,10 @@ async function _fireSearchAIAnswer(q) {
   try {
     const PLUS_SEARCH_SYSTEM = `You are Plus AI, the search assistant for Social Plus — a social app where people connect, share, and earn Plus Coins. The user typed a search query. Give a SHORT (2-4 sentence), punchy, helpful answer about this topic — could be a platform feature, Plus Coins, Premium, or any general knowledge question. Be direct and useful. Use 1-2 emoji max. Never say you are Claude or any other AI — you are Plus AI. If it's a username or person search, say you found their profile below. If it's a platform feature, explain it quickly.`;
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile', max_tokens: 180, messages: [{ role: 'system', content: PLUS_SEARCH_SYSTEM }, { role: 'user', content: q }]
       })
@@ -22064,6 +22287,7 @@ function openMessagesPage() {
   if (msgsTab) msgsTab.classList.add('active');
   renderMessagesPageContent();
   _populateMsgsStoriesBar();
+  if (typeof _syncMsgsFilterTrigger === 'function') _syncMsgsFilterTrigger();
   if (typeof window._syncFab === 'function') window._syncFab();
 }
 
@@ -22164,7 +22388,58 @@ function _setMsgsListFilter(filter) {
     pill.style.background = f === filter ? 'var(--gold)' : 'rgba(255,255,255,0.05)';
     pill.style.color = f === filter ? '#000' : 'var(--text2)';
   });
+  _syncMsgsFilterTrigger();
+  _closeMsgsFilterTray();
   _applyMsgsListFilter();
+}
+
+// ── Filter tray (bottom sheet) — replaces the old always-visible 3-pill row.
+// The pills above still exist (hidden) so _setMsgsListFilter/_refreshMsgsFilterCounts
+// don't need rewriting; this just renders a friendlier trigger + sheet on top. ──
+var _MSGS_FILTER_LABELS = { recent: 'Recent', personal: 'Personal', groups: 'Group Chats' };
+function _syncMsgsFilterTrigger() {
+  var labelEl = document.getElementById('msgsFilterTriggerLabel');
+  var countEl = document.getElementById('msgsFilterTriggerCount');
+  if (labelEl) labelEl.textContent = _MSGS_FILTER_LABELS[_msgsListFilter] || 'Recent';
+  var srcCount = document.getElementById('msgsFilterCount-' + _msgsListFilter);
+  if (countEl) {
+    if (srcCount && srcCount.style.display !== 'none' && srcCount.textContent) {
+      countEl.textContent = srcCount.textContent;
+      countEl.style.display = '';
+    } else {
+      countEl.style.display = 'none';
+    }
+  }
+}
+function _openMsgsFilterTray() {
+  var overlay = document.getElementById('msgsFilterTrayOverlay');
+  var sheet = document.getElementById('msgsFilterTraySheet');
+  var opts = document.getElementById('msgsFilterTrayOptions');
+  if (!overlay || !sheet || !opts) return;
+  opts.innerHTML = ['recent','personal','groups'].map(function(f) {
+    var active = f === _msgsListFilter;
+    var countEl = document.getElementById('msgsFilterCount-' + f);
+    var badge = (countEl && countEl.style.display !== 'none' && countEl.textContent)
+      ? `<span class="_msgs-filter-count" style="background:${active ? 'rgba(0,0,0,0.25)' : '#ff453a'};color:${active ? '#000' : '#fff'};">${countEl.textContent}</span>`
+      : '';
+    return `<button onclick="_setMsgsListFilter('${f}')" style="font-family:var(--font);font-size:14.5px;font-weight:${active?700:600};padding:13px 14px;border-radius:14px;cursor:pointer;text-align:left;border:1px solid ${active?'var(--gold)':'transparent'};background:${active?'rgba(245,197,24,0.12)':'transparent'};color:${active?'var(--gold)':'var(--text)'};display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span style="display:flex;align-items:center;gap:8px;">${_MSGS_FILTER_LABELS[f]}${badge}</span>
+      ${active ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+    </button>`;
+  }).join('');
+  overlay.style.display = 'flex';
+  var tb = document.getElementById('appTabbar');
+  if (tb) tb.classList.add('chat-open-hidden');
+  requestAnimationFrame(() => { requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; }); });
+}
+function _closeMsgsFilterTray() {
+  var overlay = document.getElementById('msgsFilterTrayOverlay');
+  var sheet = document.getElementById('msgsFilterTraySheet');
+  if (!sheet || !overlay || overlay.style.display === 'none') return;
+  sheet.style.transform = 'translateY(100%)';
+  var tb = document.getElementById('appTabbar');
+  if (tb) tb.classList.remove('chat-open-hidden');
+  setTimeout(() => { overlay.style.display = 'none'; }, 280);
 }
 function _applyMsgsListFilter() {
   var container = document.getElementById('messagesPageContent');
@@ -22175,7 +22450,7 @@ function _applyMsgsListFilter() {
     var bucket = r.dataset.msgBucket || 'personal';
     var matchesFilter = filter === 'recent' || bucket === filter;
     var matchesSearch = r.dataset.searchHidden !== '1';
-    r.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+    r.style.display = (matchesFilter && matchesSearch) ? 'flex' : 'none';
   });
   // Section-level: hide a whole section (header + contents) if the filter
   // excludes its bucket outright, so no orphaned "Recent" or "Group Chats"
@@ -22214,47 +22489,35 @@ function _refreshMsgsFilterCounts() {
     if (pair[1] > 0) { el.textContent = pair[1] > 99 ? '99+' : String(pair[1]); el.style.display = ''; }
     else { el.style.display = 'none'; }
   });
+  if (typeof _syncMsgsFilterTrigger === 'function') _syncMsgsFilterTrigger();
 }
 
 function closeMessagesPage(resetTab = true) {
-  _currentActiveTab = 'home';
   const overlay = document.getElementById('messagesPageOverlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = ''; // restore main page scroll
+  // BUGFIX: this used to set _currentActiveTab = 'home' unconditionally, even
+  // when resetTab is false (e.g. every tap into a chat from the inbox list
+  // calls closeMessagesPage(false) before opening the chat). That flipped the
+  // "same tab tapped twice?" tracker to 'home' while the tab bar still showed
+  // Messages active and you were actually looking at a chat — so the next
+  // real tap on Home read as a repeat tap and popped the refresh prompt
+  // instead of switching. Only touch _currentActiveTab when we're actually
+  // resetting the tab bar to Home, so the two stay in sync.
   if (resetTab) {
+    _currentActiveTab = 'home';
     document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
     const homeTab = document.getElementById('tab-home');
     if (homeTab) homeTab.classList.add('active');
   }
 }
-var _msgsLastFetch = parseInt(localStorage.getItem('ka_msgs_last_fetch') || '0', 10);
 async function renderMessagesPageContent() {
   const container = document.getElementById('messagesPageContent');
   if (!currentUser) {
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;font-size:14px;color:var(--text3);">Sign in to view messages.</div>';
     return;
   }
-  // Show cached conversations INSTANTLY — before any async fetch
-  const _cachedConvKey = 'ka_convs_' + _myUsernameKey();
-  let _hasCachedContent = false;
-  try {
-    const _cachedConvs = JSON.parse(localStorage.getItem(_cachedConvKey) || 'null');
-    if (_cachedConvs && _cachedConvs.length) {
-      _renderConversationsList(container, _cachedConvs, _myUsernameKey());
-      _hasCachedContent = true;
-    }
-  } catch(e) {}
-
-  // If we fetched within the last 30 seconds, skip the network refresh (no re-loading)
-  const now = Date.now();
-  if (_hasCachedContent && (now - _msgsLastFetch) < 30000) return;
-  _msgsLastFetch = now;
-  try { localStorage.setItem('ka_msgs_last_fetch', String(now)); } catch(e) {}
-
-  // Only show Loading if no cache — avoids the blank/fake-UI flash
-  if (!_hasCachedContent) {
-    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Loading…</div>';
-  }
+  container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Loading…</div>';
 
   const myKey = _myUsernameKey();
   const convs = [];
@@ -22380,13 +22643,13 @@ async function renderMessagesPageContent() {
         ? `<button onclick="event.stopPropagation();mrAcceptRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.3);color:#30d158;cursor:pointer;">Accept</button>
         <button onclick="event.stopPropagation();mrLockRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text2);cursor:pointer;">🔒</button>`
         : '';
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${aviHtml}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(displayName)}</div>
+        <div style="flex:1 1 0%;min-width:0;overflow:hidden;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
         </div>
-        <div style="display:flex;gap:5px;flex-shrink:0;">${_mrRowBtns}<button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;">Delete</button></div>
+        <div style="display:flex;flex-wrap:nowrap;gap:5px;flex-shrink:0;">${_mrRowBtns}<button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;white-space:nowrap;">Delete</button></div>
       </div>`;
     }).join('');
     html += `</div></div>`;
@@ -22424,14 +22687,14 @@ async function renderMessagesPageContent() {
       // Unread count: real messages (not system) from the peer, not yet marked read.
       const unreadCount = (conv.msgs || []).filter(m => m && !m.__mrSys && !m.read && (m.sender || '').toLowerCase() !== myKey).length;
       const unreadBadge = unreadCount ? `<span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
-      return `<div data-msg-row data-msg-bucket="personal" data-unread="${unreadCount}" data-name="${escHtml(displayName)}" style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-unread="${unreadCount}" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
-        <div style="flex:1;min-width:0;cursor:pointer;">
-          <div style="font-size:14px;font-weight:${unreadCount ? 700 : 600};color:var(--text);display:flex;align-items:center;gap:2px;">${escHtml(displayName)}${_convBadge}</div>
+        <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
+          <div style="font-size:14px;font-weight:${unreadCount ? 700 : 600};color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
           <div class="_u-ellipsis-sm" style="${unreadCount ? 'color:var(--text2);font-weight:600;' : ''}">${preview}</div>
         </div>
         ${unreadBadge}
-        <button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;">Delete</button>
+        <button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;flex-shrink:0;white-space:nowrap;">Delete</button>
       </div>`;
     }).join('');
   }
@@ -22461,45 +22724,10 @@ async function renderMessagesPageContent() {
     }).join('');
   }
   container.innerHTML = html;
-  // Cache the conversations list for instant next open
-  try { localStorage.setItem(_cachedConvKey, JSON.stringify(convs.slice(0, 30))); } catch(e) {}
   // Apply the current pill filter to the freshly-rendered rows, and refresh
   // the pill unread-count badges now that DM data is in.
   if (typeof _applyMsgsListFilter === 'function') _applyMsgsListFilter();
   if (typeof _refreshMsgsFilterCounts === 'function') _refreshMsgsFilterCounts();
-}
-function _renderConversationsList(container, convs, myKey) {
-  // Show a proper skeleton while full conversations load
-  if (!convs || !convs.length) {
-    container.innerHTML = [1,2,3,4].map((_, i) => `
-      <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-        <div class="skeleton-circle" style="width:46px;height:46px;flex-shrink:0;animation-delay:${i*0.1}s;"></div>
-        <div style="flex:1;min-width:0;">
-          <div class="skeleton-line" style="height:13px;width:45%;margin-bottom:7px;animation-delay:${i*0.1}s;"></div>
-          <div class="skeleton-line" style="height:11px;width:70%;animation-delay:${i*0.1}s;"></div>
-        </div>
-      </div>`).join('');
-    return;
-  }
-  // Render cached convs as real rows while full load happens
-  let previewHtml = '<div style="opacity:0.85;">';
-  convs.slice(0, 6).forEach(c => {
-    const peer = c.peer || '';
-    const isKris = peer.toLowerCase() === OWNER_KEY || peer.toLowerCase() === OWNER_USER.toLowerCase();
-    const displayName = isKris ? OWNER_USER : peer;
-    const preview = (c.last && c.last.text) ? c.last.text.substring(0, 36) + (c.last.text.length > 36 ? '…' : '') : '';
-    const pic = picFor(displayName) || picFor(peer) || null;
-    const aviInner = pic ? `<img src="${pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>` : escHtml(displayName.charAt(0).toUpperCase());
-    previewHtml += `<div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-      <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${aviInner}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(displayName)}</div>
-        ${preview ? `<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(preview)}</div>` : ''}
-      </div>
-    </div>`;
-  });
-  previewHtml += '</div>';
-  container.innerHTML = previewHtml;
 }
 function openNotifsPage() {
   _currentActiveTab = 'notifs';
@@ -26560,7 +26788,7 @@ function renderGroupMessages(group) {
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px;">No messages yet. Say hello!</div>';
     return;
   }
-  var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+  var myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser)).toLowerCase();
   var creatorKey = (group.created_by || '').toLowerCase();
   var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
   container.innerHTML = msgs.map(function(m) {
@@ -26685,9 +26913,13 @@ async function _resetGroupInviteLinkUI(groupId) {
   openGroupMgmt();
 }
 function _groupInviteUrl(group) {
-  var base = (typeof _channelPostShareUrl === 'function') ? location.origin + location.pathname : (location.origin + location.pathname);
-  var code = group.invite_code || group.id;
-  return base + '?joinGroup=' + encodeURIComponent(code);
+  // IMPORTANT: must match the ?group=<id>&invite=1 format that
+  // _captureDeepLinkFromUrl()/_consumePendingDeepLink() actually parse on
+  // load (see near the top of the file). This used to build a ?joinGroup=
+  // link keyed on invite_code, which nothing ever read — links opened but
+  // silently did nothing.
+  var base = location.origin + location.pathname;
+  return base + '?group=' + encodeURIComponent(group.id) + '&invite=1';
 }
 function copyGroupInviteLink() {
   if (!_currentGroupId) return;
@@ -27094,7 +27326,7 @@ async function sendGroupMessage() {
   inp.value = '';
   if (inp.tagName === 'TEXTAREA') { inp.style.height = ''; _gcAutoResize(inp); }
   _gcHideMicIfText(inp);
-  var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+  var myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser)).toLowerCase(); // routed through _myUsernameKey() so owner-sent group messages are stamped consistently with the render-side isMine check
   // ── Optimistic: use cached group, append msg, render immediately ──
   var group = _groupCache[_currentGroupId];
   if (!group) return;
@@ -27176,14 +27408,14 @@ window.renderMessagesPageContent = async function() {
       var iconHtml = icon.startsWith('data:') ? '<img src="'+icon+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>' : (icon || '👥');
       var unreadCount = _groupUnreadCount(g);
       var unreadBadge = unreadCount ? '<span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">' + (unreadCount > 99 ? '99+' : unreadCount) + '</span>' : '';
-      return '<div data-msg-row data-msg-bucket="groups" data-unread="' + unreadCount + '" data-name="' + escHtml(g.name) + '" onclick="openGroupChat(\''+escHtml(g.id)+'\')" style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">'
+      return '<div data-msg-row data-msg-bucket="groups" data-unread="' + unreadCount + '" data-name="' + escHtml(g.name) + '" onclick="openGroupChat(\''+escHtml(g.id)+'\')" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">'
         + '<div style="width:46px;height:46px;border-radius:50%;background:rgba(94,92,230,0.2);border:1.5px solid rgba(94,92,230,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">' + iconHtml + '</div>'
-        + '<div style="flex:1;min-width:0;">'
-        + '<div style="font-size:14px;font-weight:' + (unreadCount ? 700 : 600) + ';color:var(--text);">' + escHtml(g.name) + '</div>'
+        + '<div style="flex:1 1 0%;min-width:0;overflow:hidden;">'
+        + '<div style="font-size:14px;font-weight:' + (unreadCount ? 700 : 600) + ';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(g.name) + '</div>'
         + '<div class="_u-ellipsis-sm"' + (unreadCount ? ' style="color:var(--text2);font-weight:600;"' : '') + '>' + preview + '</div>'
         + '</div>'
         + unreadBadge
-        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>'
         + '</div>';
     }).join('');
 
@@ -27624,7 +27856,7 @@ window._voiceSend = async function() {
   var reader = new FileReader();
   reader.onload = async function(e) {
     var dataUrl = e.target.result;
-    var myKey = (localStorage.getItem('ka_username_key') || currentUser || '').toLowerCase();
+    var myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser || '')).toLowerCase();
     if (_voiceContext === 'gc') {
       var group = _groupCache[_currentGroupId];
       if (!group) return;
@@ -27726,7 +27958,7 @@ window.dmHandleFile = async function(input) {
       var media = inp._pendingMedia;
       inp._pendingMedia = null;
       if (typeof chatPeerKey === 'undefined' || !chatPeerKey) { if (_origSend) _origSend(); return; }
-      var myKey = (localStorage.getItem('ka_username_key') || currentUser || '').toLowerCase();
+      var myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser || '')).toLowerCase();
       var msgId = Date.now().toString();
       var msgObj = { id: msgId, sender: myKey, text: '', mediaUrl: media.url, mediaType: media.type, time: new Date().toISOString() };
       try {
@@ -30742,7 +30974,8 @@ async function _refreshWalletBalance() {
   try {
     const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`);
     _walletBalance = (rows && rows[0] && rows[0].plus_coins) || 0;
-  } catch(e) { console.warn('[wallet] balance load failed:', e); _walletBalance = 0; }
+    window._walletBalanceLoaded = true;
+  } catch(e) { console.warn('[wallet] balance load failed:', e); }
   const balEl = document.getElementById('walletCoinBalance');
   const cashEl = document.getElementById('walletCashEstimate');
   const rateEl = document.getElementById('walletRateNote');
@@ -32983,8 +33216,16 @@ async function renderPartnerSitesRow() {
   if (!row) return;
   if (!currentUser) { row.style.display = 'none'; return; }
   row.style.display = '';
-  // Show a quick live balance if we have one cached; kick off a fresh fetch either way
-  var balText = (typeof _walletBalance === 'number' && _walletBalance > 0) ? _walletBalance.toLocaleString() : '···';
+  // Show a quick live balance if we have one cached; kick off a fresh fetch either way.
+  // BUGFIX: this used to treat _walletBalance > 0 as "we have a real cached
+  // value" and anything else (including a genuine 0 left over from a prior
+  // failed fetch) as "no cached value" — but those are different things. A
+  // stale 0 isn't "no data", it's wrong data, and showing it as the literal
+  // balance (instead of the "···" loading placeholder) is what produced the
+  // "my wallet balance is 0" flash on every fresh load. Track whether a
+  // successful fetch has ever completed this session instead of guessing
+  // from the number itself.
+  var balText = window._walletBalanceLoaded ? _walletBalance.toLocaleString() : '···';
   row.innerHTML = '<div onclick="openWalletPage()" class="wallet-card-v2">'
     + '<div class="wallet-coin-wrap">' + _walletCoinSvg() + '</div>'
     + '<div style="flex:1;min-width:0;">'
@@ -33001,6 +33242,7 @@ async function renderPartnerSitesRow() {
     var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(_myWalletKey()) + '&select=plus_coins');
     var bal = (rows && rows[0] && rows[0].plus_coins) || 0;
     _walletBalance = bal;
+    window._walletBalanceLoaded = true;
     var balEl = document.getElementById('partnerSitesBalance');
     if (balEl) balEl.innerHTML = bal.toLocaleString() + ' <span class="unit">coins</span>';
   } catch(e) {}
@@ -33294,10 +33536,10 @@ async function psAutofill() {
     statusEl.textContent = 'Plus AI is writing a description…';
     var hostname = new URL(rawUrl).hostname.replace(/^www\./, '');
     var existingName = (nameEl && nameEl.value.trim()) || hostname;
-    var aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    var aiResp = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 120,
@@ -33484,10 +33726,10 @@ async function psEditAutofill(idx) {
     statusEl.textContent = 'Plus AI is writing a description…';
     var hostname = new URL(rawUrl).hostname.replace(/^www\./, '');
     var existingName = (nameEl && nameEl.value.trim()) || hostname;
-    var aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    var aiResp = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 120,
@@ -34002,8 +34244,8 @@ async function _aiReplyToComment(text, postId, parentCommentId){
 
   let reply;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+    const res = await fetch('/api/groq', {
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 300, messages: [{ role: 'system', content: systemWithPostCtx }, { role: 'user', content: userPrompt }] })
     });
     const data = await res.json();
@@ -34021,8 +34263,8 @@ async function _aiReplyToProfilePost(text, userKey, postId){
   const clean = text.replace(/@plusai/gi,'').trim() || text;
   let reply;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+    const res = await fetch('/api/groq', {
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 300, messages: [{ role: 'system', content: _getPlusAISystem() }, { role: 'user', content: clean }] })
     });
     const data = await res.json();
@@ -34195,10 +34437,10 @@ async function _aiReplyToChat(text, peerOrGroupId, isGroup){
   const SYSTEM = _getPlusAISystem();
   let reply;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'system', content: SYSTEM }, ...historyMsgs] })
     });
     const data = await res.json();
@@ -34751,10 +34993,10 @@ Your job: Extract or infer fields for a betting prediction post. Respond ONLY wi
   "analysis_cleaned": "If analysis text was provided: clean it up — fix spelling/grammar, keep the same meaning, make it punchy. If no analysis, return empty string. NEVER invent content — only clean what was given."
 }`;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'user', content: aiPrompt }] })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -34799,10 +35041,10 @@ Respond ONLY with a JSON object, no markdown:
   "body_cleaned": "a well-written, grammar-corrected, natural version of the message. Keep emojis if present. Fix spelling/grammar. Keep it human and engaging. Don't over-formalise it."
 }`;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -34839,10 +35081,10 @@ Respond ONLY with a JSON object, no markdown:
   "v2": "Another version with a different angle or tone (e.g. more hype/energetic, or more analytical). Max 2-3 sentences."
 }`;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('/api/groq', {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await res.json();
@@ -35681,9 +35923,9 @@ window._caeAIFill = function() {
   var prompt = title
     ? 'Write a short, engaging community announcement message for a social app called Social Plus. The announcement is titled: "' + title + '". Write 1-2 punchy sentences max. No hashtags. Just the message text.'
     : 'Write a short community announcement for a social app called Social Plus. 1-2 sentences, engaging and direct.';
-  fetch('https://api.groq.com/openai/v1/chat/completions', {
+  fetch('/api/groq', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'llama3-8b-8192', messages: [{ role: 'user', content: prompt }], max_tokens: 100, temperature: 0.8 })
   }).then(function(res){ return res.json(); }).then(function(data) {
     var msg = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
@@ -36579,9 +36821,9 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
             : typeof window._getPlusAISystem==='function' ? window._getPlusAISystem()
             : 'You are Plus AI, a helpful assistant built into the Social Plus app.';
 
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
+    fetch('/api/groq', {
       method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body:JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:300,
         messages:[{role:'system',content:sys}].concat(_kaiHistory.slice(-10)) })
     })
@@ -37666,7 +37908,7 @@ buildKeyboard();
 
     var key = _dmKey(chatPeerKey);
     var conv = _dmCache[key] || { key: key, peer: chatPeerKey, messages: [] };
-    var senderKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+    var senderKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser)).toLowerCase(); // routed through _myUsernameKey() for consistency with the render-side isMine check
     var msgObj = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), sender: senderKey, text: text, time: new Date().toISOString() };
     if (window._pendingReply) { msgObj.replyTo = window._pendingReply; window._pendingReply = null; }
 
@@ -37720,7 +37962,7 @@ buildKeyboard();
       container.innerHTML = '<div class="chat-empty">No messages yet. Say hello!</div>';
       return;
     }
-    var myKey = (localStorage.getItem('ka_username_key') || currentUser || '').toLowerCase();
+    var myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser || '')).toLowerCase();
     var myDisp = (localStorage.getItem('ka_user') || '').toLowerCase();
     var myCur = (currentUser || '').toLowerCase();
     var isLight = document.body.classList.contains('light-mode');
