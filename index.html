@@ -10558,16 +10558,25 @@ var _chatLastSave = {}; // track when we last saved per key, to debounce poll ov
 // _markChatMessagesRead unreliable — the write either succeeds or the catch
 // block below tells us why, nothing silently short-circuits it.
 var _markReadInFlight = {};
+function _dbgPaint(msg, color) {
+  try {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:999999;background:' + (color||'#222') + ';color:#fff;font-size:12px;font-weight:600;padding:10px;text-align:center;word-break:break-word;';
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(function(){ d.remove(); }, 6000);
+  } catch(e) {}
+}
 async function _markConversationRead(peerKey) {
-  if (!currentUser || !peerKey) { if (typeof showToast === 'function') showToast('DEBUG: markRead bailed — no currentUser/peerKey', 'error'); return; }
+  if (!currentUser || !peerKey) { _dbgPaint('markRead bailed — no currentUser/peerKey', '#e91e63'); return; }
   const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser||'').toLowerCase();
   const key = getChatKey(currentUser, peerKey);
-  if (_markReadInFlight[key]) { if (typeof showToast === 'function') showToast('DEBUG: markRead already in flight for ' + key, ''); return; }
+  if (_markReadInFlight[key]) { _dbgPaint('markRead already in flight for ' + key, '#ff9800'); return; }
   _markReadInFlight[key] = true;
   try {
     const rows = await SB.query('messages', `?chat_key=eq.${encodeURIComponent(key)}`);
     const row = rows && rows[0];
-    if (!row || !row.messages || !row.messages.length) { if (typeof showToast === 'function') showToast('DEBUG: no row/messages found for key ' + key, 'error'); return; }
+    if (!row || !row.messages || !row.messages.length) { _dbgPaint('no row/messages found for key ' + key, '#e91e63'); return; }
     let changed = false;
     const updatedMsgs = row.messages.map(m => {
       if (m && !m.__mrSys && !m.read && (m.sender || '').toLowerCase() !== myKey) {
@@ -10576,14 +10585,14 @@ async function _markConversationRead(peerKey) {
       }
       return m;
     });
-    if (!changed) { if (typeof showToast === 'function') showToast('DEBUG: nothing to mark read for ' + key + ' (myKey=' + myKey + ')', ''); return; }
+    if (!changed) { _dbgPaint('nothing to mark read for ' + key + ' (myKey=' + myKey + ')', '#ff9800'); return; }
     await SB.upsert('messages', { chat_key: key, messages: updatedMsgs }, 'chat_key');
     if (typeof _chatCache !== 'undefined') _chatCache[key] = updatedMsgs;
     try { localStorage.setItem('ka_chat_' + key, JSON.stringify(updatedMsgs)); } catch(e) {}
-    if (typeof showToast === 'function') showToast('DEBUG: marked read + saved for ' + key, 'success');
+    _dbgPaint('marked read + saved for ' + key, '#2e7d32');
   } catch(e) {
     console.warn('[markRead] failed for', peerKey, e);
-    if (typeof showToast === 'function') showToast('DEBUG: markRead threw — ' + (e && e.message ? e.message : String(e)), 'error');
+    _dbgPaint('markRead threw — ' + (e && e.message ? e.message : String(e)), '#e91e63');
   } finally {
     _markReadInFlight[key] = false;
     _msgsBadgeLastFetch = 0;
@@ -14054,8 +14063,6 @@ async function openChatFromInbox(peerKey) {
   document.querySelector('.chat-send').onclick = sendChatMessage;
   loadChats(peerKey).then(() => {
     renderChatMessages();
-    if (typeof showToast === 'function') showToast('DEBUG: about to call markRead for ' + peerKey, '');
-    _markConversationRead(peerKey);
   }).catch(() => { renderChatMessages(); });
   document.getElementById('chatOverlay').classList.add('open');
   document.body.style.overflow = 'hidden'; // prevent background scroll-bleed
@@ -16852,8 +16859,12 @@ async function signupStepNext() {
     const params = new URLSearchParams(window.location.search);
     const post = params.get('post');
     const group = params.get('group');
+    const channel = params.get('channel');
     if (post) window._pendingDeepLinkPost = post;
     if (group) window._pendingDeepLinkGroup = { id: group, invite: params.get('invite') === '1' };
+    // channel may be a real channel id OR an invite_code (see _channelPostShareUrl) —
+    // resolved against both in _consumePendingDeepLink().
+    if (channel) window._pendingDeepLinkChannel = { ref: channel, post: post || null };
   } catch(e) {}
 })();
 
@@ -16936,11 +16947,64 @@ async function _openPostByIdFromLink(postId) {
   } catch(e) { console.warn('[deep link] post open failed:', e); }
 }
 
+// Resolves a channel deep link's `ref` (real channel id OR invite_code —
+// see _channelPostShareUrl) and opens the channel detail page. If the
+// visitor isn't already subscribed, surfaces a Dynamic Island nudge
+// suggesting they follow right away instead of leaving discovery to chance.
+async function _openChannelByRefFromLink(ref, postId) {
+  try {
+    let c = await getChannel(ref); // fast path: ref is the real id
+    if (!c) {
+      // Fall back to invite_code lookup — this is the path actual shared
+      // links take, since _channelPostShareUrl prefers invite_code.
+      const rows = await SB.query('channels', `?invite_code=eq.${encodeURIComponent(ref)}&select=*`).catch(() => []);
+      c = rows && rows[0];
+    }
+    if (!c) { showToast('That channel link is no longer valid.', 'error'); return; }
+    if (_channelIsBanned(c)) { showToast('This channel is unavailable.', 'error'); return; }
+
+    openChannelDetail(c.id);
+    if (postId && typeof _openChannelPostByIdFromLink === 'function') {
+      setTimeout(function() { _openChannelPostByIdFromLink(c.id, postId); }, 500);
+    }
+
+    const myKey = _myUsernameKey();
+    if (!myKey) return; // not logged in yet — login flow handles itself, nothing to nudge
+    const already = await isSubscribedToChannel(c.id).catch(() => false);
+    if (already) return;
+    setTimeout(function() {
+      if (typeof _showIsland === 'function') {
+        _showIsland({
+          type: 'notif',
+          title: 'Follow ' + (c.name || 'this channel') + '?',
+          sub: 'Subscribe now so you never miss a post',
+          duration: 6000,
+          stackKey: 'channel-follow-nudge-' + c.id,
+          onClick: async function() {
+            const ok = await subscribeToChannel(c.id);
+            if (ok) {
+              _showIsland({ type: 'follow', title: 'Subscribed', sub: c.name || 'Channel', duration: 2200 });
+              if (_currentChannelId === c.id && typeof openChannelDetail === 'function') openChannelDetail(c.id); // refresh subscribe button state
+            }
+          }
+        });
+      }
+    }, 1200); // let the channel page finish rendering first so the island doesn't compete with the page-open animation
+  } catch(e) { console.warn('[deep link] channel open failed:', e); }
+}
+
 // Consumes ?post=/?group= once the app is ready (called after loadPosts() on boot).
 // If not logged in, the link is preserved and the login prompt happens first —
 // the group-join branch simply requires currentUser so it no-ops safely until then.
 async function _consumePendingDeepLink() {
   try {
+    const ch = window._pendingDeepLinkChannel;
+    if (ch && ch.ref) {
+      window._pendingDeepLinkChannel = null;
+      window._pendingDeepLinkPost = null; // the post param here belongs to the channel, not the main feed — don't double-handle it below
+      setTimeout(function() { _openChannelByRefFromLink(ch.ref, ch.post); }, 400);
+      return;
+    }
     const postId = window._pendingDeepLinkPost;
     if (postId) {
       window._pendingDeepLinkPost = null;
@@ -22728,16 +22792,12 @@ async function renderMessagesPageContent() {
       const preview = conv.last ? escHtml(conv.last.text.substring(0,36) + (conv.last.text.length>36?'…':'')) : '';
       const peerKey = isOwnerConv ? OWNER_KEY : (stored ? stored.username : conv.peer);
       const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
-      // Unread count: real messages (not system) from the peer, not yet marked read.
-      const unreadCount = (conv.msgs || []).filter(m => m && !m.__mrSys && !m.read && (m.sender || '').toLowerCase() !== myKey).length;
-      const unreadBadge = unreadCount ? `<span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
-      return `<div data-msg-row data-msg-bucket="personal" data-unread="${unreadCount}" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
-          <div style="font-size:14px;font-weight:${unreadCount ? 700 : 600};color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
-          <div class="_u-ellipsis-sm" style="${unreadCount ? 'color:var(--text2);font-weight:600;' : ''}">${preview}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
+          <div class="_u-ellipsis-sm">${preview}</div>
         </div>
-        ${unreadBadge}
         <button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;flex-shrink:0;white-space:nowrap;">Delete</button>
       </div>`;
     }).join('');
@@ -23606,26 +23666,8 @@ function markConnectSeen() {
 }
 
 async function refreshMsgsBadge() {
-  if (!currentUser) { _setTabBadgeCount('tab-msgs-badge', 0); return; }
-  if (_msgsBadgeChecking) return;
-  if (Date.now() - _msgsBadgeLastFetch < 20000) return; // throttle — avoid hammering Supabase
-  _msgsBadgeChecking = true;
-  try {
-    const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser||'').toLowerCase();
-    const recv = await SB.query('messages', `?receiver=eq.${encodeURIComponent(myKey)}`) || [];
-    let unread = 0;
-    recv.forEach(conv => {
-      (conv.messages || []).forEach(m => {
-        if (!m.read && (m.sender || '').toLowerCase() !== myKey) unread++;
-      });
-    });
-    _msgsBadgeLastFetch = Date.now();
-    _setTabBadgeCount('tab-msgs-badge', unread);
-  } catch(e) {
-    // If the schema doesn't use a receiver column (some deployments key by
-    // chat_key/participants only), fail silently rather than spam errors.
-  }
-  _msgsBadgeChecking = false;
+  // Unread counter removed — always show 0 on the Messages tab.
+  _setTabBadgeCount('tab-msgs-badge', 0);
 }
 document.addEventListener('DOMContentLoaded', function() {
   const ab = document.getElementById('navAuthBtn');
@@ -25629,8 +25671,20 @@ function _channelPostShareUrl(channelId, postId, inviteCode) {
   // this is what makes "reset invite link" possible: rotating the code
   // invalidates old links without touching the channel's real id (which
   // every post/subscriber/reaction row still references).
+  //
+  // Routed through /api/channel-preview (a Vercel Edge Function) instead of
+  // straight to the app root. Reason: this is a single static HTML file, so
+  // link-preview crawlers (Telegram, WhatsApp, etc.) always saw the same
+  // generic "Social Plus — Predict, Post & Earn" card no matter which
+  // channel was shared — they don't run JS, so they can't resolve which
+  // channel a #channel=/?channel= param points to. The edge function looks
+  // up the real channel and returns a channel-specific preview card to
+  // crawlers, then 302-redirects real visitors straight into the app using
+  // this same ?channel=&post= format that _captureDeepLinkFromUrl() parses,
+  // so in-app behavior is identical to before.
   const ref = inviteCode || channelId;
-  return window.location.origin + window.location.pathname + '#channel=' + encodeURIComponent(ref) + (postId ? '&post=' + encodeURIComponent(postId) : '');
+  const base = window.location.origin + '/api/channel-preview';
+  return base + '?channel=' + encodeURIComponent(ref) + (postId ? '&post=' + encodeURIComponent(postId) : '');
 }
 
 // Old entry point ("Browse All Channels" button, etc.) — now just opens the
@@ -37890,9 +37944,6 @@ buildKeyboard();
     _dmCache[key] = fresh;
     renderChatMessages();
     _markChatSeen(peerKey);
-    alert('DEBUG: reached line before markConversationRead, peerKey=' + peerKey);
-    _markConversationRead(peerKey);
-    alert('DEBUG: markConversationRead call returned (fire-and-forget, so this fires immediately)');
 
     var inp = document.getElementById('chatInput');
     if (inp) {
