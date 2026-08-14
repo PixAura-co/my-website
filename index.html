@@ -7751,7 +7751,7 @@ async function seedBuiltInAccounts() {
   const builtIns = [
     { username: 'the predictor', display_name: 'The Predictor', bio: '🏆 Daily tips & accumulators', password: 'predictor123', is_built_in: true },
     { username: 'odds master', display_name: 'Odds Master', bio: '📊 Value bets & in-depth stats', password: 'oddsmaster123', is_built_in: true },
-    { username: 'bet analytics', display_name: 'Bet Analytics', bio: '🔎 Data-driven football insights', password: 'betanalytics123', is_built_in: true }
+    { username: 'bet analytics', display_name: 'Social Plus', bio: '✅ Official Social Plus notifications', password: 'betanalytics123', is_built_in: true }
   ];
   for (const acct of builtIns) {
     const existing = await SB.query('accounts', `?username=eq.${encodeURIComponent(acct.username)}`);
@@ -10507,7 +10507,6 @@ async function loadChats(peerKey) {
     const filtered = merged.filter(m => !m.id || !_chatDeletedIds.has(m.id));
     _chatCache[key] = filtered;
     try { localStorage.setItem('ka_chat_' + key, JSON.stringify(filtered)); } catch(e) {}
-    _markChatMessagesRead(peerKey, filtered); // fire-and-forget: flips unread incoming msgs to read
     return filtered;
   } catch(e) {
     try {
@@ -10551,28 +10550,45 @@ var _dmPollInterval = null;
 var _chatDeletedIds = new Set(); // track locally deleted message IDs so poll can't restore them
 var _chatLastSave = {}; // track when we last saved per key, to debounce poll overwrites
 
-// Flip any unread incoming messages (from peer, not from us) to read:true and
-// persist. Called whenever a chat thread is opened/loaded, so the Messages
-// tab badge count reflects what the user has actually seen.
-var _markChatReadInFlight = {};
-function _markChatMessagesRead(peerKey, msgs) {
-  if (!currentUser || !peerKey || !msgs || !msgs.length) return;
+// Marks a conversation read by writing DIRECTLY to Supabase — a fresh fetch,
+// flip, write, in one isolated round trip. Deliberately does NOT touch
+// _chatCache, does NOT go through _persistChatsToSupabase's shared save-lock,
+// and does NOT depend on the caller having already-loaded/merged messages.
+// This sidesteps every cache/lock/race interaction that made the old
+// _markChatMessagesRead unreliable — the write either succeeds or the catch
+// block below tells us why, nothing silently short-circuits it.
+var _markReadInFlight = {};
+async function _markConversationRead(peerKey) {
+  if (!currentUser || !peerKey) { if (typeof showToast === 'function') showToast('DEBUG: markRead bailed — no currentUser/peerKey', 'error'); return; }
   const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser||'').toLowerCase();
-  let changed = false;
-  msgs.forEach(m => {
-    if (!m.read && (m.sender || '').toLowerCase() !== myKey) { m.read = true; changed = true; }
-  });
-  if (!changed) return;
   const key = getChatKey(currentUser, peerKey);
-  if (_markChatReadInFlight[key]) return;
-  _markChatReadInFlight[key] = true;
-  _persistChatsToSupabase(peerKey, msgs)
-    .catch(() => {})
-    .finally(() => {
-      _markChatReadInFlight[key] = false;
-      _msgsBadgeLastFetch = 0; // bypass throttle so the badge updates right away
-      if (typeof refreshMsgsBadge === 'function') refreshMsgsBadge();
+  if (_markReadInFlight[key]) { if (typeof showToast === 'function') showToast('DEBUG: markRead already in flight for ' + key, ''); return; }
+  _markReadInFlight[key] = true;
+  try {
+    const rows = await SB.query('messages', `?chat_key=eq.${encodeURIComponent(key)}`);
+    const row = rows && rows[0];
+    if (!row || !row.messages || !row.messages.length) { if (typeof showToast === 'function') showToast('DEBUG: no row/messages found for key ' + key, 'error'); return; }
+    let changed = false;
+    const updatedMsgs = row.messages.map(m => {
+      if (m && !m.__mrSys && !m.read && (m.sender || '').toLowerCase() !== myKey) {
+        changed = true;
+        return Object.assign({}, m, { read: true });
+      }
+      return m;
     });
+    if (!changed) { if (typeof showToast === 'function') showToast('DEBUG: nothing to mark read for ' + key + ' (myKey=' + myKey + ')', ''); return; }
+    await SB.upsert('messages', { chat_key: key, messages: updatedMsgs }, 'chat_key');
+    if (typeof _chatCache !== 'undefined') _chatCache[key] = updatedMsgs;
+    try { localStorage.setItem('ka_chat_' + key, JSON.stringify(updatedMsgs)); } catch(e) {}
+    if (typeof showToast === 'function') showToast('DEBUG: marked read + saved for ' + key, 'success');
+  } catch(e) {
+    console.warn('[markRead] failed for', peerKey, e);
+    if (typeof showToast === 'function') showToast('DEBUG: markRead threw — ' + (e && e.message ? e.message : String(e)), 'error');
+  } finally {
+    _markReadInFlight[key] = false;
+    _msgsBadgeLastFetch = 0;
+    if (typeof refreshMsgsBadge === 'function') refreshMsgsBadge();
+  }
 }
 
 // Resets chat-overlay UI that's specific to the AI assistant chat (the
@@ -10628,6 +10644,7 @@ async function openChat() {
   _startSeenPoll(chatPeerKey);
   loadChats(chatPeerKey).then(function() {
     renderChatMessages();
+    _markConversationRead(chatPeerKey);
   }).catch(function() {
     renderChatMessages();
   });
@@ -10666,9 +10683,22 @@ async function openChat() {
         var remoteIds = new Set(remoteMsgs.map(function(m){return m.id;}).filter(Boolean));
         // Keep any local message not yet confirmed in Supabase
         var localOnly = localMsgs.filter(function(m){return m.id && !remoteIds.has(m.id);});
+        // Preserve local read:true on messages that already exist remotely too.
+        // Without this, a message we just marked read locally (save still
+        // in-flight, or the server row hadn't picked it up yet) gets its
+        // read:false server copy pasted back in here, and the unread badge
+        // in the Messages list reappears even though the user already read it.
+        var localReadById = {};
+        localMsgs.forEach(function(m){ if (m.id && m.read) localReadById[m.id] = true; });
+        var remoteMsgsReadPreserved = remoteMsgs.map(function(m){
+          if (m.id && !m.read && localReadById[m.id]) {
+            return Object.assign({}, m, { read: true });
+          }
+          return m;
+        });
         var merged = localOnly.length > 0
-          ? remoteMsgs.concat(localOnly).sort(function(a,b){return new Date(a.time)-new Date(b.time);})
-          : remoteMsgs;
+          ? remoteMsgsReadPreserved.concat(localOnly).sort(function(a,b){return new Date(a.time)-new Date(b.time);})
+          : remoteMsgsReadPreserved;
         // Filter out locally deleted messages so poll can't restore them
         merged = merged.filter(function(m){ return !m.id || !_chatDeletedIds.has(m.id); });
         // Only update if the merged result is actually different from what we have
@@ -10790,6 +10820,7 @@ async function startDirectChatWith(userKey) {
   if (tb) tb.classList.add('chat-open-hidden');
   loadChats(chatPeerKey).then(function() {
     renderChatMessages();
+    _markConversationRead(chatPeerKey);
   }).catch(function() {
     renderChatMessages();
   });
@@ -10836,6 +10867,7 @@ async function startChatWithViewed() {
   if (upo) { upo.classList.remove('open'); upo.style.display = 'none'; }
   loadChats(chatPeerKey).then(function() {
     renderChatMessages();
+    _markConversationRead(chatPeerKey);
   }).catch(function() {
     renderChatMessages();
   });
@@ -13454,7 +13486,7 @@ function _startChatNotifPoll() {
         const parts = (chatKey || '').split('__');
         const peerKey = parts.length === 2 ? (parts[0] === myKey ? parts[1] : parts[0]) : (row.sender === myKey ? row.receiver : row.sender);
         const peerIsOpen = isChatOpen && typeof chatPeerKey !== 'undefined' && chatPeerKey && (chatPeerKey || '').toLowerCase() === (peerKey || '').toLowerCase();
-        if (peerIsOpen) { if (typeof _markChatMessagesRead === 'function') _markChatMessagesRead(peerKey, msgs); return; }
+        if (peerIsOpen) { if (typeof _markConversationRead === 'function') _markConversationRead(peerKey); return; }
         if (!window._chatNotifPrimed) return; // first pass after load: just record timestamps, don't blast the existing backlog as new alerts
         const displayName = (function() {
           const stored = (_cache['acct_by_username'] || {})[peerKey] || (_cache['acct_by_username'] || {})[(peerKey||'').toLowerCase()];
@@ -14020,7 +14052,11 @@ async function openChatFromInbox(peerKey) {
   const inp = document.getElementById('chatInput');
   inp.onkeydown = function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } };
   document.querySelector('.chat-send').onclick = sendChatMessage;
-  loadChats(peerKey).then(() => renderChatMessages()).catch(() => renderChatMessages());
+  loadChats(peerKey).then(() => {
+    renderChatMessages();
+    if (typeof showToast === 'function') showToast('DEBUG: about to call markRead for ' + peerKey, '');
+    _markConversationRead(peerKey);
+  }).catch(() => { renderChatMessages(); });
   document.getElementById('chatOverlay').classList.add('open');
   document.body.style.overflow = 'hidden'; // prevent background scroll-bleed
   const tb = document.getElementById('appTabbar');
@@ -19100,9 +19136,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const uname = acct.username || '';
             if (!uname || acct.is_built_in) continue;
             if (/[^a-z0-9_]/.test(uname)) {
-              // This username has spaces or disallowed chars — send Bet Analytics DM
+              // This username has spaces or disallowed chars — send Social Plus DM
               const suggestedFix = uname.replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-              const dmText = `⚠️ Hi ${acct.display_name || uname}! We noticed your username "@${uname}" contains characters that are no longer allowed (spaces or special symbols).\n\nPlease update it to only use letters, numbers, and underscores. We suggest: @${suggestedFix}\n\nGo to Settings → Edit Login Details to update your username. — Bet Analytics`;
+              const dmText = `⚠️ Hi ${acct.display_name || uname}! We noticed your username "@${uname}" contains characters that are no longer allowed (spaces or special symbols).\n\nPlease update it to only use letters, numbers, and underscores. We suggest: @${suggestedFix}\n\nGo to Settings → Edit Login Details to update your username. — Social Plus`;
               await _sendBetAnalyticsDM(uname, dmText).catch(()=>{});
               addNotifForUser(uname, `⚠️ Your username "@${uname}" needs to be updated — please go to Settings to fix it.`);
             }
@@ -19486,7 +19522,7 @@ function ownerVerify(username, display) {
   if (_cache['acct_' + _dbUsername]) _cache['acct_' + _dbUsername].is_verified = true;
   _cache['all_accounts'] = null;
   _cache['acct_' + username.toLowerCase()] = null;
-  // Notify the user via Bet Analytics DM and notification
+  // Notify the user via Social Plus DM and notification
   _sendBetAnalyticsVerifiedDM(_dbUsername, display || username);
   addNotifForUser(_dbUsername, `✅ Congratulations! Your account @${username} has been verified by Social Plus. You now have the gold ✓ badge!`);
   showToast((display||username) + ' verified ✓', 'success'); renderUserManager();
@@ -19508,10 +19544,10 @@ function ownerRemoveVerify(username, display) {
   showToast('Verification removed.', ''); renderUserManager();
 }
 
-// Send a DM from Bet Analytics (moderator account) to a user
+// Send a DM from Social Plus (moderator account) to a user
 async function _sendBetAnalyticsDM(targetUsername, messageText) {
   const BAKey = 'bet_analytics';
-  const BADisplay = 'Bet Analytics';
+  const BADisplay = 'Social Plus';
   const chatKey = [BAKey, targetUsername.toLowerCase()].sort().join('_');
   const msgObj = {
     id: Date.now().toString() + Math.random().toString(36).slice(2),
@@ -19527,7 +19563,7 @@ async function _sendBetAnalyticsDM(targetUsername, messageText) {
     const msgs = existing.messages || [];
     msgs.push(msgObj);
     await SB.upsert('messages', { chat_key: chatKey, messages: msgs, participants: [BAKey, targetUsername.toLowerCase()], last_time: msgObj.time }, 'chat_key');
-  } catch(e) { console.warn('Bet Analytics DM error:', e); }
+  } catch(e) { console.warn('Social Plus DM error:', e); }
 }
 
 async function _sendBetAnalyticsVerifiedDM(usernameKey, displayName) {
@@ -22539,7 +22575,15 @@ async function renderMessagesPageContent() {
         const peer = parts.length === 2
           ? (parts[0] === myKey ? parts[1] : parts[0])
           : (r.sender === myKey ? r.receiver : r.sender);
-        convs.push({ key: rowKey, peer: String(peer || ''), msgs: r.messages||[], last: (typeof _mrLastRealMsg === 'function' ? _mrLastRealMsg(r.messages||[]) : (r.messages||[])[r.messages.length-1]) });
+        // Prefer the local cache's copy of these messages when we have one —
+        // it may already reflect a read:true flip from _markChatMessagesRead
+        // that hasn't finished persisting to Supabase yet. Without this, the
+        // fresh-but-stale server row silently overwrites the local read state
+        // and the unread badge in this list never clears even after opening
+        // and reading the chat.
+        const cachedMsgs = (typeof window._chatCache !== 'undefined') ? window._chatCache[rowKey] : null;
+        const msgsToUse = (cachedMsgs && cachedMsgs.length) ? cachedMsgs : (r.messages||[]);
+        convs.push({ key: rowKey, peer: String(peer || ''), msgs: msgsToUse, last: (typeof _mrLastRealMsg === 'function' ? _mrLastRealMsg(msgsToUse) : msgsToUse[msgsToUse.length-1]) });
       }
     });
   } catch(e) {
@@ -25379,7 +25423,11 @@ async function _renderChannelPostCard(p, channel, preloaded) {
     return `<button data-active="${active ? '1' : '0'}" onclick="_onChannelReactionTap('${escHtml(p.id)}','${e}',this)" style="font-family:var(--font);font-size:13px;padding:5px 9px;border-radius:100px;border:1px solid ${active ? 'rgba(245,197,24,0.5)' : 'var(--glass-border)'};background:${active ? 'rgba(245,197,24,0.15)' : 'var(--glass)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;">${e}${cnt ? `<span class="creact-count" style="font-size:11px;color:var(--text3);">${cnt}</span>` : ''}</button>`;
   }).join('');
 
-  const mediaHtml = (p.media||[]).length ? `<div style="margin-top:8px;border-radius:14px;overflow:hidden;"><img src="${escHtml(p.media[0].dataUrl||p.media[0].url||p.media[0].src)}" style="width:100%;display:block;"/></div>` : '';
+  const mediaHtml = (p.media||[]).length ? (() => {
+    const srcs = p.media.map(m => m.dataUrl||m.url||m.src).filter(Boolean);
+    const srcsJson = escHtml(JSON.stringify(srcs)).replace(/'/g,'&#39;');
+    return `<div style="margin-top:8px;border-radius:14px;overflow:hidden;cursor:pointer;" onclick="event.stopPropagation();openLightbox('${escHtml(srcs[0])}',false,JSON.parse('${srcsJson}'))"><img src="${escHtml(srcs[0])}" style="width:100%;display:block;"/></div>`;
+  })() : '';
   const fwdHtml = p.forwarded_from_channel_id ? `<div style="font-size:11px;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>Forwarded</div>` : '';
   const pollHtml = p.is_poll && p.poll_id
     ? await _renderChannelPollWidget(p.poll_id, preloaded && preloaded.pollMap ? preloaded.pollMap.get(p.poll_id) : null, preloaded && preloaded.voteMap ? preloaded.voteMap.get(p.poll_id) : null)
@@ -25401,7 +25449,7 @@ async function _renderChannelPostCard(p, channel, preloaded) {
       <button onclick="event.stopPropagation();_shareChannelPost('${escHtml(shareUrl)}')" style="width:30px;height:30px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
     </div>
     ${fwdHtml}
-    ${!p.is_poll && p.body ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;">${escHtml(p.body)}</div>` : ''}
+    ${!p.is_poll && p.body ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;">${linkify(escHtml(p.body))}</div>` : ''}
     ${mediaHtml}
     ${pollHtml}
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center;">
@@ -25975,20 +26023,20 @@ async function openChannelDetail(channelId) {
     ${statusBanner}
     <div style="background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.18);border-radius:16px;padding:16px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-        <div class="${aviAnimCls}" style="width:60px;height:60px;border-radius:16px;background:rgba(245,197,24,0.12);border:2px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
+        <div class="${aviAnimCls}" ${(c.avatar && !c.avatar.startsWith('__emoji__') && !c.avatar.startsWith('__gradient__')) ? `onclick="openLightbox('${escHtml(c.avatar)}',false,['${escHtml(c.avatar)}'])" style="cursor:pointer;width:60px;height:60px;border-radius:16px;background:rgba(245,197,24,0.12);border:2px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;"` : `style="width:60px;height:60px;border-radius:16px;background:rgba(245,197,24,0.12);border:2px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;"`}>${avi}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:18px;font-weight:700;display:flex;align-items:center;gap:6px;">${escHtml(c.name)}${myRole==='admin' ? '<span style="font-size:10px;font-weight:700;color:var(--gold);background:rgba(245,197,24,0.14);border-radius:6px;padding:2px 6px;">ADMIN</span>' : ''}</div>
           <div style="font-size:12px;color:var(--text3);">${(c.subscriber_count||0).toLocaleString()} subscriber${c.subscriber_count===1?'':'s'} · Channel</div>
         </div>
       </div>
-      ${c.bio ? `<div style="font-size:13px;color:var(--text2);margin-bottom:10px;">${escHtml(c.bio)}</div>` : ''}
+      ${c.bio ? `<div style="font-size:13px;color:var(--text2);margin-bottom:10px;white-space:pre-wrap;">${linkify(escHtml(c.bio))}</div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${isOwnerOfChannel
           ? `<button onclick="openChannelManage('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(245,197,24,0.3);background:rgba(245,197,24,0.12);color:var(--gold);">Manage Channel</button>`
           : `<button onclick="_quickSubscribeToggle('${escHtml(c.id)}',this)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};">${isSub ? '✓ Subscribed' : 'Subscribe'}</button>`}
         ${isSub ? _channelMuteBtnHtml(c.id, isMuted) : ''}
         ${canManage ? `<button onclick="openChannelSubscriberManager('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Subscribers</button>` : ''}
-        ${canManage ? `<button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>` : ''}
+        <button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>
         ${canManage && !isOwnerOfChannel ? `<button onclick="openChannelManage('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Channel Settings</button>` : ''}
         ${isOwner ? `<button onclick="openSuperAdmin();setSuperAdminTab('channels');setTimeout(()=>_saOpenChannelModeration('${escHtml(c.id)}'),150)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,69,58,0.3);background:rgba(255,69,58,0.08);color:#ff453a;">Moderate</button>` : ''}
       </div>
@@ -37842,6 +37890,9 @@ buildKeyboard();
     _dmCache[key] = fresh;
     renderChatMessages();
     _markChatSeen(peerKey);
+    alert('DEBUG: reached line before markConversationRead, peerKey=' + peerKey);
+    _markConversationRead(peerKey);
+    alert('DEBUG: markConversationRead call returned (fire-and-forget, so this fires immediately)');
 
     var inp = document.getElementById('chatInput');
     if (inp) {
