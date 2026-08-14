@@ -7,17 +7,17 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Social Plus — Predict, Post & Earn</title>
-<meta name="description" content="Social Plus is a sports prediction and social community. Share your picks, follow top predictors, chat, and earn Plus Coins you can withdraw — all in one app."/>
+<title>Social Plus — Post & Earn</title>
+<meta name="description" content="Social Plus is a social community app. Post, chat with the community, and earn Plus Coins you can withdraw — all in one app."/>
 <link rel="canonical" href="https://plusng.com.ng/"/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="Social Plus"/>
-<meta property="og:title" content="Social Plus — Predict, Post & Earn"/>
-<meta property="og:description" content="Share your sports predictions, follow top predictors, chat with the community, and earn Plus Coins you can withdraw."/>
+<meta property="og:title" content="Social Plus — Post & Earn"/>
+<meta property="og:description" content="Post, chat, and connect with the community — earn Plus Coins you can withdraw."/>
 <meta property="og:url" content="https://plusng.com.ng/"/>
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Social Plus — Predict, Post & Earn"/>
-<meta name="twitter:description" content="Share your sports predictions, follow top predictors, chat with the community, and earn Plus Coins you can withdraw."/>
+<meta name="twitter:title" content="Social Plus — Post & Earn"/>
+<meta name="twitter:description" content="Post, chat, and connect with the community — earn Plus Coins you can withdraw."/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://fonts.gstatic.com">
 <link rel="dns-prefetch" href="https://api.groq.com">
@@ -16883,21 +16883,6 @@ function sharePostLink(postId) {
   }
 }
 
-// Builds a shareable invite link for a group chat. Opening it while logged in
-// joins the group directly (mirrors the existing channel-post join pattern).
-function _groupInviteUrl(groupId) {
-  return window.location.origin + window.location.pathname + '?group=' + encodeURIComponent(groupId) + '&invite=1';
-}
-function copyGroupInviteLink() {
-  if (!_currentGroupId) return;
-  const url = _groupInviteUrl(_currentGroupId);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => showToast('Invite link copied!', 'success')).catch(() => showToast(url));
-  } else {
-    showToast(url);
-  }
-}
-
 // Resolves a post id against both post tables (main feed `posts`, general
 // user posts `profile_posts`) and opens the correct comment overlay — a
 // shared link doesn't know ahead of time which table its post lives in.
@@ -25666,6 +25651,31 @@ function _shareChannelPost(url) {
     showToast(url);
   }
 }
+// Dedicated clipboard-only copy for buttons explicitly labeled "Copy" (channel
+// invite link) — unlike _shareChannelPost, this never opens the OS share sheet.
+async function _copyChannelInviteLink(url) {
+  var copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(url); copied = true; } catch(e) { copied = false; }
+  }
+  if (!copied) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      copied = document.execCommand('copy');
+      ta.remove();
+    } catch(e) { copied = false; }
+  }
+  if (copied) {
+    showToast('Invite link copied!', 'success');
+  } else {
+    showToast('Could not copy — long-press the link to copy it', 'error');
+  }
+}
 function _channelPostShareUrl(channelId, postId, inviteCode) {
   // Prefer a dedicated invite_code over the raw channel id when available —
   // this is what makes "reset invite link" possible: rotating the code
@@ -26526,7 +26536,7 @@ async function openChannelManage(channelId) {
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Invite Link</div>
     <div style="display:flex;gap:8px;">
       <input readonly value="${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:12px;color:var(--text2);"/>
-      <button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;white-space:nowrap;">Copy</button>
+      <button onclick="_copyChannelInviteLink('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;white-space:nowrap;">Copy</button>
       ${isOwnerForManage ? `<button onclick="_resetChannelInviteLinkUI('${escHtml(c.id)}')" title="Reset invite link — old links stop working" style="width:38px;height:38px;flex-shrink:0;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>` : ''}
     </div>
 
@@ -27023,15 +27033,32 @@ function _groupInviteUrl(group) {
   var base = location.origin + location.pathname;
   return base + '?group=' + encodeURIComponent(group.id) + '&invite=1';
 }
-function copyGroupInviteLink() {
+async function copyGroupInviteLink() {
   if (!_currentGroupId) return;
   var group = _groupCache[_currentGroupId];
   if (!group) return;
   var url = _groupInviteUrl(group);
-  try { navigator.clipboard.writeText(url); } catch(e) {
-    var ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  var copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(url); copied = true; } catch(e) { copied = false; }
   }
-  showToast('Invite link copied!', 'success');
+  if (!copied) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      copied = document.execCommand('copy');
+      ta.remove();
+    } catch(e) { copied = false; }
+  }
+  if (copied) {
+    showToast('Invite link copied!', 'success');
+  } else {
+    showToast('Could not copy — long-press the link to copy it', 'error');
+  }
 }
 
 // Toggles whether non-admin members can send messages — Telegram's "Send
