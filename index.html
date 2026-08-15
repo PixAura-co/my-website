@@ -6006,7 +6006,7 @@ let _premiumTiers = _getLocalPremiumTiers(); // { username: { tier, expires_at }
 
 async function _refreshPremiumTiersCache() {
   try {
-    const rows = await SB.query('premium_users', '?select=username,tier,expires_at&limit=2000');
+    const rows = await SB.query('premium_users', '?select=username,tier,expires_at,is_trial&limit=2000');
     const now = Date.now();
     const fresh = new Set();
     const freshTiers = {};
@@ -6016,7 +6016,7 @@ async function _refreshPremiumTiersCache() {
       const notExpired = !r.expires_at || new Date(r.expires_at).getTime() > now;
       if (!notExpired) return; // expired — treat as not premium
       fresh.add(k);
-      freshTiers[k] = { tier: r.tier || 'pro', expires_at: r.expires_at || null };
+      freshTiers[k] = { tier: r.tier || 'pro', expires_at: r.expires_at || null, is_trial: r.is_trial === true };
     });
     if (fresh.has('money')) { fresh.add('hardeh'); freshTiers['hardeh'] = freshTiers['money']; }
     if (fresh.has('hardeh')) { fresh.add('money'); freshTiers['money'] = freshTiers['hardeh']; }
@@ -6033,15 +6033,15 @@ function getPremiumTier(usernameOrKey) {
   if (!usernameOrKey) return null;
   const k = String(usernameOrKey).toLowerCase().replace(/\s+/g,'').replace(/^user_/,'');
   if (PREMIUM_USERS.some(function(p){ return k === p || k.startsWith(p); }) || k === OWNER_KEY) {
-    return { tier: 'prestige', label: PREMIUM_TIERS.prestige.label, expires_at: null, daysLeft: null };
+    return { tier: 'prestige', label: PREMIUM_TIERS.prestige.label, expires_at: null, daysLeft: null, isTrial: false };
   }
   const rec = _premiumTiers[k];
-  if (!rec) return isPremiumUser(k) ? { tier: 'pro', label: PREMIUM_TIERS.pro.label, expires_at: null, daysLeft: null } : null;
+  if (!rec) return isPremiumUser(k) ? { tier: 'pro', label: PREMIUM_TIERS.pro.label, expires_at: null, daysLeft: null, isTrial: false } : null;
   if (rec.expires_at && new Date(rec.expires_at).getTime() <= Date.now()) return null;
   const t = PREMIUM_TIERS[rec.tier] || PREMIUM_TIERS.pro;
   let daysLeft = null;
   if (rec.expires_at) daysLeft = Math.max(0, Math.ceil((new Date(rec.expires_at).getTime() - Date.now()) / 86400000));
-  return { tier: t.id, label: t.label, expires_at: rec.expires_at, daysLeft: daysLeft };
+  return { tier: t.id, label: t.label, expires_at: rec.expires_at, daysLeft: daysLeft, isTrial: rec.is_trial === true };
 }
 function formatPremiumCountdown(expiresAtIso) {
   if (!expiresAtIso) return 'Never expires';
@@ -6059,11 +6059,12 @@ async function _grantPremiumTier(username, tierId, opts) {
   const key = username.toLowerCase();
   const t = PREMIUM_TIERS[tierId] || PREMIUM_TIERS.pro;
   const expiresAt = opts.days ? _tierExpiryFromNow(tierId, opts.days) : _tierExpiryFromNow(tierId);
-  const row = { username: key, tier: t.id, subscribed_at: new Date().toISOString(), expires_at: expiresAt };
+  const isTrial = opts.isTrial === true;
+  const row = { username: key, tier: t.id, subscribed_at: new Date().toISOString(), expires_at: expiresAt, is_trial: isTrial };
   await SB.upsert('premium_users', row, 'username');
   _premiumUsers.add(key);
   _saveLocalPremiumUsers(_premiumUsers);
-  _premiumTiers[key] = { tier: t.id, expires_at: expiresAt };
+  _premiumTiers[key] = { tier: t.id, expires_at: expiresAt, is_trial: isTrial };
   _saveLocalPremiumTiers(_premiumTiers);
   // Every paid tier (Pro/Premium/Prestige) automatically carries the gold
   // checkmark — no separate manual step needed. Skip the notification/DM
@@ -6109,6 +6110,24 @@ async function ownerRemovePremiumCompletely(username, displayName) {
   }
   showToast('Premium fully removed from @' + username, 'success');
   renderUserManager();
+}
+// ── Owner: revoke whatever plan is currently active (trial or paid tier) ──
+// Thin wrapper over ownerRemovePremiumCompletely with wording that matches
+// what's actually being revoked, since "Revoke Trial" and "Revoke Plus
+// Premium Plan" are different admin actions from the user's point of view
+// even though they're the same underlying removal. Both make the account a
+// normal user immediately — same guarantee as the full-removal path above.
+async function ownerRevokePlan(username, displayName) {
+  if (!isOwner || !username) return;
+  const key = username.toLowerCase();
+  const planInfo = getPremiumTier(key);
+  const wasTrial = !!(planInfo && planInfo.isTrial);
+  const label = wasTrial ? 'Plus Pro trial' : ((planInfo && planInfo.label) || 'premium plan');
+  await ownerRemovePremiumCompletely(username, displayName);
+  // ownerRemovePremiumCompletely already sends its own generic notification —
+  // this just corrects the toast so a revoked trial doesn't read as a paid
+  // "subscription" being cancelled.
+  showToast(`Revoked ${label} for @` + username, 'success');
 }
 // Same effect as ownerVerify() but without the "you've been verified!"
 // notification/DM — used when verification is a side-effect of a premium
@@ -7383,7 +7402,10 @@ async function _autoMigrate() {
     ['messages',      { id: '__probe__', sender: null, receiver: null, messages: [], updated_at: new Date().toISOString() }, 'id'],
     ['profile_posts', { id: '__probe__', username: null, body: null, media: [], visibility: 'public', pp_comments: [], likes: [], timestamp: new Date().toISOString() }, 'id'],
     ['group_chats',   { id: '__probe__', name: null, members: [], messages: [], created_by: null, avatar: '👥', created_at: new Date().toISOString() }, 'id'],
+    ['premium_users', { username: '__probe__', tier: 'pro', subscribed_at: new Date().toISOString(), expires_at: new Date().toISOString(), is_trial: false }, 'username'],
   ];
+  window._migrationIssues = [];
+  let _allOk = true;
   await checks.reduce(function(chain, entry) {
     return chain.then(function() {
       var table = entry[0];
@@ -7401,16 +7423,45 @@ async function _autoMigrate() {
                     : 'id=eq.__probe__';
           fetch(SB_URL + '/rest/v1/' + table + '?' + pkCol, { method: 'DELETE', headers: SB.headers }).catch(function(){});
         } else {
+          _allOk = false;
           return r.text().catch(function(){ return ''; }).then(function(err) {
-            var colMatch = err.match(/column ["']?([\w]+)["']? of relation/i) || err.match(/["']([\w]+)["'] does not exist/i);
-            if (colMatch) {
-              console.warn('[Social Plus] Missing column in ' + table + ': "' + colMatch[1] + '" — add it in Supabase SQL Editor');
-            }
+            // ── Every failure gets logged with its table name now — this used to
+            // only fire for "missing column" errors via a regex match, so the
+            // far more common "no unique or exclusion constraint matching the
+            // ON CONFLICT specification" (42P10) failure was silently dropped
+            // with zero trace. That error means EVERY real write to this table
+            // via SB.upsert() is failing the same way in production, not just
+            // this one-time probe — so it needs to be loud, not swallowed.
+            var colMatch = err.match(/column ["']?([\w.]+)["']? (?:of relation|does not exist)/i) || err.match(/["']([\w.]+)["'] does not exist/i);
+            var reason = colMatch
+              ? 'missing column "' + colMatch[1] + '"'
+              : /no unique or exclusion constraint/i.test(err)
+                ? 'no UNIQUE/PRIMARY KEY constraint on (' + conflictCol + ') — every real write to this table is failing the same way'
+                : (err || ('HTTP ' + r.status));
+            var msg = '[Social Plus] Migration check failed on "' + table + '": ' + reason;
+            console.warn(msg);
+            window._migrationIssues.push({ table: table, conflictCol: conflictCol, reason: reason });
           });
         }
-      }).catch(function() { /* network error — silent */ });
+      }).catch(function() {
+        _allOk = false;
+        window._migrationIssues.push({ table: table, conflictCol: conflictCol, reason: 'network error reaching Supabase' });
+      });
     });
   }, Promise.resolve());
+  if (window._migrationIssues.length && typeof window._showIsland === 'function') {
+    window._showIsland({
+      type: 'error', title: 'Schema issue found',
+      sub: window._migrationIssues.length + ' table(s) can\'t write — tap for details',
+      duration: 8000,
+      onClick: function() { console.warn('[Social Plus] Migration issues:', window._migrationIssues); }
+    });
+  }
+  // Only mark migration as "done" once every check actually passed — if a
+  // real constraint gap is still there, this keeps re-checking (and
+  // re-alerting) on every fresh boot instead of silently giving up after
+  // one failed attempt on a device that happened to load first.
+  if (!_allOk) return;
   try { localStorage.setItem(AUTOMIGRATE_FLAG, '1'); } catch(e) {}
 }
 
@@ -7532,16 +7583,57 @@ async function _flushPendingWrites() {
 //     decay so old-but-popular posts don't bury today's posts forever.
 //  3. Take mostly the top-ranked ones, but swap a couple of slots for
 //     posts the session hasn't shown yet, so refreshing doesn't feel static.
+// ── Empty-feed diagnosis ────────────────────────────────────────────────
+// SB.query() deliberately swallows HTTP errors and falls back to cache/[]
+// so one bad table can't cascade into "offline" everywhere — correct for
+// most things, but it means an empty ranked page alone can't say whether
+// posts are genuinely zero or something's actually broken (bad column,
+// RLS denial, timeout). Given how much content the platform now has, an
+// empty feed is never an expected state — this does a raw, unwrapped probe
+// specifically to find and report the real reason instead of shrugging.
+async function _diagnoseFeedFailure() {
+  try {
+    const r = await Promise.race([
+      fetch(`${SB_URL}/rest/v1/posts?select=id&limit=1`, { headers: SB.headers }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('probe timed out after 6s')), 6000))
+    ]);
+    if (!r.ok) {
+      let body = '';
+      try { body = await r.text(); } catch(e) {}
+      return `Supabase rejected the posts query — HTTP ${r.status}${body ? ': ' + body.slice(0, 200) : ''}`;
+    }
+    const rows = await r.json();
+    if (Array.isArray(rows) && rows.length) {
+      return `Posts exist in the database, but the ranked-feed query (_fetchRankedPostsPage) returned none for this page — likely a bug in the ranking/pool query or its column list, not a real empty state.`;
+    }
+    return `Posts table genuinely has 0 rows right now.`;
+  } catch(e) {
+    return `Could not reach Supabase to check why the feed is empty: ${e && e.message ? e.message : e}`;
+  }
+}
+
 async function _fetchRankedPostsPage(pageSize, seenIds) {
   const POOL_SIZE = Math.max(pageSize * 4, 40);
   // Fetch the recent post pool and comment counts in parallel — they don't
   // depend on each other, so no reason to wait on one before starting the other.
+  // ── Track whether the posts query itself failed vs. genuinely returned 0 rows ──
+  // SB.query() never rejects — on a network error/timeout it sets
+  // _sbOnline=false and resolves with LS.query()'s result (an empty array
+  // on a cold app with nothing cached locally yet). That made a slow/cold
+  // first request on a fresh install indistinguishable from "0 posts exist
+  // in the database," which is why it got treated as a hard feed failure
+  // instead of "still loading, try again." We snapshot _sbOnline right
+  // before the call and check it right after: if it flipped to false
+  // during THIS call, the empty pool is a timeout/network miss, not a
+  // real empty state.
+  const _onlineBefore = _sbOnline;
   const [pool, commentRows] = await Promise.all([
     SB.query('posts', `?order=timestamp.desc&limit=${POOL_SIZE}&select=id,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link`).catch(() => []),
     // id-only rows over a generous recent window — cheap, and only needs to be
     // roughly right for ranking, not exact.
     SB.query('comments', `?order=time.desc&limit=400&select=post_id`).catch(() => [])
   ]);
+  window._lastRankedPoolFailed = (_onlineBefore !== false && _sbOnline === false);
   if (!pool || !pool.length) return [];
 
   const commentCounts = {};
@@ -7681,6 +7773,65 @@ async function _fetchMorePosts(pageSize) {
   }
 }
 
+// ── Unified boot/load tracker ───────────────────────────────────────────
+// The Dynamic Island used to represent ONLY the feed's own load, and would
+// hide the moment loadPosts() finished — even if Messages/Channels/etc were
+// still spinning elsewhere. Any loader can now register with this tracker;
+// the island stays up until every registered load is done, so "loading"
+// means the whole app is actually ready, not just one piece of it.
+//
+// It also enforces the load budget: each registered load gets its own
+// per-call timeout at the call site (5-8s), and this tracker additionally
+// enforces an absolute ceiling (HARD_CAP_MS) — if anything is still pending
+// past that, the island force-completes anyway. One stuck loader can now
+// never hang the indicator forever.
+window._appLoadTracker = (function() {
+  var pending = new Map(); // id -> { label, progress }
+  var hardCapTimer = null;
+  var ISLAND_ID = 'appBoot';
+  var HARD_CAP_MS = 10000; // absolute ceiling on how long the island can show "loading"
+
+  function _renderIsland() {
+    if (typeof window._showIsland !== 'function') return;
+    var entries = Array.from(pending.values());
+    if (!entries.length) return;
+    var sub = entries.length === 1 ? entries[0].label : (entries.length + ' things loading…');
+    var progress = entries.reduce(function(s, e) { return s + (typeof e.progress === 'number' ? e.progress : 0.4); }, 0) / entries.length;
+    window._showIsland({ live: true, id: ISLAND_ID, type: 'loading', title: 'Loading', sub: sub, progress: progress });
+  }
+  function start(id, label) {
+    if (!pending.size) hardCapTimer = setTimeout(forceFinish, HARD_CAP_MS);
+    pending.set(id, { label: label || 'Loading…', progress: 0.05 });
+    _renderIsland();
+  }
+  function update(id, patch) {
+    var cur = pending.get(id);
+    if (!cur) return;
+    if (patch && patch.label !== undefined) cur.label = patch.label;
+    if (patch && typeof patch.progress === 'number') cur.progress = patch.progress;
+    _renderIsland();
+  }
+  function done(id) {
+    pending.delete(id);
+    if (!pending.size) {
+      clearTimeout(hardCapTimer);
+      if (typeof window._endLiveIsland === 'function') window._endLiveIsland(ISLAND_ID);
+    } else {
+      _renderIsland();
+    }
+  }
+  function forceFinish() {
+    // Hard cap hit — something is still pending after 10s. Don't leave the
+    // island (or the caller) hanging forever; drop everything and close it.
+    // Whatever page is still loading keeps its own local "Couldn't load /
+    // tap to retry" state — this only stops the shared indicator from
+    // sitting there indefinitely.
+    pending.clear();
+    if (typeof window._endLiveIsland === 'function') window._endLiveIsland(ISLAND_ID);
+  }
+  return { start: start, update: update, done: done };
+})();
+
 async function loadPosts() {
   if (_loadPostsInFlight) return; // prevent racing duplicate loads
   _loadPostsInFlight = true;
@@ -7701,15 +7852,10 @@ async function loadPosts() {
   // Now a REAL progress bar: each stage below reports how far through the
   // boot sequence we are, instead of an indefinite spinner with no signal
   // of whether anything is actually happening.
-  const _islandOn = typeof window._showIsland === 'function';
   function _feedProgress(frac, sub) {
-    if (!_islandOn) return;
-    window._showIsland({
-      live: true, id: 'feedRefresh', type: 'loading',
-      title: 'Fetching Posts', sub: sub || 'Getting the latest updates…',
-      progress: frac,
-    });
+    window._appLoadTracker.update('feed', { progress: frac, label: sub || 'Getting the latest updates…' });
   }
+  window._appLoadTracker.start('feed', 'Getting the latest updates…');
   _feedProgress(0.05, 'Getting the latest updates…');
 
   _autoMigrate();   // fire-and-forget: ensures all columns exist
@@ -7729,7 +7875,49 @@ async function loadPosts() {
     // the seen-set so refreshing doesn't run out of "new" posts to surface.
     if (window._feedSeenPostIds && window._feedSeenPostIds.size > 60) window._feedSeenPostIds.clear();
     const _seenIds = window._feedSeenPostIds || (window._feedSeenPostIds = new Set());
-    const postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
+    let postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
+    // ── Don't trust a single empty result on a cold app/slow network ──────
+    // A timed-out first request (common on a fresh install with nothing in
+    // localStorage to fall back to) used to look identical to "0 posts in
+    // the database" and immediately showed the scary red failure screen —
+    // even while the app was still mid-boot ("Finishing up…" on the
+    // island). If the pool call flagged itself as a real network miss
+    // (_lastRankedPoolFailed), give it one quiet retry before deciding
+    // anything is actually wrong.
+    if ((!postsData || !postsData.length) && window._lastRankedPoolFailed) {
+      await new Promise(res => setTimeout(res, 800));
+      postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
+    }
+    if (!postsData || !postsData.length) {
+      // Only surface the hard failure UI for a genuine failure (server
+      // reachable but errored, or still unreachable after the retry) or a
+      // confirmed-real "0 rows" from Supabase — not a benign empty pool
+      // sitting behind a slow connection.
+      if (window._lastRankedPoolFailed || (typeof _sbOnline !== 'undefined' && _sbOnline !== false)) {
+        window._lastLoadPostsError = await _diagnoseFeedFailure();
+        // Owner-only — a raw diagnostic string ("Supabase rejected the
+        // query — HTTP 500…") in a toast reads as broken/alarming to a
+        // regular user with no context for what it means. Dave can debug
+        // from the empty-state screen below, which carries the same info
+        // and is also owner-gated.
+        if (isOwner && typeof window._showIsland === 'function') {
+          window._showIsland({ type: 'error', title: 'Feed came back empty', sub: window._lastLoadPostsError, duration: 7000 });
+        }
+      } else {
+        // Offline/unreachable and nothing local to show — let the normal
+        // skeleton/empty-state logic in _doRenderPosts handle it instead of
+        // slapping a diagnostic error screen over what's really just "no
+        // connection yet."
+        window._lastLoadPostsError = null;
+      }
+    } else {
+      window._lastLoadPostsError = null; // clear any stale reason from a previous failed load
+      // A real success — reset the auto-retry counter/timer so a future,
+      // unrelated failure gets its own fresh set of retries instead of
+      // inheriting an exhausted count from a previous incident.
+      window._feedAutoRetryCount = 0;
+      if (window._feedAutoRetryTimer) { clearTimeout(window._feedAutoRetryTimer); window._feedAutoRetryTimer = null; }
+    }
     const _pageIds = (postsData || []).map(p => p.id);
     postsData.forEach(p => _seenIds.add(p.id));
     _feedProgress(0.3, 'Loading comments…');
@@ -7860,6 +8048,11 @@ async function loadPosts() {
 
   } catch(e) {
     console.error('loadPosts error', e);
+    // Surface the real reason in the empty state below instead of a vague
+    // "Nothing here yet" — this is what you'd otherwise need console
+    // access to see. window._lastLoadPostsError is read by _doRenderPosts()
+    // when the feed is genuinely empty.
+    window._lastLoadPostsError = (e && e.message) ? e.message : String(e);
     // Don't wipe posts on error — keep cached posts visible
     // Only clear if we genuinely have no data at all
     if (!posts.length) posts = [];
@@ -7889,9 +8082,9 @@ async function loadPosts() {
   // above — this final renderPosts() just picks up anything the background
   // enrichment (accounts/For You/Following) added in the meantime.
   renderPosts();
-  // Progress bar to 100%, then dismiss the shared Dynamic Island loading state.
-  if (_islandOn) window._showIsland({ live: true, id: 'feedRefresh', type: 'loading', title: 'Fetching Posts', sub: 'Done', progress: 1 });
-  if (typeof window._endLiveIsland === 'function') window._endLiveIsland('feedRefresh');
+  // Feed's own load is done — the shared island only fully dismisses once
+  // every other registered load (messages, channels, …) is done too.
+  window._appLoadTracker.done('feed');
   // Suggested accounts only load when user actively searches — not auto-loaded
   refreshNotifBadge();
   if (currentUser) syncNotifsFromSupabase().catch(()=>{});
@@ -8076,6 +8269,17 @@ async function _refreshForYouProfilePosts() {
   try {
     let rows = await SB.query('profile_posts', '?order=timestamp.desc&limit=150') || [];
     rows = rows.filter(p => p.id !== '__probe__' && (p.visibility === 'public' || !p.visibility));
+    // ── Ensure display names are resolvable before building cards ──────
+    // This used to race getAllAccounts(): if that hadn't populated
+    // acct_by_username yet, `stored` below was always undefined and every
+    // post silently fell back to the raw username instead of the display
+    // name (and picFor() similarly fell back to a placeholder avatar).
+    // Waiting here — rather than hoping the parallel getAllAccounts() call
+    // in loadPosts() wins the race — makes correct names/pics the default
+    // instead of a lucky timing outcome.
+    if (!_cache['acct_by_username'] && typeof getAllAccounts === 'function') {
+      await getAllAccounts().catch(() => {});
+    }
     const accounts = _cache['acct_by_username'] || {};
     // Warm _ppCache per-author from this same fetch, so opening the comment
     // overlay on a For You post never has to fall back to the thin
@@ -8124,6 +8328,10 @@ async function _refreshForYouProfilePosts() {
       };
     });
     window._forYouFeedFetchFailed = false;
+    // Real success — reset the auto-retry counter/timer, same reasoning as
+    // the ranked-feed reset above.
+    window._forYouAutoRetryCount = 0;
+    if (window._forYouAutoRetryTimer) { clearTimeout(window._forYouAutoRetryTimer); window._forYouAutoRetryTimer = null; }
   } catch(e) {
     console.warn('[For You feed] refresh failed:', e);
     // Distinguish "genuinely no posts" from "couldn't reach Supabase" — without
@@ -8144,6 +8352,11 @@ async function _refreshFollowingProfilePosts() {
     const follows = getFollowData();
     const myKey = (currentUser || '').toLowerCase();
     const myFollows = follows[myKey] || [];
+    // Same race fix as _refreshForYouProfilePosts — don't build cards
+    // against a still-empty accounts cache.
+    if (!_cache['acct_by_username'] && typeof getAllAccounts === 'function') {
+      await getAllAccounts().catch(() => {});
+    }
     const accounts = _cache['acct_by_username'] || {};
     const targets = myFollows.filter(k => k !== myKey && k !== myKey.replace(/\s+/g,'_') && k !== myKey.replace(/_/g,' '));
     const lists = await Promise.all(targets.map(async followedKey => {
@@ -9009,6 +9222,27 @@ async function _renderCommentOverlayAd(container) {
     container.insertBefore(tmp.firstElementChild, container.firstChild);
     if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
   } catch(e) { /* comments still render fine without the ad */ }
+}
+// Renders one compact card ad inserted near the top of the Messages page's
+// conversation list. Uses its own 'messages_list' placement — same pattern
+// as _renderCommentOverlayAd — so it's independent of feed/channel/comment
+// placements and only shows if the admin explicitly enables it here.
+// Skipped for Premium subscribers and the owner (same _amIAdFree() gate).
+async function _renderMessagesListAd(container) {
+  if (!container || _amIAdFree()) return;
+  try {
+    const ads = await _loadAdsConfig();
+    const cardAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'card' && (a.placements||[]).indexOf('messages_list') !== -1; });
+    if (!cardAds.length) return;
+    // Don't stack a duplicate if this got called twice on the same render pass
+    const existing = container.querySelector('.sp-ad-block');
+    if (existing) existing.remove();
+    const ad = cardAds[Math.floor(Math.random() * cardAds.length)];
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _buildAdCardCompact(ad);
+    container.insertBefore(tmp.firstElementChild, container.firstChild);
+    if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
+  } catch(e) { /* messages still render fine without the ad */ }
 }
 function toggleCommentSection(postId) {
   // Open the Facebook-style overlay instead of inline expand
@@ -9945,10 +10179,64 @@ function _doRenderPosts() {
     // failed fetch and a genuinely empty feed are different situations
     // and shouldn't share the same message.
     if (activeFilter === 'all' && window._forYouFeedFetchFailed) {
+      // Same auto-retry pattern as the ranked-feed failure below, with its
+      // own counter since this is a different failure (the For You profile
+      // posts fetch, not the main ranked pool) that can fail independently.
+      window._forYouAutoRetryCount = (window._forYouAutoRetryCount || 0);
+      if (window._forYouAutoRetryTimer) { clearTimeout(window._forYouAutoRetryTimer); window._forYouAutoRetryTimer = null; }
+      if (window._forYouAutoRetryCount < 3) {
+        const _fyDelays = [2000, 5000, 10000];
+        const _fyDelay = _fyDelays[window._forYouAutoRetryCount];
+        window._forYouAutoRetryCount++;
+        window._forYouAutoRetryTimer = setTimeout(function() {
+          window._forYouAutoRetryTimer = null;
+          if (typeof _refreshForYouProfilePosts === 'function') _refreshForYouProfilePosts();
+        }, _fyDelay);
+      }
       container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Couldn't load feed</div><div class="empty-sub">Check your connection and try again.</div><button onclick="if(typeof _refreshForYouProfilePosts==='function')_refreshForYouProfilePosts();if(typeof loadPosts==='function')loadPosts();" style="margin-top:14px;font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Retry</button></div>`;
       return;
     }
-    container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M2 12h20"/></svg></div><div class="empty-title">Nothing here yet</div><div class="empty-sub">Check back soon — Social Plus posts every morning.</div><button onclick="window.location.reload()" style="margin-top:14px;font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload Feed</button></div>`;
+    // ── Real diagnostic instead of a generic dead-end — OWNER ONLY ─────
+    // An empty feed is never expected at this platform's current scale —
+    // treat it as a failure to explain, not a normal "check back later"
+    // state. Always shows the real reason (from _diagnoseFeedFailure or a
+    // thrown error), no console access needed — "Copy diagnostic" grabs it.
+    // Regular users get a calm, generic empty state below instead: the red
+    // "Feed failed to load" wording + raw error text/monospace diagnostic
+    // is meant for Dave to debug with, not something a normal user should
+    // see and worry about — it reads as broken/alarming with no context.
+    const _diagOnline = typeof _sbOnline !== 'undefined' ? _sbOnline : 'unknown';
+    const _diagErr = window._lastLoadPostsError || 'Unknown — posts came back empty with no error reported. Tap Reload to re-check.';
+    const _diagCache = (function() { try { return JSON.parse(localStorage.getItem('ka_posts_cache')||'[]').length; } catch(e) { return 'unreadable'; } })();
+    const _diagText = `Social Plus diagnostic\nSupabase reachable: ${_diagOnline}\nWhy the feed is empty: ${_diagErr}\nCached posts: ${_diagCache}\nTime: ${new Date().toISOString()}`;
+    window._lastDiagText = _diagText;
+    // ── Auto-retry with backoff ─────────────────────────────────────────
+    // The failure screen used to just sit there until someone tapped
+    // Reload (which was a full window.location.reload() — slow, and loses
+    // scroll position/any in-progress typing elsewhere on the page). Now
+    // the moment this screen renders, it quietly retries loadPosts() in
+    // the background on its own: 2s, then 5s, then 10s. Most transient
+    // hiccups (a slow cold connection, a momentary Supabase blip) resolve
+    // within one of these and the feed just fills in — nobody has to
+    // notice or tap anything. Capped at 3 attempts so a genuinely broken
+    // backend doesn't retry forever in the background; the manual Reload
+    // button is still there for that case.
+    window._feedAutoRetryCount = (window._feedAutoRetryCount || 0);
+    if (window._feedAutoRetryTimer) { clearTimeout(window._feedAutoRetryTimer); window._feedAutoRetryTimer = null; }
+    if (window._feedAutoRetryCount < 3) {
+      const _retryDelays = [2000, 5000, 10000];
+      const _delay = _retryDelays[window._feedAutoRetryCount];
+      window._feedAutoRetryCount++;
+      window._feedAutoRetryTimer = setTimeout(function() {
+        window._feedAutoRetryTimer = null;
+        if (typeof loadPosts === 'function') loadPosts();
+      }, _delay);
+    }
+    if (isOwner) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--red);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Feed failed to load</div><div class="empty-sub" style="color:var(--red);opacity:0.9;font-size:12px;font-family:monospace;word-break:break-word;padding:0 12px;">${escHtml(_diagErr)}</div><div style="margin-top:10px;font-size:11px;color:var(--text3);opacity:0.7;">Supabase reachable: ${_diagOnline} · Cached posts: ${_diagCache}${window._feedAutoRetryTimer ? ' · Retrying automatically…' : ''}</div><div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload Feed</button><button onclick="navigator.clipboard&&navigator.clipboard.writeText(window._lastDiagText||'').then(()=>{if(typeof showToast==='function')showToast('Diagnostic copied','success');});" style="font-family:var(--font);font-size:12px;font-weight:600;padding:10px 18px;border-radius:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text2);cursor:pointer;">Copy diagnostic</button></div></div>`;
+    } else {
+      container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></div><div class="empty-title">Nothing here right now</div><div class="empty-sub" style="opacity:0.75;">Check back in a bit, or pull to refresh.</div><div style="margin-top:14px;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload</button></div></div>`;
+    }
     return;
   }
   // ── Smart render: skip full rebuild if content hasn't changed ──
@@ -19597,9 +19885,31 @@ function openUprofileManager() {
   const isRestricted = (cachedAcct && cachedAcct.is_restricted === true) || restricted.includes(username);
   const isVerified = isUserVerified(displayName) || isUserVerified(username);
 
+  // ── Plan row: reflects whatever's actually active for this user ────────
+  // No active plan  → both gift buttons (trial opens a day picker instead
+  //                    of silently granting a fixed 7 days).
+  // Active trial     → Edit Trial (reopens the same picker, prefilled) +
+  //                    Revoke Trial (both make them a normal user immediately).
+  // Active paid tier → Revoke {Tier} Plan only — gifting a trial on top of
+  //                    a paid plan doesn't make sense, so gift options hide.
+  const planInfo = getPremiumTier(username);
+  const hasActivePlan = !!planInfo;
+  const isTrialActive = hasActivePlan && planInfo.isTrial;
+  const isPaidTierActive = hasActivePlan && !planInfo.isTrial;
+  const planActions = isPaidTierActive
+    ? [`<button onclick="ownerRevokePlan('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);color:var(--red);cursor:pointer;">Revoke ${escHtml(planInfo.label)} Plan</button>`]
+    : isTrialActive
+      ? [
+          `<button onclick="closeUprofileManager();ownerOpenGiftTrialPicker('${escHtml(username)}','${escHtml(displayName)}')" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">✏️ Edit Trial${planInfo.daysLeft != null ? ' (' + planInfo.daysLeft + 'd left)' : ''}</button>`,
+          `<button onclick="ownerRevokePlan('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);color:var(--red);cursor:pointer;">Revoke Trial</button>`
+        ]
+      : [
+          `<button onclick="closeUprofileManager();ownerOpenGiftTrialPicker('${escHtml(username)}','${escHtml(displayName)}')" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">🎁 Gift Plus Trial</button>`,
+          `<button onclick="closeUprofileManager();ownerOpenGiftPremiumPicker('${escHtml(username)}','${escHtml(displayName)}')" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">🎁 Gift Premium → Select Plan</button>`
+        ];
+
   const actions = [
-    `<button onclick="ownerGiftPlusTrial('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">🎁 Gift Plus Trial (7 days)</button>`,
-    `<button onclick="closeUprofileManager();ownerOpenGiftPremiumPicker('${escHtml(username)}','${escHtml(displayName)}')" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">🎁 Gift Premium → Select Plan</button>`,
+    ...planActions,
     isVerified
       ? `<button onclick="ownerRemoveVerify('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">Remove Verification</button>`
       : `<button onclick="ownerVerify('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">✓ Verify Account</button>`,
@@ -19635,23 +19945,72 @@ function closeUprofileManager() {
   if (sheet) sheet.style.display = 'none';
 }
 
-// ── Owner: gift a 7-day Plus Pro trial ──
-async function ownerGiftPlusTrial(username, displayName) {
+// ── Owner: gift a Plus Pro trial for a chosen number of days, or update an
+// already-active one. Same underlying call either way (_grantPremiumTier
+// upserts by username), but the notification wording differs so an existing
+// trial user isn't told they were freshly "gifted" something they already had.
+async function ownerGiftPlusTrial(username, displayName, days) {
   if (!isOwner || !username) return;
   const key = username.toLowerCase();
+  const numDays = Math.max(1, parseInt(days, 10) || 7);
+  const existing = getPremiumTier(key);
+  const isEdit = !!(existing && existing.isTrial);
   try {
-    await _grantPremiumTier(key, 'pro', { days: 7 });
+    await _grantPremiumTier(key, 'pro', { days: numDays, isTrial: true });
+    const verb = isEdit ? 'updated' : 'gifted';
     if (typeof addNotifForUser === 'function') {
-      addNotifForUser(key, `🎁 You've been gifted a 7-day Plus Pro trial by Social Plus! Check Wallet → Premium for your countdown.`, null, null, 'premium').catch(()=>{});
+      addNotifForUser(key, `🎁 Your Plus Pro trial was ${verb} — now ${numDays} day${numDays===1?'':'s'} from today. Check Wallet → Premium for your countdown.`, null, null, 'premium').catch(()=>{});
     }
     if (typeof _sendBetAnalyticsDM === 'function') {
-      _sendBetAnalyticsDM(key, `🎁 Hi ${displayName || username}! We've gifted you a 7-day Plus Pro trial — enjoy no ads, animated profile artifacts, and channel perks. It's active now. — Social Plus`).catch(()=>{});
+      _sendBetAnalyticsDM(key, `🎁 Hi ${displayName || username}! Your Plus Pro trial was ${verb} — it now runs for ${numDays} day${numDays===1?'':'s'} from today. Enjoy no ads, animated profile artifacts, and channel perks. — Social Plus`).catch(()=>{});
     }
-    showToast('Gifted 7-day Plus Pro trial to @' + username, 'success');
+    showToast(`${isEdit ? 'Updated' : 'Gifted'} ${numDays}-day Plus Pro trial for @` + username, 'success');
   } catch(e) {
-    console.error('[owner] gift trial failed:', e);
-    showToast('Failed to gift trial — try again', 'error');
+    console.error('[owner] gift/edit trial failed:', e);
+    showToast('Failed to save trial — try again', 'error');
   }
+}
+
+// ── Owner: pick how many days the trial should run — works for a fresh
+// gift or for editing an already-active trial's length (same sheet, the
+// copy/prefill just adapts based on whether a trial is currently active).
+function ownerOpenGiftTrialPicker(username, displayName) {
+  if (!isOwner || !username) return;
+  const key = username.toLowerCase();
+  const existing = getPremiumTier(key);
+  const isEdit = !!(existing && existing.isTrial);
+  let sheet = document.getElementById('_ownerGiftTrialSheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = '_ownerGiftTrialSheet';
+    document.body.appendChild(sheet);
+  }
+  const presetBtn = function(d) {
+    return `<button onclick="ownerGiftPlusTrial('${escHtml(username)}','${escHtml(displayName)}',${d});closeOwnerGiftTrialPicker();" style="flex:1;padding:12px 6px;border-radius:12px;font-family:var(--font);font-size:14px;font-weight:700;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">${d}d</button>`;
+  };
+  const currentInfo = isEdit
+    ? `<div style="font-size:12px;color:var(--gold);margin-bottom:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:8px 10px;">Currently active — ${existing.daysLeft != null ? existing.daysLeft + ' day' + (existing.daysLeft===1?'':'s') + ' left' : 'no expiry set'}. Choosing a length below replaces the remaining time (counted from today), it doesn't add to it.</div>`
+    : '';
+  sheet.innerHTML = `
+    <div onclick="if(event.target===this)closeOwnerGiftTrialPicker()" style="position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;">
+      <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
+        <div class="_u-drawer-handle"></div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;">${isEdit ? 'Edit' : 'Gift'} Plus Trial: ${escHtml(displayName)}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">@${escHtml(username)} · choose trial length</div>
+        ${currentInfo}
+        <div style="display:flex;gap:8px;margin-bottom:14px;">${presetBtn(3)}${presetBtn(7)}${presetBtn(14)}${presetBtn(30)}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <input id="_ownerTrialCustomDays" type="number" min="1" max="365" value="${isEdit && existing.daysLeft != null ? existing.daysLeft : ''}" placeholder="Custom days" style="flex:1;padding:11px 12px;border-radius:12px;font-family:var(--font);font-size:13.5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:var(--text);"/>
+          <button onclick="var v=document.getElementById('_ownerTrialCustomDays').value;if(v&&parseInt(v,10)>0){ownerGiftPlusTrial('${escHtml(username)}','${escHtml(displayName)}',parseInt(v,10));closeOwnerGiftTrialPicker();}else{showToast('Enter a valid number of days','error');}" style="padding:11px 16px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:700;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;white-space:nowrap;">${isEdit ? 'Save' : 'Gift'}</button>
+        </div>
+        <button onclick="closeOwnerGiftTrialPicker()" style="width:100%;margin-top:4px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);cursor:pointer;">Cancel</button>
+      </div>
+    </div>`;
+  sheet.style.display = 'block';
+}
+function closeOwnerGiftTrialPicker() {
+  const sheet = document.getElementById('_ownerGiftTrialSheet');
+  if (sheet) sheet.style.display = 'none';
 }
 
 // ── Owner: gift Premium → pick a tier ──
@@ -23271,7 +23630,27 @@ async function renderMessagesPageContent() {
     return;
   }
   container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Loading…</div>';
-
+  // ── Hard budget ──────────────────────────────────────────────────────
+  // Everything below the fetch used to run unguarded: one malformed account
+  // or conversation row could throw mid-build and leave this page frozen on
+  // "Loading…" forever, with no error and no fallback. Now the whole render
+  // (fetch + build) is raced against an 8s timeout and registered with the
+  // shared load tracker so it can never hang the page or the island.
+  if (window._appLoadTracker) window._appLoadTracker.start('messages', 'Loading messages…');
+  try {
+    await Promise.race([
+      _renderMessagesPageContentInner(container),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('[messages] render timed out')), 8000))
+    ]);
+  } catch(e) {
+    console.error('[renderMessagesPageContent] failed:', e);
+    const _errMsg = (e && (e.message || e.body || e.status)) ? String(e.message || e.body || ('HTTP ' + e.status)) : String(e);
+    container.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text3);font-size:13px;">Couldn\'t load messages.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:8px 0;opacity:0.8;">' + _errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span><span style="color:var(--gold);cursor:pointer;" onclick="renderMessagesPageContent()">Tap to retry</span></div>';
+  } finally {
+    if (window._appLoadTracker) window._appLoadTracker.done('messages');
+  }
+}
+async function _renderMessagesPageContentInner(container) {
   const myKey = _myUsernameKey();
   const convs = [];
   try {
@@ -23485,6 +23864,10 @@ async function renderMessagesPageContent() {
   // the pill unread-count badges now that DM data is in.
   if (typeof _applyMsgsListFilter === 'function') _applyMsgsListFilter();
   if (typeof _refreshMsgsFilterCounts === 'function') _refreshMsgsFilterCounts();
+  // Ad card (if the admin has enabled the 'messages_list' placement) — added
+  // last, after the filter/badge hooks above, since it doesn't carry
+  // data-msg-row and shouldn't be touched by the pill-filter's row matching.
+  if (typeof _renderMessagesListAd === 'function') _renderMessagesListAd(container);
 }
 function openNotifsPage() {
   _currentActiveTab = 'notifs';
@@ -26868,6 +27251,26 @@ async function renderExploreChannels() {
   const container = document.getElementById('exploreChannelsList');
   if (!container) return;
   container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Loading channels…</div>`;
+  // ── Hard budget ──────────────────────────────────────────────────────
+  // The row-building .map() below used to run unguarded: one channel with a
+  // malformed avatar/bio could throw mid-build and freeze this page on
+  // "Loading channels…" forever. Now raced against an 8s timeout and
+  // registered with the shared load tracker.
+  if (window._appLoadTracker) window._appLoadTracker.start('channels', 'Loading channels…');
+  try {
+    await Promise.race([
+      _renderExploreChannelsInner(container),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('[channels] render timed out')), 8000))
+    ]);
+  } catch(e) {
+    console.error('[renderExploreChannels] failed:', e);
+    const _errMsg = (e && (e.message || e.body || e.status)) ? String(e.message || e.body || ('HTTP ' + e.status)) : String(e);
+    container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Couldn't load channels.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:6px 0;opacity:0.8;">${_errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span><span style="color:var(--gold);cursor:pointer;" onclick="renderExploreChannels()">Retry</span></div>`;
+  } finally {
+    if (window._appLoadTracker) window._appLoadTracker.done('channels');
+  }
+}
+async function _renderExploreChannelsInner(container) {
   let channels = [];
   try { channels = await getAllChannels(); } catch(e) {}
   if (!channels.length) {
@@ -30889,6 +31292,9 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
       <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
         <input type="checkbox" id="saAdPlaceComment" style="width:16px;height:16px;accent-color:var(--gold);"/> Top of comment threads (card format only)
       </label>
+      <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+        <input type="checkbox" id="saAdPlaceMessages" style="width:16px;height:16px;accent-color:var(--gold);"/> Top of Messages list (card format only)
+      </label>
     </div>
     <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-bottom:18px;cursor:pointer;">
       <input type="checkbox" id="saAdEnabled" checked style="width:16px;height:16px;accent-color:var(--gold);"/> Enabled (visible to users)
@@ -32059,6 +32465,17 @@ async function _onAdCtaTap(adId) {
 // Inserts one random 'post'-format ad after a random position within each
 // completed run of 10 real posts — "random within every 10", not glued to
 // a fixed slot. Skipped entirely for Premium subscribers and the owner.
+//
+// BUGFIX: this used to require a FULL run of 10 posts before showing even
+// one ad (Math.floor(postEls.length/10) groups) — so a normal feed page,
+// which only ever renders exactly PAGE_SIZE=10 posts at a time, needed
+// every single one of those 10 to survive the content-quality filter in
+// _doRenderPosts() to hit the threshold at all. Drop even one broken/empty
+// post and the count fell to 9, giving 0 ad groups — an ad silently never
+// showed, with no error anywhere. Simplified to a flat "one ad per 10
+// posts rendered, rounding up for a partial page" — a 10-post page or an
+// 8-post page each reliably get exactly one ad at a random spot, instead
+// of ads depending on hitting an exact multiple of 10.
 async function injectAdCards() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
@@ -32069,10 +32486,12 @@ async function injectAdCards() {
   if (!feedAds.length) return;
   const postEls = Array.from(container.querySelectorAll(':scope > .post-card, :scope > .post'));
   if (!postEls.length) return;
-  const groups = Math.floor(postEls.length / 10);
+  const groups = Math.max(1, Math.ceil(postEls.length / 10));
   for (let g = 0; g < groups; g++) {
     const start = g * 10;
-    const anchorIndex = start + Math.floor(Math.random() * 10);
+    const groupSize = Math.min(10, postEls.length - start);
+    if (groupSize <= 0) continue;
+    const anchorIndex = start + Math.floor(Math.random() * groupSize);
     const anchor = postEls[anchorIndex];
     if (!anchor || !anchor.parentNode) continue;
     const ad = feedAds[Math.floor(Math.random() * feedAds.length)];
@@ -34771,6 +35190,7 @@ async function _saOpenAdEditor(index) {
   document.getElementById('saAdPlaceFeed').checked = placements.indexOf('feed') !== -1;
   document.getElementById('saAdPlaceChannel').checked = placements.indexOf('channel_top') !== -1;
   document.getElementById('saAdPlaceComment').checked = placements.indexOf('comment_thread') !== -1;
+  document.getElementById('saAdPlaceMessages').checked = placements.indexOf('messages_list') !== -1;
   document.getElementById('saAdEnabled').checked = a ? a.enabled !== false : true;
   document.getElementById('saAdDeleteBtn').style.display = a ? '' : 'none';
   _saUpdateAdImagePreview();
@@ -34836,6 +35256,7 @@ async function _saSaveAd() {
   if (document.getElementById('saAdPlaceFeed').checked) placements.push('feed');
   if (document.getElementById('saAdPlaceChannel').checked) placements.push('channel_top');
   if (document.getElementById('saAdPlaceComment').checked) placements.push('comment_thread');
+  if (document.getElementById('saAdPlaceMessages').checked) placements.push('messages_list');
   if (!title) { showToast('Title is required', 'error'); return; }
   if (!placements.length) { showToast('Pick at least one placement', 'error'); return; }
   if (ctaType === 'url' && ctaLabel && !ctaValue) { showToast('Enter a URL for the button, or clear the button label', 'error'); return; }
