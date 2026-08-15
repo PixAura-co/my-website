@@ -4516,7 +4516,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   <!-- FEED FILTER: "For You" pill + separate "Channels" pill that opens its own full page -->
   <div id="feedSegmentWrap" style="display:flex;gap:8px;margin-bottom:14px;width:100%;">
     <button id="seg-all" onclick="setFeedSegment('all',this)" style="font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:1px solid rgba(255,255,255,0.09);cursor:pointer;background:var(--gold);color:#000;transition:all 0.2s;letter-spacing:-0.1px;-webkit-tap-highlight-color:transparent;flex:1;">For You</button>
-    <button id="seg-following" onclick="openChannelsListPage()" style="font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:1px solid rgba(255,255,255,0.09);cursor:pointer;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.72);transition:all 0.2s;letter-spacing:-0.1px;-webkit-tap-highlight-color:transparent;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg> Channels</button>
+    <button id="seg-channels" onclick="openChannelsListPage()" style="font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:1px solid rgba(255,255,255,0.09);cursor:pointer;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.72);transition:all 0.2s;letter-spacing:-0.1px;-webkit-tap-highlight-color:transparent;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg> Channels</button>
   </div>
 
   <!-- COMPOSER — hidden; new posts use the FAB button (+ New Post) -->
@@ -6600,7 +6600,16 @@ const SB = {
   async query(table, params = '') {
     if (!await _checkSB()) return LS.query(table, params);
     try {
-      const r = await fetch(`${SB_URL}/rest/v1/${table}${params}`, { headers: this.headers });
+      // ── Hard timeout so one stalled request can never hang the whole boot ──
+      // Without this, a slow/cold Supabase connection made loadPosts() (and
+      // anything awaiting it) sit frozen indefinitely — no error, no fallback,
+      // just a spinner forever. 7s is generous for a normal query but still
+      // fails fast enough that the caller's .catch(() => []) / local-cache
+      // fallback kicks in well inside the overall load budget.
+      const r = await Promise.race([
+        fetch(`${SB_URL}/rest/v1/${table}${params}`, { headers: this.headers }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error(`[SB] query ${table} timed out`)), 7000))
+      ]);
       // A non-2xx here means Supabase responded — a bad query, an RLS denial,
       // a missing column — none of which mean we're offline. Falling back to
       // the local cache for THIS call is still correct (better than showing
@@ -7344,23 +7353,43 @@ function _refreshAllAvatarElements(key, dataUrl) {
 
 let tempProfilePic = null;
 
+// One-time schema probe: confirms every table has the columns the app
+// expects, and self-heals nothing — it just warns in the console if a
+// column is missing. This used to run on EVERY loadPosts() call (every
+// feed refresh), chaining 9 sequential POST+DELETE round trips each time —
+// a real chunk of load time for something that only needs to run once
+// per deploy. Now gated behind a flag like the other one-shot migrations.
+//
+// Also fixed: the per-table primary-key column used for cleanup defaulted
+// to 'id=eq.__probe__' for every table that wasn't reactions/follows —
+// but accounts' primary key is 'username', not 'id', so that delete was
+// silently failing with "column accounts.id does not exist" every run.
+// And the insert had no on_conflict= param, so resolution=merge-duplicates
+// had nothing to merge on — accounts got a 42P10 (no matching constraint)
+// and follows got a 23505 (plain duplicate-key) on any second run.
 async function _autoMigrate() {
+  const AUTOMIGRATE_FLAG = 'ka_automigrate_done_v1';
+  if (localStorage.getItem(AUTOMIGRATE_FLAG)) return;
+  // conflictCol drives BOTH the on_conflict= query param on insert AND the
+  // filter used to delete the probe row afterward — every table needs its
+  // real unique/primary-key column(s) here, not a one-size-fits-all guess.
   const checks = [
-    ['posts',         { id: '__probe__', type: 'prediction', result: 'pending', booking_codes: [], media: [], comments_on: true, timestamp: new Date().toISOString(), version: null, views: 0, boost_data: {} }],
-    ['accounts',      { username: '__probe__', display_name: null, password: null, bio: null, profile_pic: null, profile_link: null, is_built_in: false, saved_posts: [], streak_data: null, last_seen: null, is_banned: false, is_restricted: false }],
-    ['comments',      { id: '__probe__', post_id: null, username: null, text: null, media: [], likes: [], replies: [], time: new Date().toISOString() }],
-    ['reactions',     { post_id: '__probe__', username: '__probe__', emoji: '__probe__' }],
-    ['follows',       { follower: '__probe__', following: '__probe__' }],
-    ['notifications', { id: '__probe__', target_user: null, body: null, post_owner: null, post_id: null, time: new Date().toISOString(), read: false }],
-    ['messages',      { id: '__probe__', sender: null, receiver: null, messages: [], updated_at: new Date().toISOString() }],
-    ['profile_posts', { id: '__probe__', username: null, body: null, media: [], visibility: 'public', pp_comments: [], likes: [], timestamp: new Date().toISOString() }],
-    ['group_chats',   { id: '__probe__', name: null, members: [], messages: [], created_by: null, avatar: '👥', created_at: new Date().toISOString() }],
+    ['posts',         { id: '__probe__', type: 'prediction', result: 'pending', booking_codes: [], media: [], comments_on: true, timestamp: new Date().toISOString(), version: null, views: 0, boost_data: {} }, 'id'],
+    ['accounts',      { username: '__probe__', display_name: null, password: null, bio: null, profile_pic: null, profile_link: null, is_built_in: false, saved_posts: [], streak_data: null, last_seen: null, is_banned: false, is_restricted: false }, 'username'],
+    ['comments',      { id: '__probe__', post_id: null, username: null, text: null, media: [], likes: [], replies: [], time: new Date().toISOString() }, 'id'],
+    ['reactions',     { post_id: '__probe__', username: '__probe__', emoji: '__probe__' }, 'post_id,username,emoji'],
+    ['follows',       { follower: '__probe__', following: '__probe__' }, 'follower,following'],
+    ['notifications', { id: '__probe__', target_user: null, body: null, post_owner: null, post_id: null, time: new Date().toISOString(), read: false }, 'id'],
+    ['messages',      { id: '__probe__', sender: null, receiver: null, messages: [], updated_at: new Date().toISOString() }, 'id'],
+    ['profile_posts', { id: '__probe__', username: null, body: null, media: [], visibility: 'public', pp_comments: [], likes: [], timestamp: new Date().toISOString() }, 'id'],
+    ['group_chats',   { id: '__probe__', name: null, members: [], messages: [], created_by: null, avatar: '👥', created_at: new Date().toISOString() }, 'id'],
   ];
   await checks.reduce(function(chain, entry) {
     return chain.then(function() {
       var table = entry[0];
       var payload = entry[1];
-      return fetch(SB_URL + '/rest/v1/' + table, {
+      var conflictCol = entry[2];
+      return fetch(SB_URL + '/rest/v1/' + table + '?on_conflict=' + conflictCol, {
         method: 'POST',
         headers: Object.assign({}, SB.headers, { 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
         body: JSON.stringify(payload)
@@ -7368,6 +7397,7 @@ async function _autoMigrate() {
         if (r.ok) {
           var pkCol = table === 'reactions' ? 'post_id=eq.__probe__&username=eq.__probe__&emoji=eq.__probe__'
                     : table === 'follows'   ? 'follower=eq.__probe__&following=eq.__probe__'
+                    : table === 'accounts'  ? 'username=eq.__probe__'
                     : 'id=eq.__probe__';
           fetch(SB_URL + '/rest/v1/' + table + '?' + pkCol, { method: 'DELETE', headers: SB.headers }).catch(function(){});
         } else {
@@ -7381,6 +7411,7 @@ async function _autoMigrate() {
       }).catch(function() { /* network error — silent */ });
     });
   }, Promise.resolve());
+  try { localStorage.setItem(AUTOMIGRATE_FLAG, '1'); } catch(e) {}
 }
 
 function _startHeartbeat() {
@@ -7506,7 +7537,7 @@ async function _fetchRankedPostsPage(pageSize, seenIds) {
   // Fetch the recent post pool and comment counts in parallel — they don't
   // depend on each other, so no reason to wait on one before starting the other.
   const [pool, commentRows] = await Promise.all([
-    SB.query('posts', `?order=timestamp.desc&limit=${POOL_SIZE}&select=id,username,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link`).catch(() => []),
+    SB.query('posts', `?order=timestamp.desc&limit=${POOL_SIZE}&select=id,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link`).catch(() => []),
     // id-only rows over a generous recent window — cheap, and only needs to be
     // roughly right for ranking, not exact.
     SB.query('comments', `?order=time.desc&limit=400&select=post_id`).catch(() => [])
@@ -7667,15 +7698,19 @@ async function loadPosts() {
     } catch(e) {}
   }
   // Show the loading state on the shared Dynamic Island (persists until posts finish loading)
-  if (typeof window._showIsland === 'function') {
+  // Now a REAL progress bar: each stage below reports how far through the
+  // boot sequence we are, instead of an indefinite spinner with no signal
+  // of whether anything is actually happening.
+  const _islandOn = typeof window._showIsland === 'function';
+  function _feedProgress(frac, sub) {
+    if (!_islandOn) return;
     window._showIsland({
-      live: true,
-      id: 'feedRefresh',
-      type: 'loading',
-      title: 'Fetching Posts',
-      sub: 'Getting the latest updates…',
+      live: true, id: 'feedRefresh', type: 'loading',
+      title: 'Fetching Posts', sub: sub || 'Getting the latest updates…',
+      progress: frac,
     });
   }
+  _feedProgress(0.05, 'Getting the latest updates…');
 
   _autoMigrate();   // fire-and-forget: ensures all columns exist
   if (!window._heartbeatStarted) { window._heartbeatStarted = true; _startHeartbeat(); }
@@ -7697,46 +7732,13 @@ async function loadPosts() {
     const postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
     const _pageIds = (postsData || []).map(p => p.id);
     postsData.forEach(p => _seenIds.add(p.id));
+    _feedProgress(0.3, 'Loading comments…');
 
     const [commentsData, reactionsData] = await Promise.all([
       _pageIds.length ? SB.query('comments', `?post_id=in.(${_pageIds.map(encodeURIComponent).join(',')})&order=time.asc`) : [],
       _pageIds.length ? SB.query('reactions', `?post_id=in.(${_pageIds.map(encodeURIComponent).join(',')})`) : []
     ]);
-    // ── Load everything the first paint actually needs together, instead of
-    // firing accounts / For You / Following as uncoordinated background
-    // promises that each call renderPosts() whenever they happen to resolve.
-    // That old pattern is exactly why the feed used to flash "Nothing here
-    // yet" or blank avatars: _appBooting turned off the moment postsData
-    // arrived, so if accounts/profile-posts were still one tick behind, the
-    // very next repaint (from whichever of them resolved first) ran with
-    // _appBooting already false and no loading guard left to fall back on.
-    // Awaiting all four together means the first real (non-skeleton) paint
-    // only happens once posts, accounts, and both profile-post feeds are
-    // actually ready — matching "load once, load well."
-    const [, accts] = await Promise.all([
-      Promise.all([
-        typeof _refreshForYouProfilePosts === 'function' ? _refreshForYouProfilePosts() : Promise.resolve(),
-        currentUser && typeof _refreshFollowingProfilePosts === 'function' ? _refreshFollowingProfilePosts() : Promise.resolve()
-      ]),
-      getAllAccounts().catch(() => [])
-    ]);
-    getProfilePosts(OWNER_KEY).catch(()=>{});
-    if (currentUser) {
-      const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
-      getProfilePosts(usernameKey).catch(()=>{});
-    }
-    // Pre-warm other profiles' posts well after the feed is already visible
-    setTimeout(() => {
-      if (_cache['all_accounts'] && _cache['all_accounts'].length) {
-        const builtInKeys = new Set(['the predictor','odds master','bet analytics','the_predictor','odds_master','bet_analytics']);
-        const toWarm = _cache['all_accounts'].filter(a => {
-          const u = (a.username||'').toLowerCase();
-          return u !== OWNER_KEY && u !== OWNER_USER.toLowerCase() && !builtInKeys.has(u) && !a.is_built_in;
-        }).slice(0, 30);
-        Promise.all(toWarm.map(a => getProfilePosts(a.username).catch(()=>{}))).catch(()=>{});
-      }
-    }, 4000);
-    void accts;
+    _feedProgress(0.55, 'Almost there…');
 
     posts = (postsData || []).map(p => {
       const pComments = (commentsData || []).filter(c => c.post_id === p.id).map(c => ({
@@ -7798,9 +7800,63 @@ async function loadPosts() {
       }
     }
 
-    await loadFollows();
+    // ── PAINT NOW ─────────────────────────────────────────────────────
+    // This is the fix for "posts/comments won't show once loading is
+    // 'complete'": the feed used to wait on accounts + For You + Following
+    // (all bundled into one Promise.all) before EVER calling renderPosts()
+    // for the first time. If any one of those was slow, rate-limited, or
+    // silently hung (no timeout existed on SB.query before this patch),
+    // comments/reactions that had already arrived just sat in memory,
+    // invisible, because nothing had painted yet. Posts + their own
+    // comments + reactions are everything the base feed needs — render
+    // them the moment they're ready, don't make them wait on anything else.
+    window._appBooting = false;
+    _loadPostsInFlight = false; // let renderPosts()'s isLoading check pass now that real data exists
+    renderPosts();
+    _feedProgress(0.75, 'Finishing up…');
+
+    // ── Everything else enriches the feed in the background ────────────
+    // For You / Following / accounts / follows each re-render on arrival
+    // instead of gating the first paint. A slow one now costs nothing —
+    // worst case an avatar or a "For You" extra post pops in a moment
+    // later, instead of the whole feed (including comments) staying blank.
+    // loadFollows() runs before _refreshFollowingProfilePosts() (not in
+    // parallel with it) because the latter reads _cache['follows'] via
+    // getFollowData() — running them concurrently risked the Following
+    // feed computing against the just-cleared, still-empty follow map.
+    const _followsReady = loadFollows().then(() => renderPosts()).catch(()=>{});
+    const _bg = Promise.all([
+      (typeof _refreshForYouProfilePosts === 'function' ? _refreshForYouProfilePosts() : Promise.resolve()).catch(()=>{}),
+      currentUser && typeof _refreshFollowingProfilePosts === 'function'
+        ? _followsReady.then(() => _refreshFollowingProfilePosts()).catch(()=>{})
+        : Promise.resolve(),
+      getAllAccounts().then(() => renderPosts()).catch(() => {}),
+      _followsReady
+    ]);
     _migrateFollowKeys().catch(()=>{});
     _migrateKrisFollowAlias().catch(()=>{});
+
+    getProfilePosts(OWNER_KEY).catch(()=>{});
+    if (currentUser) {
+      const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+      getProfilePosts(usernameKey).catch(()=>{});
+    }
+    // Pre-warm other profiles' posts well after the feed is already visible
+    setTimeout(() => {
+      if (_cache['all_accounts'] && _cache['all_accounts'].length) {
+        const builtInKeys = new Set(['the predictor','odds master','bet analytics','the_predictor','odds_master','bet_analytics']);
+        const toWarm = _cache['all_accounts'].filter(a => {
+          const u = (a.username||'').toLowerCase();
+          return u !== OWNER_KEY && u !== OWNER_USER.toLowerCase() && !builtInKeys.has(u) && !a.is_built_in;
+        }).slice(0, 30);
+        Promise.all(toWarm.map(a => getProfilePosts(a.username).catch(()=>{}))).catch(()=>{});
+      }
+    }, 4000);
+
+    // Cap how long the island's progress bar / any late "finishing up" work
+    // waits on the background enrichment — 5s total load budget per Dave's
+    // requirement. The feed itself is already visible by now regardless.
+    await Promise.race([_bg, new Promise(res => setTimeout(res, 4200))]);
 
   } catch(e) {
     console.error('loadPosts error', e);
@@ -7829,11 +7885,12 @@ async function loadPosts() {
   // ── Clear render fingerprint so fresh Supabase data always repaints ──
   const _pc = document.getElementById('postsContainer');
   if (_pc) _pc._lastFingerprint = null;
-  // By this point posts, accounts, and both profile-post feeds have already
-  // resolved together above — this is genuinely the first complete paint,
-  // not a partial one that another late-arriving fetch has to patch up.
+  // Posts + comments were already painted the moment they were ready, up
+  // above — this final renderPosts() just picks up anything the background
+  // enrichment (accounts/For You/Following) added in the meantime.
   renderPosts();
-  // Dismiss the shared Dynamic Island loading state
+  // Progress bar to 100%, then dismiss the shared Dynamic Island loading state.
+  if (_islandOn) window._showIsland({ live: true, id: 'feedRefresh', type: 'loading', title: 'Fetching Posts', sub: 'Done', progress: 1 });
   if (typeof window._endLiveIsland === 'function') window._endLiveIsland('feedRefresh');
   // Suggested accounts only load when user actively searches — not auto-loaded
   refreshNotifBadge();
@@ -19804,6 +19861,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { if (typeof renderExploreSuggested === 'function') renderExploreSuggested(); } catch(e) {}
       try { if (typeof renderExploreChannels === 'function') renderExploreChannels(); } catch(e) {}
       try { if (typeof _populateMsgsStoriesBar === 'function') _populateMsgsStoriesBar(); } catch(e) {}
+      // Full Channels list page (getAllChannels + getMySubscribedChannels)
+      // was never in this warm-up list — it's a different page from the
+      // small Connect-page channels preview above, and its own cache
+      // (_channelsListAllCache/_channelsListSubIdsCache) was only ever
+      // populated the first time the user actually opened it, cold, every
+      // single time. Pre-warm it here too so tapping "Channels" is instant.
+      try { if (typeof _renderChannelsListPage === 'function') _renderChannelsListPage(); } catch(e) {}
     }, 400); // small delay so the home feed's own paint/animations aren't competing for the main thread
   })();
   (async function purgeBuiltIns() {
@@ -33018,15 +33082,14 @@ async function _checkInAppTaskCondition(task) {
     } catch(e) { return { done: false, hint: 'Could not check — try again' }; }
   }
   if (task.action === 'first_post') {
-    // Checks BOTH post systems: 'posts' (predictions/match posts) and
-    // 'profile_posts' (personal profile posts) — a user's first post could
-    // be either type, and both should count toward this task.
+    // 'posts' is the owner-only prediction feed — regular users never write
+    // there, so checking it here was always wrong (and posts?author=eq.X
+    // was also querying a column, `author`, that doesn't exist on that
+    // table, throwing a 42703 on every single check). A user's first post
+    // can only ever be a profile_posts row.
     try {
-      const [predictionRows, profileRows] = await Promise.all([
-        SB.query('posts', `?author=eq.${encodeURIComponent(myKey)}&select=id&limit=1`),
-        SB.query('profile_posts', `?username=eq.${encodeURIComponent(myKey)}&select=id&limit=1`)
-      ]);
-      const done = (predictionRows && predictionRows.length) || (profileRows && profileRows.length);
+      const profileRows = await SB.query('profile_posts', `?username=eq.${encodeURIComponent(myKey)}&select=id&limit=1`);
+      const done = profileRows && profileRows.length;
       return done ? { done: true } : { done: false, hint: 'Make a post first', navigate: function(){ openPostPage && openPostPage(); } };
     } catch(e) { return { done: false, hint: 'Could not check — try again' }; }
   }
