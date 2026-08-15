@@ -7417,9 +7417,10 @@ async function _autoMigrate() {
         body: JSON.stringify(payload)
       }).then(function(r) {
         if (r.ok) {
-          var pkCol = table === 'reactions' ? 'post_id=eq.__probe__&username=eq.__probe__&emoji=eq.__probe__'
-                    : table === 'follows'   ? 'follower=eq.__probe__&following=eq.__probe__'
-                    : table === 'accounts'  ? 'username=eq.__probe__'
+          var pkCol = table === 'reactions'     ? 'post_id=eq.__probe__&username=eq.__probe__&emoji=eq.__probe__'
+                    : table === 'follows'       ? 'follower=eq.__probe__&following=eq.__probe__'
+                    : table === 'accounts'      ? 'username=eq.__probe__'
+                    : table === 'premium_users' ? 'username=eq.__probe__'
                     : 'id=eq.__probe__';
           fetch(SB_URL + '/rest/v1/' + table + '?' + pkCol, { method: 'DELETE', headers: SB.headers }).catch(function(){});
         } else {
@@ -7490,7 +7491,8 @@ function _startHeartbeat() {
     // If posts is empty or we were hidden a long time, do a full re-fetch
     var needsFullRefresh = !window.posts || !window.posts.length || hiddenMs > 60000;
     if (needsFullRefresh) {
-      _loadPostsInFlight = false;
+      // Token-based supersession in loadPosts() now handles a possibly
+      // still-running earlier call safely — no flag to force-reset here.
       if (typeof loadPosts === 'function') {
         setTimeout(function() { loadPosts(); }, 300);
       }
@@ -7522,7 +7524,8 @@ function _startHeartbeat() {
 function startFollowSync() { if (typeof window._triggerSync === 'function') window._triggerSync(); }
 function stopFollowSync() { /* no-op */ }
 function loadFeed() {
-  _loadPostsInFlight = false; // force-reset so reload always works
+  // Token-based supersession in loadPosts() now handles this safely — no
+  // need to force-reset a flag that could race a still-running call.
   if (typeof loadPosts === 'function') loadPosts();
 }
 
@@ -7833,7 +7836,26 @@ window._appLoadTracker = (function() {
 })();
 
 async function loadPosts() {
-  if (_loadPostsInFlight) return; // prevent racing duplicate loads
+  // ── Real re-entrancy protection, not just a boolean flag ────────────
+  // The old boolean guard got flipped back to false mid-function (right
+  // after the first paint, so renderPosts()'s loading check would pass)
+  // and force-reset to false by loadFeed()/resume handlers whenever they
+  // wanted to guarantee a fresh load. That meant TWO loadPosts() calls
+  // could run fully concurrently — an auto-retry timer firing at the same
+  // moment someone tapped "Reload Feed", for example — both writing to
+  // the same shared globals (posts, window._lastLoadPostsError,
+  // window._feedSeenPostIds, window._prevPosts) at once. Whichever run
+  // finished last silently overwrote the other's result, including
+  // wiping a real diagnostic message back to null right before render
+  // read it — which is exactly how the failure screen ended up showing
+  // "Unknown — posts came back empty with no error reported" even though
+  // an earlier run HAD figured out the real reason.
+  // Fix: every call gets its own token. Only the newest token is allowed
+  // to write to shared state or trigger a render; a stale, superseded
+  // run still completes its network requests (no wasted in-flight work)
+  // but quietly discards its own results instead of racing.
+  const _myLoadToken = (window._loadPostsToken = (window._loadPostsToken || 0) + 1);
+  const _isCurrentLoad = () => window._loadPostsToken === _myLoadToken;
   _loadPostsInFlight = true;
 
   // ── Instant render from localStorage cache while Supabase fetches ──
@@ -7928,6 +7950,14 @@ async function loadPosts() {
     ]);
     _feedProgress(0.55, 'Almost there…');
 
+    // ── Bail if a newer loadPosts() call has started since we began ─────
+    // Without this, an older/slower run finishing after a newer one would
+    // overwrite the newer run's already-painted, already-correct `posts`
+    // and error state with its own stale results — including wiping a
+    // real error message back to null and making the failure screen show
+    // "Unknown" even though the newer run had already diagnosed it.
+    if (!_isCurrentLoad()) return;
+
     posts = (postsData || []).map(p => {
       const pComments = (commentsData || []).filter(c => c.post_id === p.id).map(c => ({
         id: c.id, user: c.username, text: c.text, media: c.media || [], likes: c.likes || [], time: c.time,
@@ -7999,7 +8029,12 @@ async function loadPosts() {
     // comments + reactions are everything the base feed needs — render
     // them the moment they're ready, don't make them wait on anything else.
     window._appBooting = false;
-    _loadPostsInFlight = false; // let renderPosts()'s isLoading check pass now that real data exists
+    // NOTE: intentionally NOT resetting _loadPostsInFlight here anymore —
+    // doing so mid-function (before background enrichment finished) is
+    // what let a second loadPosts() call start racing this one in the
+    // first place. renderPosts()'s "isLoading" check only cares whether
+    // `posts` actually has data now, which it does, so it paints fine
+    // without needing the flag flipped early.
     renderPosts();
     _feedProgress(0.75, 'Finishing up…');
 
@@ -8048,6 +8083,7 @@ async function loadPosts() {
 
   } catch(e) {
     console.error('loadPosts error', e);
+    if (!_isCurrentLoad()) return; // a newer call already handled this — don't stomp its state
     // Surface the real reason in the empty state below instead of a vague
     // "Nothing here yet" — this is what you'd otherwise need console
     // access to see. window._lastLoadPostsError is read by _doRenderPosts()
@@ -8057,10 +8093,12 @@ async function loadPosts() {
     // Only clear if we genuinely have no data at all
     if (!posts.length) posts = [];
   } finally {
-    _loadPostsInFlight = false;
+    if (_isCurrentLoad()) _loadPostsInFlight = false;
     window._appBooting = false; // first-ever load attempt is done — safe to show a real empty state now
     window._postsLastLoaded = Date.now(); // stamp for AI context freshness check
   }
+
+  if (!_isCurrentLoad()) return; // stale run — a newer loadPosts() already painted the real result
 
   // Only cache if we got real Supabase data (posts have reactions/comments objects = freshly fetched)
   const _isFromSupabase = posts.length && posts[0] && typeof posts[0].reactions === 'object' && !Array.isArray(posts[0].reactions);
@@ -23623,13 +23661,26 @@ function closeMessagesPage(resetTab = true) {
     if (homeTab) homeTab.classList.add('active');
   }
 }
-async function renderMessagesPageContent() {
+async function renderMessagesPageContent(opts) {
+  opts = opts || {};
   const container = document.getElementById('messagesPageContent');
   if (!currentUser) {
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;font-size:14px;color:var(--text3);">Sign in to view messages.</div>';
     return;
   }
-  container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Loading…</div>';
+  // ── Instant repaint from last-rendered HTML ─────────────────────────
+  // Re-opening the inbox (e.g. backing out of a chat, or switching tabs
+  // back to Messages) used to blow away whatever was already on screen
+  // and show "Loading…" again every single time, even though the list
+  // hadn't changed. Now: if we have a previous render for this user,
+  // paint it immediately and refresh in the background — no flash, no
+  // skeleton, unless this is truly the first load with nothing cached.
+  const _hasCache = window._msgsListLastHtml && window._msgsListLastUser === currentUser;
+  if (_hasCache && !opts.forceSkeleton) {
+    container.innerHTML = window._msgsListLastHtml;
+  } else {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Loading…</div>';
+  }
   // ── Hard budget ──────────────────────────────────────────────────────
   // Everything below the fetch used to run unguarded: one malformed account
   // or conversation row could throw mid-build and leave this page frozen on
@@ -23642,10 +23693,17 @@ async function renderMessagesPageContent() {
       _renderMessagesPageContentInner(container),
       new Promise((_, rej) => setTimeout(() => rej(new Error('[messages] render timed out')), 8000))
     ]);
+    // Snapshot the freshly-built list so the next open can repaint instantly.
+    window._msgsListLastHtml = container.innerHTML;
+    window._msgsListLastUser = currentUser;
   } catch(e) {
     console.error('[renderMessagesPageContent] failed:', e);
+    // If we already repainted from cache above, a failed background refresh
+    // shouldn't rip the working list off screen — just leave it as-is and
+    // quietly retry later rather than replacing it with an error state.
+    if (_hasCache && !opts.forceSkeleton) { if (window._appLoadTracker) window._appLoadTracker.done('messages'); return; }
     const _errMsg = (e && (e.message || e.body || e.status)) ? String(e.message || e.body || ('HTTP ' + e.status)) : String(e);
-    container.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text3);font-size:13px;">Couldn\'t load messages.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:8px 0;opacity:0.8;">' + _errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span><span style="color:var(--gold);cursor:pointer;" onclick="renderMessagesPageContent()">Tap to retry</span></div>';
+    container.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text3);font-size:13px;">Couldn\'t load messages.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:8px 0;opacity:0.8;">' + _errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span><span style="color:var(--gold);cursor:pointer;" onclick="renderMessagesPageContent({forceSkeleton:true})">Tap to retry</span></div>';
   } finally {
     if (window._appLoadTracker) window._appLoadTracker.done('messages');
   }
@@ -26626,7 +26684,16 @@ async function _renderHomeChannelFeed(container) {
     container.innerHTML = `<div class="empty"><div class="empty-title">Sign in to see Channels</div><div class="empty-sub">Subscribe to channels to see their posts here.</div></div>`;
     return;
   }
-  container.innerHTML = _buildFeedSkeleton(3, 'predictions');
+  // ── Instant repaint from last-rendered HTML ─────────────────────────
+  // Switching to the Channels feed segment used to blank straight to a
+  // skeleton every time, even if you'd just left it seconds ago. Repaint
+  // the previous render immediately; the fetch below still runs and
+  // replaces it once fresh data is back, same as before.
+  if (window._homeChannelFeedLastHtml) {
+    container.innerHTML = window._homeChannelFeedLastHtml;
+  } else {
+    container.innerHTML = _buildFeedSkeleton(3, 'predictions');
+  }
   let subscribed = [];
   try { subscribed = await getMySubscribedChannels(); } catch(e) {}
   if (!stillCurrent()) return; // user left the Channels tab while this was in flight
@@ -26648,6 +26715,7 @@ async function _renderHomeChannelFeed(container) {
       </div>` : ''}
       <button onclick="openConnectChannelsTab()" style="display:block;width:calc(100% - 32px);margin:6px 16px 18px;padding:13px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-border);color:var(--gold);font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;">Browse All Channels</button>
     `;
+    window._homeChannelFeedLastHtml = container.innerHTML;
     return;
   }
 
@@ -26661,6 +26729,7 @@ async function _renderHomeChannelFeed(container) {
 
   if (!chanPosts.length) {
     container.innerHTML = `<div class="empty"><div class="empty-title">No posts yet</div><div class="empty-sub">The channels you're subscribed to haven't posted anything yet.</div></div>`;
+    window._homeChannelFeedLastHtml = container.innerHTML;
     return;
   }
 
@@ -26679,6 +26748,7 @@ async function _renderHomeChannelFeed(container) {
   const cards = await Promise.all(chanPosts.map(p => _renderChannelPostCard(p, byId[p.channel_id], preloaded)));
   if (!stillCurrent()) return; // final guard — card rendering awaited too, segment may have changed again
   container.innerHTML = cards.join('');
+  window._homeChannelFeedLastHtml = container.innerHTML;
 }
 
 function _renderChannelDiscoveryCard(c) {
@@ -27247,10 +27317,20 @@ function _renderChannelsListFiltered(q) {
 // Shows at most 5 rows + an "Explore More" button that hands off to the full
 // Channels page (openChannelsListPage) instead of dumping everything here.
 const EXPLORE_CHANNELS_LIMIT = 5;
-async function renderExploreChannels() {
+async function renderExploreChannels(opts) {
+  opts = opts || {};
   const container = document.getElementById('exploreChannelsList');
   if (!container) return;
-  container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Loading channels…</div>`;
+  // ── Instant repaint from last-rendered HTML ─────────────────────────
+  // Re-opening Connect used to blank this list to "Loading channels…"
+  // every single time, even seconds after it was last shown. Repaint the
+  // previous render immediately and refresh quietly in the background.
+  const _hasCache = window._exploreChannelsLastHtml;
+  if (_hasCache && !opts.forceSkeleton) {
+    container.innerHTML = window._exploreChannelsLastHtml;
+  } else {
+    container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Loading channels…</div>`;
+  }
   // ── Hard budget ──────────────────────────────────────────────────────
   // The row-building .map() below used to run unguarded: one channel with a
   // malformed avatar/bio could throw mid-build and freeze this page on
@@ -27262,10 +27342,12 @@ async function renderExploreChannels() {
       _renderExploreChannelsInner(container),
       new Promise((_, rej) => setTimeout(() => rej(new Error('[channels] render timed out')), 8000))
     ]);
+    window._exploreChannelsLastHtml = container.innerHTML;
   } catch(e) {
     console.error('[renderExploreChannels] failed:', e);
+    if (_hasCache && !opts.forceSkeleton) { if (window._appLoadTracker) window._appLoadTracker.done('channels'); return; }
     const _errMsg = (e && (e.message || e.body || e.status)) ? String(e.message || e.body || ('HTTP ' + e.status)) : String(e);
-    container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Couldn't load channels.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:6px 0;opacity:0.8;">${_errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span><span style="color:var(--gold);cursor:pointer;" onclick="renderExploreChannels()">Retry</span></div>`;
+    container.innerHTML = `<div style="padding:10px 0;color:var(--text3);font-size:13px;">Couldn't load channels.<br><span style="color:var(--red);font-size:11px;font-family:monospace;word-break:break-all;display:block;margin:6px 0;opacity:0.8;">${_errMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span><span style="color:var(--gold);cursor:pointer;" onclick="renderExploreChannels({forceSkeleton:true})">Retry</span></div>`;
   } finally {
     if (window._appLoadTracker) window._appLoadTracker.done('channels');
   }
