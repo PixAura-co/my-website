@@ -6065,7 +6065,67 @@ async function _grantPremiumTier(username, tierId, opts) {
   _saveLocalPremiumUsers(_premiumUsers);
   _premiumTiers[key] = { tier: t.id, expires_at: expiresAt };
   _saveLocalPremiumTiers(_premiumTiers);
+  // Every paid tier (Pro/Premium/Prestige) automatically carries the gold
+  // checkmark — no separate manual step needed. Skip the notification/DM
+  // spam here since ownerVerify() already sends its own "you're verified"
+  // message; the caller's own grant notification covers the tier itself.
+  if (!opts.skipVerify && !isUserVerified(key)) {
+    try { _grantVerificationSilently(key); } catch(e) { console.warn('[premium] auto-verify failed:', e); }
+  }
   return row;
+}
+// ── Complete premium removal ── strips EVERY premium perk and renders the
+// account fully normal: removes the premium_users row, removes the gold
+// checkmark, and clears any profile artifact (a premium-only perk). Used by
+// Manage Users → "Remove Premium". Distinct from expiry (which is passive —
+// the tier just stops being active) in that this is an explicit admin action
+// with its own notification.
+async function ownerRemovePremiumCompletely(username, displayName) {
+  if (!isOwner || !username) return;
+  const key = username.toLowerCase();
+  try {
+    await SB.delete('premium_users', `username=eq.${encodeURIComponent(key)}`);
+  } catch(e) { console.warn('[premium] delete premium_users row failed:', e); }
+  _premiumUsers.delete(key);
+  _saveLocalPremiumUsers(_premiumUsers);
+  delete _premiumTiers[key];
+  _saveLocalPremiumTiers(_premiumTiers);
+  // Verification was granted as a premium perk — remove it too, but quietly
+  // (no separate "verification removed" DM; the premium-removal notice below covers it).
+  const v = _getVerifiedUsers();
+  v.delete(key); if (displayName) v.delete(displayName.toLowerCase());
+  _saveVerifiedUsers(v);
+  _verifiedUsers.delete(key); if (displayName) _verifiedUsers.delete(displayName.toLowerCase());
+  const _dbUsername = (key === 'hardeh') ? 'money' : key;
+  try { await SB.update('accounts', { is_verified: false, profile_artifact: null }, `username=eq.${encodeURIComponent(_dbUsername)}`); } catch(e) {}
+  if (_cache['acct_' + key]) { _cache['acct_' + key].is_verified = false; _cache['acct_' + key].profile_artifact = null; }
+  if (_cache['acct_' + _dbUsername]) { _cache['acct_' + _dbUsername].is_verified = false; _cache['acct_' + _dbUsername].profile_artifact = null; }
+  _cache['all_accounts'] = null;
+  delete _profileArtifacts[key];
+  _saveLocalArtifacts(_profileArtifacts);
+  addNotifForUser(key, `ℹ️ Your Plus Premium subscription and its perks have been removed by Social Plus. Your account is now on the free plan.`);
+  if (typeof _sendBetAnalyticsDM === 'function') {
+    _sendBetAnalyticsDM(key, `ℹ️ Hi @${username}, your premium plan has been removed and your account is now on the free plan. If you think this is a mistake, please contact support.`).catch(()=>{});
+  }
+  showToast('Premium fully removed from @' + username, 'success');
+  renderUserManager();
+}
+// Same effect as ownerVerify() but without the "you've been verified!"
+// notification/DM — used when verification is a side-effect of a premium
+// grant that already sends its own "you've been gifted/activated" message,
+// so the user isn't double-notified for one action.
+function _grantVerificationSilently(username) {
+  const key = username.toLowerCase();
+  const v = _getVerifiedUsers();
+  v.add(key);
+  _saveVerifiedUsers(v);
+  _verifiedUsers.add(key);
+  const _dbUsername = (key === 'hardeh') ? 'money' : key;
+  SB.update('accounts', { is_verified: true }, `username=eq.${encodeURIComponent(_dbUsername)}`).catch(function(){});
+  if (_dbUsername !== key) { _verifiedUsers.add(_dbUsername); _verifiedUsers.add('hardeh'); _saveVerifiedUsers(_verifiedUsers); }
+  if (_cache['acct_' + key]) _cache['acct_' + key].is_verified = true;
+  if (_cache['acct_' + _dbUsername]) _cache['acct_' + _dbUsername].is_verified = true;
+  _cache['all_accounts'] = null;
 }
 // ══════════════════════  PROFILE ARTIFACTS  ═══════════════════════
 // 30 animated avatar decorations + 1 branded "Social Plus" design, inspired
@@ -8875,6 +8935,24 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
   </div>`;
 }
 
+// Renders one compact card ad at the top of the comment thread overlay.
+// Uses the 'comment_thread' placement so it's independent from feed/channel
+// placements — an ad only shows here if the admin explicitly ticks it on
+// for that placement. Skipped for Premium subscribers and the owner (same
+// _amIAdFree() gate as everywhere else, including the preview-as-user toggle).
+async function _renderCommentOverlayAd(container) {
+  if (!container || _amIAdFree()) return;
+  try {
+    const ads = await _loadAdsConfig();
+    const cardAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'card' && (a.placements||[]).indexOf('comment_thread') !== -1; });
+    if (!cardAds.length) return;
+    const ad = cardAds[Math.floor(Math.random() * cardAds.length)];
+    const tmp = document.createElement('div');
+    tmp.innerHTML = _buildAdCardCompact(ad);
+    container.insertBefore(tmp.firstElementChild, container.firstChild);
+    if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
+  } catch(e) { /* comments still render fine without the ad */ }
+}
 function toggleCommentSection(postId) {
   // Open the Facebook-style overlay instead of inline expand
   openCommentOverlay(postId);
@@ -8961,6 +9039,7 @@ function openCommentOverlay(postId) {
     ? post.comments.map(c => _buildCommentItemHTML(c, _overlayPostId)).join('')
     : `<div id="commentSheetEmpty">No comments yet. Be the first!</div>`;
   body.innerHTML = commentsList;
+  _renderCommentOverlayAd(body);
 
   // Render input
   const commentsEnabled = !post || post.commentsOn !== false;
@@ -12353,6 +12432,62 @@ function _rerenderUprofile() {
   }).catch(console.error);
 }
 function uprofileViewPic() {
+  if (!viewedUserKey) return;
+  // If this profile has a premium artifact active, tapping the avatar opens
+  // the artifact action menu first (View Photo is offered inside it) rather
+  // than jumping straight to the photo lightbox — matches how Telegram
+  // surfaces profile gifts/decorations as a tappable, actionable thing.
+  const artId = getUserArtifactId(viewedUserKey);
+  if (artId) { _openProfileArtifactMenu(viewedUserKey, artId); return; }
+  _uprofileViewPicDirect();
+}
+// Bottom-sheet menu for another user's active profile artifact: lets a
+// Premium/Pro/Prestige viewer add the same artifact to their own profile in
+// one tap, or nudges a free viewer to upgrade. Falls through to the normal
+// photo lightbox via "View Photo" so that flow isn't lost.
+function _openProfileArtifactMenu(userKey, artifactId) {
+  const art = _artifactById(artifactId);
+  if (!art) { _uprofileViewPicDirect(); return; }
+  const myKey = _myUsernameKey ? _myUsernameKey() : (currentUser||'').toLowerCase();
+  const iAmPremium = !!(typeof isPremiumUser === 'function' && isPremiumUser(myKey));
+  let sheet = document.getElementById('_profileArtifactMenuSheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = '_profileArtifactMenuSheet';
+    document.body.appendChild(sheet);
+  }
+  const previewLayer = renderArtifactLayer(artifactId);
+  sheet.innerHTML = `
+    <div onclick="if(event.target===this)_closeProfileArtifactMenu()" style="position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;">
+      <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
+        <div class="_u-drawer-handle"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px;">
+          <div style="position:relative;width:80px;height:80px;margin-bottom:10px;">
+            <div class="artifact-layer" style="position:relative;top:0;left:0;margin:0;width:80px;height:80px;">${previewLayer}</div>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);">${escHtml(art.name)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Profile artifact</div>
+        </div>
+        ${iAmPremium
+          ? `<button onclick="_applyArtifactFromMenu('${escHtml(artifactId)}')" style="width:100%;padding:13px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">Add Artifact to My Profile</button>`
+          : `<div style="font-size:12.5px;color:var(--text3);text-align:center;margin-bottom:12px;line-height:1.5;">Animated profile artifacts are a Plus Premium perk.</div>
+             <button onclick="_closeProfileArtifactMenu();if(typeof openWalletPage==='function')openWalletPage('premium')" style="width:100%;padding:13px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">Upgrade to Plus Premium</button>`}
+        <button onclick="_closeProfileArtifactMenu();_uprofileViewPicDirect()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;">View Photo</button>
+        <button onclick="_closeProfileArtifactMenu()" style="width:100%;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);cursor:pointer;">Cancel</button>
+      </div>
+    </div>`;
+  sheet.style.display = 'block';
+}
+function _closeProfileArtifactMenu() {
+  const sheet = document.getElementById('_profileArtifactMenuSheet');
+  if (sheet) sheet.style.display = 'none';
+}
+async function _applyArtifactFromMenu(artifactId) {
+  _closeProfileArtifactMenu();
+  const ok = await setMyProfileArtifact(artifactId);
+  showToast(ok ? 'Artifact added to your profile ✨' : 'Could not add artifact — try again', ok ? 'success' : 'error');
+}
+function _uprofileViewPicDirect() {
   if (!viewedUserKey) return;
   const accounts = _cache['acct_by_username'] || {};
   const stored = accounts[viewedUserKey];
@@ -19808,6 +19943,10 @@ function showVerifiedInfo(e) {
     <div style="width:60px"></div>
   </div>
   <div style="padding:14px 16px;">
+    <button onclick="closeUserManager();openSuperAdmin();setSuperAdminTab('approvals')" style="width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);border-radius:14px;padding:12px 14px;margin-bottom:12px;cursor:pointer;font-family:var(--font);">
+      <span style="font-size:13px;font-weight:700;color:var(--gold);">👑 Review Premium Requests</span>
+      <span style="font-size:12px;color:var(--text3);">Approve / reject →</span>
+    </button>
     <input id="userManagerSearch" placeholder="Search users…" oninput="renderUserManager()" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:14px;padding:11px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:14px;-webkit-appearance:none;"/>
     <div id="userManagerList"></div>
   </div>
@@ -19919,11 +20058,18 @@ async function renderUserManager() {
     const isBanned = a.is_banned === true || bannedLS.includes(a.username);
     const isRestricted = a.is_restricted === true || restrictedLS.includes(a.username);
     const isVerified = isUserVerified(a.display_name) || isUserVerified(a.username);
+    const premTier = (typeof getPremiumTier === 'function') ? getPremiumTier(a.username) : null;
     const statusHtml = isBanned
       ? `<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,69,58,0.15);border:1px solid rgba(255,69,58,0.3);color:var(--red);">Banned</span>`
       : isRestricted
       ? `<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.3);color:var(--gold);">Restricted</span>`
       : '';
+    let premLine = '';
+    if (premTier) {
+      const soonExpiring = premTier.daysLeft !== null && premTier.daysLeft <= 5;
+      const expiryText = premTier.expires_at ? `${formatPremiumCountdown(premTier.expires_at)}` : 'Never expires';
+      premLine = `<div style="font-size:11px;color:${soonExpiring ? 'var(--gold)' : 'var(--text3)'};margin-top:2px;">👑 ${escHtml(premTier.label)} · ${escHtml(expiryText)}${soonExpiring ? ' · suggest renewal' : ''}</div>`;
+    }
     const verBadge = isVerified ? `<span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>` : '';
     return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
@@ -19933,9 +20079,10 @@ async function renderUserManager() {
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.2;">${escHtml(a.display_name)} ${verBadge}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:6px;">@${escHtml(a.username)} ${statusHtml}</div>
+          ${premLine}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+      <div style="display:grid;grid-template-columns:repeat(${premTier ? 6 : 5},1fr);gap:6px;">
         ${isVerified
           ? `<button onclick="ownerRemoveVerify('${escHtml(a.username)}','${escHtml(a.display_name)}')" title="Remove Verify" style="font-family:var(--font);font-size:11px;font-weight:600;padding:7px 4px;border-radius:10px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="currentColor"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#16161e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -19971,6 +20118,10 @@ async function renderUserManager() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           <span>Delete</span>
         </button>
+        ${premTier ? `<button onclick="if(confirm('Completely remove Premium from @${escHtml(a.username)}? This strips the checkmark, artifact, and all perks.'))ownerRemovePremiumCompletely('${escHtml(a.username)}','${escHtml(a.display_name)}')" title="Remove Premium completely" style="font-family:var(--font);font-size:11px;font-weight:600;padding:7px 4px;border-radius:10px;background:rgba(255,69,58,0.06);border:1px solid rgba(255,69,58,0.2);color:#ff453a;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.8 5.3.8-3.8 3.7.9 5.3L12 14l-4.8 2.6.9-5.3-3.8-3.7 5.3-.8z"/><line x1="4" y1="20" x2="20" y2="4"/></svg>
+          <span>Un-Premium</span>
+        </button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -25166,7 +25317,7 @@ function channelVerifiedBadgeHtml(c) {
   const t = _channelOwnerTier(c);
   if (!t) return '';
   const icon = _channelBadgeIconHtml(c.badge_artifact, 15);
-  return `<span onclick="event.stopPropagation();showChannelBadgeInfo('${escHtml(c.id)}')" style="cursor:pointer;display:inline-flex;align-items:center;vertical-align:middle;" title="Verified — Plus ${escHtml(t.label)} channel">${icon}</span>`;
+  return `<span onclick="event.stopPropagation();showChannelBadgeInfo('${escHtml(c.id)}')" style="cursor:pointer;display:inline-flex;align-items:center;vertical-align:middle;" title="Verified — ${escHtml(t.label)} channel">${icon}</span>`;
 }
 async function showChannelBadgeInfo(channelId) {
   const c = await getChannel(channelId);
@@ -25181,7 +25332,7 @@ async function showChannelBadgeInfo(channelId) {
     <div style="text-align:center;padding:6px 4px 2px;">
       <div style="width:64px;height:64px;border-radius:50%;background:rgba(245,197,24,0.1);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">${icon}</div>
       <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">${escHtml(c.name)}</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:${isOwnerOfChannel ? '10px' : (viewerPremium ? '4px' : '18px')};">This channel is owned by a <b style="color:var(--gold);">Plus ${escHtml(t.label)}</b> subscriber.</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:${isOwnerOfChannel ? '10px' : (viewerPremium ? '4px' : '18px')};">This channel is owned by a <b style="color:var(--gold);">${escHtml(t.label)}</b> subscriber.</div>
       ${isOwnerOfChannel ? `<div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Customize this badge's icon from Manage Channel → Verification Badge.</div>` : ''}
       ${(!viewerPremium && !isOwnerOfChannel) ? `<button onclick="closeGenericInfoSheet();openWalletPage('premium')" style="width:100%;padding:13px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">Subscribe to Plus Premium</button>` : ''}
       <button onclick="closeGenericInfoSheet()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Close</button>
@@ -29999,8 +30150,21 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
       <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Your Username (for reference)</div>
       <div id="premiumTransferMyUsername" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--text2);"></div>
     </div>
-    <button onclick="submitPremiumTransferConfirm()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:24px;">I've Sent the Money</button>
+    <button onclick="openPremiumPaymentDetailsSheet('naira')" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:24px;">I've Sent the Money</button>
     <div style="font-size:11.5px;color:var(--text3);text-align:center;margin-top:12px;line-height:1.5;">Only tap this after the transfer has actually gone through. False confirmations may delay or block your request.</div>
+  </div>
+</div>
+
+<!-- ══════════ PREMIUM PAYMENT DETAILS SHEET (sender confirms account/address after tapping "I've Sent") ══════════ -->
+<div id="premiumPayDetailsOverlay" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;">
+  <div onclick="if(event.target===this)closePremiumPaymentDetailsSheet()" style="position:absolute;inset:0;"></div>
+  <div style="position:relative;background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px calc(28px + env(safe-area-inset-bottom,0px));border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div class="_u-drawer-handle"></div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;">Confirm Your Payment</div>
+    <div id="premiumPayDetailsSub" style="font-size:12.5px;color:var(--text3);margin-bottom:18px;line-height:1.5;"></div>
+    <div id="premiumPayDetailsFields"></div>
+    <button id="premiumPayDetailsSubmitBtn" onclick="_submitPremiumPaymentDetails()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;">Confirm Payment</button>
+    <button onclick="closePremiumPaymentDetailsSheet()" style="width:100%;margin-top:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);cursor:pointer;">Cancel</button>
   </div>
 </div>
 
@@ -30322,6 +30486,15 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
 
     <!-- Ads -->
     <div id="sa-panel-ads" style="display:none;">
+      <div onclick="_saTogglePreviewAdsAsUser()" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <div style="flex:1;">
+          <div style="font-size:13.5px;font-weight:700;color:var(--text);">Preview Ads as Regular User</div>
+          <div style="font-size:11.5px;color:var(--text3);margin-top:2px;">Owners are always ad-free by default — flip this on to actually see ads render in the feed/channels while testing, on this device only.</div>
+        </div>
+        <div id="saPreviewAdsToggle" class="wallet-glass-toggle" style="width:44px;height:26px;border-radius:100px;background:rgba(255,255,255,0.15);position:relative;flex-shrink:0;transition:background 0.15s;">
+          <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left 0.15s;"></div>
+        </div>
+      </div>
       <button onclick="_saOpenAdEditor(null)" style="width:100%;padding:12px;border-radius:14px;background:rgba(245,197,24,0.12);border:1.5px dashed rgba(245,197,24,0.4);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">+ Add New Ad</button>
       <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:14px;">"Post" ads look like a real post (image + text) and appear roughly once every 10 posts in the Home feed, at a random spot within each 10. "Card" ads are compact and appear at the top of every channel's broadcast list — best for promoting in-app features like Premium. Premium subscribers never see either.</div>
       <div id="saAdsList"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
@@ -30568,6 +30741,15 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
         <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Username to follow</label>
         <input class="c-input" id="saTaskTarget" placeholder="e.g. dave" style="margin-top:6px;margin-bottom:12px;"/>
       </div>
+      <div id="saTaskChannelRow" style="display:none;">
+        <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Target Channel</label>
+        <div class="c-input" id="saTaskChannelDisplay" onclick="_saOpenChannelTargetPicker()" style="margin-top:6px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+          <span id="saTaskChannelDisplayLabel" style="color:var(--text3);">Any channel</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin:0 0 12px;">Leave as "Any channel" to accept a subscription to any channel, or pick one to require that specific channel.</div>
+        <input type="hidden" id="saTaskChannelId"/>
+      </div>
       <div id="saTaskCountRow" style="display:none;">
         <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Target count</label>
         <input class="c-input" id="saTaskCount" type="number" min="1" placeholder="e.g. 5" style="margin-top:6px;margin-bottom:12px;"/>
@@ -30639,6 +30821,9 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
       </label>
       <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;cursor:pointer;">
         <input type="checkbox" id="saAdPlaceChannel" style="width:16px;height:16px;accent-color:var(--gold);"/> Top of channel broadcasts
+      </label>
+      <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+        <input type="checkbox" id="saAdPlaceComment" style="width:16px;height:16px;accent-color:var(--gold);"/> Top of comment threads (card format only)
       </label>
     </div>
     <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-bottom:18px;cursor:pointer;">
@@ -31750,7 +31935,15 @@ async function _bumpAdStat(adId, field) {
 }
 function _amIAdFree() {
   const myKey = typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser||'').toLowerCase();
+  if (isOwner && localStorage.getItem('ka_owner_preview_ads') === '1') return false;
   return (typeof isPremiumUser === 'function' && isPremiumUser(myKey)) || isOwner;
+}
+function _saTogglePreviewAdsAsUser() {
+  const on = localStorage.getItem('ka_owner_preview_ads') === '1';
+  localStorage.setItem('ka_owner_preview_ads', on ? '0' : '1');
+  _saSetToggleUI(document.getElementById('saPreviewAdsToggle'), !on);
+  showToast(!on ? 'Ads will now show for you (this device only)' : 'Ads hidden again — back to normal owner view', '');
+  if (typeof injectAdCards === 'function') injectAdCards();
 }
 function _adCtaHref(ad) {
   if (ad.cta_type === 'premium') return "openWalletPage('premium')";
@@ -32905,13 +33098,22 @@ async function _checkInAppTaskCondition(task) {
       : { done: false, hint: 'Install the app first, then come back and tap Claim', navigate: function(){ if (typeof _promptPwaInstall === 'function') _promptPwaInstall(); } };
   }
   if (task.action === 'channel_subscribe') {
-    // Any single channel subscription counts — no specific target channel,
-    // so this can be reused as a generic "join the community" nudge.
+    // If the admin picked a specific channel_id, require a subscription to
+    // that exact channel; otherwise any single channel subscription counts
+    // (generic "join the community" nudge).
     try {
-      const rows = await SB.query('channel_subscribers', `?username=eq.${encodeURIComponent(myKey)}&select=id&limit=1`);
+      const filter = task.channel_id
+        ? `?username=eq.${encodeURIComponent(myKey)}&channel_id=eq.${encodeURIComponent(task.channel_id)}&select=id&limit=1`
+        : `?username=eq.${encodeURIComponent(myKey)}&select=id&limit=1`;
+      const rows = await SB.query('channel_subscribers', filter);
+      const hintTarget = task.channel_name ? `Subscribe to ${task.channel_name} first, then come back and tap Claim` : 'Subscribe to a channel first, then come back and tap Claim';
       return (rows && rows.length)
         ? { done: true }
-        : { done: false, hint: 'Subscribe to a channel first, then come back and tap Claim', navigate: function(){ closeWalletPage(); if (typeof openChannelsListPage === 'function') openChannelsListPage(); } };
+        : { done: false, hint: hintTarget, navigate: function(){
+            closeWalletPage();
+            if (task.channel_id && typeof openChannelDetail === 'function') openChannelDetail(task.channel_id);
+            else if (typeof openChannelsListPage === 'function') openChannelsListPage();
+          } };
     } catch(e) { return { done: false, hint: 'Could not check — try again' }; }
   }
   if (task.action === 'premium_purchase') {
@@ -33716,7 +33918,7 @@ async function openPremiumBankTransferPage() {
       </div>
     </div>`;
   }
-  const btn = document.querySelector('#premiumTransferPageOverlay button[onclick="submitPremiumTransferConfirm()"]');
+  const btn = document.querySelector('#premiumTransferPageOverlay button[onclick="openPremiumPaymentDetailsSheet(\'naira\')"]');
   if (btn) { btn.style.display = pending ? 'none' : ''; }
   if (userEl) userEl.textContent = '@' + _myWalletKey();
 }
@@ -33726,7 +33928,52 @@ function closePremiumTransferPage() {
   document.body.style.overflow = '';
 }
 
-async function submitPremiumTransferConfirm() {
+// ── Payment details sheet: shown after tapping "I've Sent the Money/Payment",
+// before the request actually submits. Collects what the sender actually
+// used to pay (their own account, or the crypto address they sent from) so
+// the admin can match it against the incoming transfer/tx when reviewing.
+var _premiumPayDetailsMethod = null; // 'naira' | 'crypto'
+function openPremiumPaymentDetailsSheet(method) {
+  _premiumPayDetailsMethod = method;
+  const tierId = _premiumSelectedTier || 'pro';
+  const t = PREMIUM_TIERS[tierId] || PREMIUM_TIERS.pro;
+  const p = (_walletConfig.premiumTierPricing || {})[tierId] || {};
+  const sub = document.getElementById('premiumPayDetailsSub');
+  const fields = document.getElementById('premiumPayDetailsFields');
+  if (method === 'naira') {
+    const amount = p.naira || 0;
+    if (sub) sub.textContent = `Confirm you've sent ₦${amount.toLocaleString('en-NG')} for ${t.label} to our account, then tell us which account you sent it from.`;
+    if (fields) fields.innerHTML = `
+      <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Your Account Number</label>
+      <input class="c-input" id="ppdAccountNumber" placeholder="The account you sent from" style="margin-top:6px;margin-bottom:12px;" inputmode="numeric"/>
+      <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Your Account Name</label>
+      <input class="c-input" id="ppdAccountName" placeholder="Name on that account" style="margin-top:6px;margin-bottom:4px;"/>`;
+  } else {
+    const usdt = p.usdt || 0, gram = p.gram || 0;
+    if (sub) sub.textContent = `Confirm you've sent ${usdt} USDT or ${gram} GRAM for ${t.label}, then paste the wallet address you sent it from.`;
+    if (fields) fields.innerHTML = `
+      <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Address You Sent From</label>
+      <input class="c-input" id="ppdCryptoAddress" placeholder="Your wallet address" style="margin-top:6px;margin-bottom:4px;"/>`;
+  }
+  document.getElementById('premiumPayDetailsOverlay').style.display = 'flex';
+}
+function closePremiumPaymentDetailsSheet() {
+  const ov = document.getElementById('premiumPayDetailsOverlay');
+  if (ov) ov.style.display = 'none';
+}
+async function _submitPremiumPaymentDetails() {
+  if (_premiumPayDetailsMethod === 'naira') {
+    const num = (document.getElementById('ppdAccountNumber').value || '').trim();
+    const name = (document.getElementById('ppdAccountName').value || '').trim();
+    if (!num || !name) { showToast('Enter the account you sent from', 'error'); return; }
+    await submitPremiumTransferConfirm(num, name);
+  } else {
+    const addr = (document.getElementById('ppdCryptoAddress').value || '').trim();
+    if (!addr) { showToast('Enter the address you sent from', 'error'); return; }
+    await submitPremiumCryptoConfirm(addr);
+  }
+}
+async function submitPremiumTransferConfirm(senderAccountNumber, senderAccountName) {
   const key = _myWalletKey();
   const tierId = _premiumSelectedTier || 'pro';
   const p = (_walletConfig.premiumTierPricing || {})[tierId] || {};
@@ -33734,12 +33981,12 @@ async function submitPremiumTransferConfirm() {
   const bank = _walletConfig.premiumBankDetails || {};
   if (!amount) { showToast('Price not set for this plan — try again later', 'error'); return; }
   const existing = await _myPendingPremiumTransfer();
-  if (existing) { showToast('You already have a payment under review.', ''); closePremiumTransferPage(); return; }
+  if (existing) { showToast('You already have a payment under review.', ''); closePremiumPaymentDetailsSheet(); closePremiumTransferPage(); return; }
 
   if (typeof _showIsland === 'function') {
     _showIsland({ type: 'loading', title: 'Submitting confirmation…', sub: 'Please wait', duration: 4000 });
   }
-  const btn = document.querySelector('#premiumTransferPageOverlay button[onclick="submitPremiumTransferConfirm()"]');
+  const btn = document.getElementById('premiumPayDetailsSubmitBtn');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Submitting…'; }
 
   try {
@@ -33752,6 +33999,8 @@ async function submitPremiumTransferConfirm() {
       bank_name: bank.bank || '',
       account_number: bank.accountNumber || '',
       account_name: bank.accountName || '',
+      sender_account_number: senderAccountNumber || '',
+      sender_account_name: senderAccountName || '',
       status: 'pending',
       submitted_at: new Date().toISOString()
     };
@@ -33759,19 +34008,21 @@ async function submitPremiumTransferConfirm() {
     if (typeof addNotifForUser === 'function') {
       addNotifForUser(key, `🏦 ${PREMIUM_TIERS[tierId].label} payment submitted — ₦${amount.toLocaleString('en-NG')} pending confirmation`, null, null, 'premium').catch(()=>{});
     }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Confirm Payment'; }
+    closePremiumPaymentDetailsSheet();
     closePremiumTransferPage();
     closePremiumPayMethodPage();
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "I've Sent the Money"; }
     _renderWalletPremiumTab();
     _renderWalletHistoryList();
     const detail = `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Plan</span><span style="color:var(--text);font-weight:700;">${escHtml(PREMIUM_TIERS[tierId].label)}</span></div>
        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Amount</span><span style="color:var(--text);font-weight:700;">₦${amount.toLocaleString('en-NG')}</span></div>
        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Sent to</span><span style="color:var(--text);font-weight:600;">${escHtml(record.bank_name)} · ${escHtml(record.account_number)}</span></div>
+       <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Sent from</span><span style="color:var(--text);font-weight:600;">${escHtml(senderAccountName)} · ${escHtml(senderAccountNumber)}</span></div>
        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Status</span><span style="color:var(--gold);font-weight:700;">Pending review</span></div>`;
     showWalletConfirm({ tone: 'pending', title: 'Payment Submitted', sub: "We'll activate your plan once we confirm your transfer — usually within a few hours.", detailHtml: detail });
   } catch(e) {
     console.error('[wallet] premium transfer submit failed:', e);
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "I've Sent the Money"; }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Confirm Payment'; }
     var detail2 = (e && e.body) ? e.body : (e && e.message) || '';
     showToast(detail2 ? ('Submit failed: ' + detail2.slice(0, 160)) : 'Submit failed — try again', 'error');
   }
@@ -33816,7 +34067,7 @@ function openPremiumCryptoPage() {
         </button>
       </div>
     </div>
-    <button onclick="submitPremiumCryptoConfirm()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">I've Sent the Payment</button>
+    <button onclick="openPremiumPaymentDetailsSheet('crypto')" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">I've Sent the Payment</button>
     <div style="font-size:11.5px;color:var(--text3);text-align:center;margin-top:12px;line-height:1.5;">Only tap this after the transfer has actually gone through. False confirmations may delay or block your request.</div>`;
   document.getElementById('premiumCryptoPageOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -33825,13 +34076,13 @@ function closePremiumCryptoPage() {
   document.getElementById('premiumCryptoPageOverlay').style.display = 'none';
   document.body.style.overflow = '';
 }
-async function submitPremiumCryptoConfirm() {
+async function submitPremiumCryptoConfirm(senderAddress) {
   const key = _myWalletKey();
   const tierId = _premiumSelectedTier || 'pro';
   const p = (_walletConfig.premiumTierPricing || {})[tierId] || {};
   const existing = await _myPendingPremiumTransfer();
-  if (existing) { showToast('You already have a payment under review.', ''); closePremiumCryptoPage(); return; }
-  const btn = document.querySelector('#premiumCryptoPageOverlay button[onclick="submitPremiumCryptoConfirm()"]');
+  if (existing) { showToast('You already have a payment under review.', ''); closePremiumPaymentDetailsSheet(); closePremiumCryptoPage(); return; }
+  const btn = document.getElementById('premiumPayDetailsSubmitBtn');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Submitting…'; }
   try {
     const record = {
@@ -33842,6 +34093,7 @@ async function submitPremiumCryptoConfirm() {
       amount_naira: 0,
       crypto_usdt: p.usdt || 0,
       crypto_gram: p.gram || 0,
+      sender_crypto_address: senderAddress || '',
       status: 'pending',
       submitted_at: new Date().toISOString()
     };
@@ -33849,18 +34101,20 @@ async function submitPremiumCryptoConfirm() {
     if (typeof addNotifForUser === 'function') {
       addNotifForUser(key, `₿ ${PREMIUM_TIERS[tierId].label} crypto payment submitted — pending confirmation`, null, null, 'premium').catch(()=>{});
     }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Confirm Payment'; }
+    closePremiumPaymentDetailsSheet();
     closePremiumCryptoPage();
     closePremiumPayMethodPage();
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "I've Sent the Payment"; }
     _renderWalletPremiumTab();
     _renderWalletHistoryList();
     const detail = `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Plan</span><span style="color:var(--text);font-weight:700;">${escHtml(PREMIUM_TIERS[tierId].label)}</span></div>
        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Amount</span><span style="color:var(--text);font-weight:700;">${p.usdt||0} USDT / ${p.gram||0} GRAM</span></div>
+       <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Sent from</span><span style="color:var(--text);font-weight:600;word-break:break-all;">${escHtml(senderAddress||'')}</span></div>
        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;"><span style="color:var(--text3);">Status</span><span style="color:var(--gold);font-weight:700;">Pending review</span></div>`;
     showWalletConfirm({ tone: 'pending', title: 'Payment Submitted', sub: "We'll activate your plan once we confirm your payment — usually within a few hours.", detailHtml: detail });
   } catch(e) {
     console.error('[wallet] premium crypto submit failed:', e);
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = "I've Sent the Payment"; }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Confirm Payment'; }
     var detail2 = (e && e.body) ? e.body : (e && e.message) || '';
     showToast(detail2 ? ('Submit failed: ' + detail2.slice(0, 160)) : 'Submit failed — try again', 'error');
   }
@@ -34332,10 +34586,9 @@ async function _saRenderTasksList() {
   if (!tasks.length) { list.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">No tasks yet</div>'; return; }
   list.innerHTML = tasks.map(function(t, i) {
     const typeLabel = t.type === 'external' ? 'External link' : t.type === 'screenshot' ? 'Screenshot proof' : 'In-app';
-    return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
-      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
-        <button onclick="_saMoveTask(${i},-1)" ${i===0?'disabled':''} style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:${i===0?'var(--text3)':'var(--text2)'};font-family:var(--font);font-size:11px;cursor:${i===0?'default':'pointer'};opacity:${i===0?'0.4':'1'};">▲</button>
-        <button onclick="_saMoveTask(${i},1)" ${i===tasks.length-1?'disabled':''} style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:${i===tasks.length-1?'var(--text3)':'var(--text2)'};font-family:var(--font);font-size:11px;cursor:${i===tasks.length-1?'default':'pointer'};opacity:${i===tasks.length-1?'0.4':'1'};">▼</button>
+    return `<div class="sa-task-row" data-task-index="${i}" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;touch-action:pan-y;">
+      <div class="sa-task-draghandle" style="flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--text3);cursor:grab;touch-action:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;">${escHtml(t.title)}${t.enabled===false ? '<span style="font-size:10px;font-weight:700;color:var(--text3);background:rgba(255,255,255,0.08);border-radius:100px;padding:2px 7px;">Off</span>' : ''}</div>
@@ -34344,23 +34597,85 @@ async function _saRenderTasksList() {
       <button onclick="_saOpenTaskEditor(${i})" style="flex-shrink:0;padding:7px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;">Edit</button>
     </div>`;
   }).join('');
+  _saInitTaskDragReorder(list);
 }
-async function _saMoveTask(index, direction) {
-  const tasks = await _loadWalletTasksConfig();
-  const target = index + direction;
-  if (target < 0 || target >= tasks.length) return;
-  const reordered = tasks.slice();
-  const tmp = reordered[index];
-  reordered[index] = reordered[target];
-  reordered[target] = tmp;
-  await _saveWalletTasksConfig(reordered);
-  _saRenderTasksList();
+// Long-press-and-drag reordering for the tasks list. Grabbing the handle
+// (not the row) starts a drag after a short hold, so normal scrolling and
+// tapping "Edit" both keep working untouched. Reuses the same
+// _saveWalletTasksConfig persistence path as the old up/down buttons.
+function _saInitTaskDragReorder(list) {
+  let dragEl = null, placeholder = null, startY = 0, longPressTimer = null, dragging = false;
+  function onHandleDown(e) {
+    const handle = e.target.closest('.sa-task-draghandle');
+    if (!handle) return;
+    const row = handle.closest('.sa-task-row');
+    if (!row) return;
+    const point = e.touches ? e.touches[0] : e;
+    startY = point.clientY;
+    longPressTimer = setTimeout(function() { _saBeginTaskDrag(row, list); dragging = true; }, 160);
+    const cancel = function() { clearTimeout(longPressTimer); document.removeEventListener('touchend', cancel); document.removeEventListener('touchcancel', cancel); document.removeEventListener('mouseup', cancel); };
+    document.addEventListener('touchend', cancel, { once: true });
+    document.addEventListener('touchcancel', cancel, { once: true });
+    document.addEventListener('mouseup', cancel, { once: true });
+  }
+  list.addEventListener('touchstart', onHandleDown, { passive: true });
+  list.addEventListener('mousedown', onHandleDown);
+}
+var _saDragState = null;
+function _saBeginTaskDrag(row, list) {
+  if (navigator.vibrate) navigator.vibrate(12);
+  const rect = row.getBoundingClientRect();
+  const placeholder = document.createElement('div');
+  placeholder.style.cssText = `height:${rect.height}px;margin-bottom:8px;border-radius:14px;border:2px dashed rgba(245,197,24,0.35);background:rgba(245,197,24,0.05);`;
+  row.parentNode.insertBefore(placeholder, row);
+  row.style.cssText += `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:99999;box-shadow:0 12px 30px rgba(0,0,0,0.5);opacity:0.96;pointer-events:none;`;
+  document.body.appendChild(row);
+  _saDragState = { row: row, placeholder: placeholder, list: list, offsetY: 0, startTop: rect.top };
+  const move = function(e) {
+    const point = e.touches ? e.touches[0] : e;
+    const dy = point.clientY - (_saDragState.lastY || point.clientY);
+    _saDragState.lastY = point.clientY;
+    const top = parseFloat(row.style.top) + dy;
+    row.style.top = top + 'px';
+    const rowsNow = Array.from(list.querySelectorAll('.sa-task-row')).filter(function(r){ return r !== row; });
+    for (let i = 0; i < rowsNow.length; i++) {
+      const r = rowsNow[i];
+      const rr = r.getBoundingClientRect();
+      const mid = rr.top + rr.height / 2;
+      if (top + rect_h() / 2 < mid) { list.insertBefore(placeholder, r); break; }
+      if (i === rowsNow.length - 1) list.appendChild(placeholder);
+    }
+    function rect_h() { return row.getBoundingClientRect().height; }
+  };
+  const end = async function() {
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('touchend', end);
+    document.removeEventListener('mouseup', end);
+    row.style.cssText = row.style.cssText.replace(/position:fixed[^;]*;|left:[^;]*;|top:[^;]*;|width:[^;]*;|z-index:[^;]*;|box-shadow:[^;]*;|opacity:0\.96;|pointer-events:none;/g, '');
+    placeholder.parentNode.insertBefore(row, placeholder);
+    placeholder.remove();
+    _saDragState = null;
+    // Persist the new order by reading DOM order back against the loaded task list
+    const orderedIndexes = Array.from(list.querySelectorAll('.sa-task-row')).map(function(r){ return parseInt(r.getAttribute('data-task-index')); });
+    const tasks = await _loadWalletTasksConfig();
+    const reordered = orderedIndexes.map(function(i){ return tasks[i]; }).filter(Boolean);
+    if (reordered.length === tasks.length) {
+      await _saveWalletTasksConfig(reordered);
+      _saRenderTasksList();
+    }
+  };
+  document.addEventListener('touchmove', move, { passive: true });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchend', end, { once: true });
+  document.addEventListener('mouseup', end, { once: true });
 }
 
 // ── Ads tab ──
 async function _saRenderAdsList() {
   const list = document.getElementById('saAdsList');
   if (!list) return;
+  _saSetToggleUI(document.getElementById('saPreviewAdsToggle'), localStorage.getItem('ka_owner_preview_ads') === '1');
   const ads = await _loadAdsConfig(true);
   if (!ads.length) { list.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">No ads yet</div>'; return; }
   list.innerHTML = ads.map(function(a, i) {
@@ -34392,6 +34707,7 @@ async function _saOpenAdEditor(index) {
   const placements = (a && a.placements) || (a && a.type === 'card' ? ['channel_top'] : ['feed']);
   document.getElementById('saAdPlaceFeed').checked = placements.indexOf('feed') !== -1;
   document.getElementById('saAdPlaceChannel').checked = placements.indexOf('channel_top') !== -1;
+  document.getElementById('saAdPlaceComment').checked = placements.indexOf('comment_thread') !== -1;
   document.getElementById('saAdEnabled').checked = a ? a.enabled !== false : true;
   document.getElementById('saAdDeleteBtn').style.display = a ? '' : 'none';
   _saUpdateAdImagePreview();
@@ -34456,6 +34772,7 @@ async function _saSaveAd() {
   const placements = [];
   if (document.getElementById('saAdPlaceFeed').checked) placements.push('feed');
   if (document.getElementById('saAdPlaceChannel').checked) placements.push('channel_top');
+  if (document.getElementById('saAdPlaceComment').checked) placements.push('comment_thread');
   if (!title) { showToast('Title is required', 'error'); return; }
   if (!placements.length) { showToast('Pick at least one placement', 'error'); return; }
   if (ctaType === 'url' && ctaLabel && !ctaValue) { showToast('Enter a URL for the button, or clear the button label', 'error'); return; }
@@ -34500,6 +34817,9 @@ async function _saOpenTaskEditor(index) {
   document.getElementById('saTaskAction').value = (t && t.action) || 'follow';
   document.getElementById('saTaskTarget').value = (t && t.target) || '';
   document.getElementById('saTaskCount').value = (t && t.count) || '';
+  document.getElementById('saTaskChannelId').value = (t && t.channel_id) || '';
+  document.getElementById('saTaskChannelDisplayLabel').textContent = (t && t.channel_name) || 'Any channel';
+  document.getElementById('saTaskChannelDisplayLabel').style.color = (t && t.channel_id) ? 'var(--text)' : 'var(--text3)';
   document.getElementById('saTaskDaily').checked = !!(t && t.daily);
   document.getElementById('saTaskEnabled').checked = t ? t.enabled !== false : true;
   document.getElementById('saTaskDeleteBtn').style.display = t ? '' : 'none';
@@ -34525,8 +34845,22 @@ function _saTaskTypeChanged() {
 function _saTaskActionChanged() {
   const action = document.getElementById('saTaskAction').value;
   document.getElementById('saTaskTargetRow').style.display = (action === 'follow') ? '' : 'none';
+  document.getElementById('saTaskChannelRow').style.display = (action === 'channel_subscribe') ? '' : 'none';
   document.getElementById('saTaskCountRow').style.display =
     (action === 'like_count' || action === 'comment_count' || action === 'streak_count') ? '' : 'none';
+}
+async function _saOpenChannelTargetPicker() {
+  let channels = [];
+  try { channels = await getAllChannels(); } catch(e) { channels = []; }
+  const opts = [{ value: '', label: 'Any channel' }].concat(
+    channels.map(function(c){ return { value: c.id, label: c.name }; })
+  );
+  const current = document.getElementById('saTaskChannelId').value || '';
+  _openGenericPicker('Target Channel', opts, current, function(value, label) {
+    document.getElementById('saTaskChannelId').value = value;
+    document.getElementById('saTaskChannelDisplayLabel').textContent = label;
+    document.getElementById('saTaskChannelDisplayLabel').style.color = value ? 'var(--text)' : 'var(--text3)';
+  });
 }
 function _saOpenTypePicker() {
   const sel = document.getElementById('saTaskType');
@@ -34621,6 +34955,13 @@ async function _saSaveTask() {
         const count = parseInt(document.getElementById('saTaskCount').value) || 0;
         if (!count) { showToast('Enter a target count', 'error'); return; }
         taskObj.count = count;
+      }
+      if (action === 'channel_subscribe') {
+        const channelId = document.getElementById('saTaskChannelId').value.trim();
+        if (channelId) {
+          taskObj.channel_id = channelId;
+          taskObj.channel_name = document.getElementById('saTaskChannelDisplayLabel').textContent.trim();
+        }
       }
     }
   }
@@ -34909,8 +35250,11 @@ async function _saRenderPremiumTransferRequests() {
       const tierLabel = (PREMIUM_TIERS[r.tier || 'pro'] || PREMIUM_TIERS.pro).label;
       const isCrypto = r.method === 'crypto';
       const amountLine = isCrypto ? `${r.crypto_usdt||0} USDT / ${r.crypto_gram||0} GRAM` : `₦${(r.amount_naira||0).toLocaleString('en-NG')}`;
+      const senderLine = isCrypto
+        ? (r.sender_crypto_address ? `<div style="font-size:11.5px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--glass-border);word-break:break-all;"><span style="color:var(--text3);">Sent from:</span> ${escHtml(r.sender_crypto_address)}</div>` : '')
+        : ((r.sender_account_number || r.sender_account_name) ? `<div style="font-size:11.5px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--glass-border);"><span style="color:var(--text3);">Sent from:</span> ${escHtml(r.sender_account_name||'')} · ${escHtml(r.sender_account_number||'')}</div>` : '');
       return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${aviHtml}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text);">@${escHtml(r.username||'')} <span style="font-weight:500;color:var(--text3);">· ${escHtml(tierLabel)}</span></div>
@@ -34918,7 +35262,8 @@ async function _saRenderPremiumTransferRequests() {
           </div>
           <div style="font-size:14px;font-weight:800;color:var(--gold);text-align:right;">${amountLine}</div>
         </div>
-        <div style="display:flex;gap:8px;">
+        ${senderLine}
+        <div style="display:flex;gap:8px;margin-top:10px;">
           <button onclick="_saApprovePremiumTransfer('${r.id}')" style="flex:1;padding:9px;border-radius:10px;background:rgba(48,209,88,0.14);border:1px solid rgba(48,209,88,0.35);color:#30D158;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">Approve</button>
           <button onclick="_saRejectPremiumTransfer('${r.id}')" style="flex:1;padding:9px;border-radius:10px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.25);color:var(--red);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">Reject</button>
         </div>
