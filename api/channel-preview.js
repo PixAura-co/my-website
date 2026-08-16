@@ -9,22 +9,30 @@
 // "Social Plus — Predict, Post & Earn" preview card instead of the channel's
 // actual name/description.
 //
-// This Edge Function sits in front of that: when a channel link is shared,
-// it points here instead of straight at the app. It looks at the request:
-//   - If it's a crawler/bot fetching the link to build a preview card, it
-//     returns a tiny HTML page with OG tags built from the real channel row
-//     in Supabase (name, bio, avatar).
-//   - If it's a real visitor (a browser), it 302-redirects straight to the
-//     actual app URL (?channel=<ref>&post=<id>) so the existing deep-link
-//     handling in index.html (_openChannelByRefFromLink) takes over exactly
-//     as before. Nothing about the in-app flow changes.
+// UPDATED FOR USERNAME LINKS: shared channel/group links are no longer
+// ?channel=<ref> query strings routed through /api/channel-preview — they're
+// now plain path-based short links like plusng.com.ng/plusupdates or
+// plusng.com.ng/plusupdates/broadcast/42 (see _channelPostShareUrl() and
+// _groupInviteUrl() in index.html). So instead of this function being linked
+// to directly, vercel.json now rewrites EVERY request through here first
+// (see the vercel.json alongside this file). This function then:
+//   - If it's a crawler/bot fetching the link to build a preview card, looks
+//     up the channel by username (falling back to invite_code/id for the
+//     small number of pre-username links still in circulation) and returns a
+//     tiny HTML page with OG tags built from the real channel row.
+//   - If it's a real visitor (a browser) — or the path doesn't match a
+//     channel/group/broadcast pattern at all (a normal in-app route like
+//     /settings, or the root /) — it passes straight through to index.html,
+//     completely untouched. The existing client-side deep-link handling in
+//     index.html (_resolveUsernamePathOnLoad, _openChannelByRefFromLink)
+//     takes over from there exactly as before. Nothing about the in-app flow
+//     changes; this function ONLY affects what crawlers see.
 //
 // SETUP (done once by Dave, not per-link):
 //   1. Drop this file at /api/channel-preview.js in the Vercel project.
-//   2. In _channelPostShareUrl() (index.html), change the generated link
-//      from `${origin}${pathname}?channel=...` to
-//      `${origin}/api/channel-preview?channel=...` — see the one-line patch
-//      note at the bottom of this file.
+//   2. Add/update vercel.json at the project root with the rewrite rule
+//      shown at the bottom of this file — this is what makes EVERY path
+//      (not just /api/channel-preview) reach this function first.
 //   3. No new env vars needed — the anon key below is the SAME anon key
 //      already shipped in index.html's client-side SB_KEY constant, so
 //      exposing it here adds no new surface area.
@@ -43,8 +51,16 @@ const SITE_ORIGIN = 'https://plusng.com.ng';
 const DEFAULT_OG_IMAGE = SITE_ORIGIN + '/og-default.png'; // swap to Dave's actual default OG image path if different
 
 // Bot/crawler user-agents that request link previews. Real browsers never
-// match this list, so they fall through to the redirect branch below.
+// match this list, so they fall through to the pass-through branch below.
 const CRAWLER_UA = /facebookexternalhit|Twitterbot|TelegramBot|WhatsApp|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Googlebot|bingbot|Pinterest|redditbot|vkShare|Applebot/i;
+
+// First path segments that are real in-app routes / static assets, never a
+// channel or group username — must be kept in sync with _RESERVED_USERNAMES
+// in index.html (both lists exist to prevent the same collision, from two
+// different layers: this one stops a crawler from getting a bogus "channel"
+// preview for /settings; the client-side one stops a real visitor's browser
+// from trying to resolve /settings as a channel username).
+const RESERVED_FIRST_SEGMENTS = new Set(['api','admin','www','app','settings','profile','login','signup','explore','wallet','premium','support','help','about','terms','privacy','broadcast','post','channel','group','user','users','static','assets','index.html','og-default.png','favicon.ico','manifest.json','robots.txt','sitemap.xml']);
 
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({
@@ -62,56 +78,32 @@ function resolveOgImage(avatar) {
 
 async function fetchChannel(ref) {
   const headers = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
-  // Try real id first (cheap, indexed), then invite_code (the format actual
-  // share links use — see _channelPostShareUrl's invite_code preference).
-  let res = await fetch(`${SB_URL}/rest/v1/channels?id=eq.${encodeURIComponent(ref)}&select=id,name,bio,avatar,subscriber_count,status`, { headers });
+  const cols = 'id,name,bio,avatar,subscriber_count,status,username';
+  // Username first — the current default for every link generated today.
+  let res = await fetch(`${SB_URL}/rest/v1/channels?username=eq.${encodeURIComponent(ref)}&select=${cols}`, { headers });
   let rows = res.ok ? await res.json() : [];
   if (!rows.length) {
-    res = await fetch(`${SB_URL}/rest/v1/channels?invite_code=eq.${encodeURIComponent(ref)}&select=id,name,bio,avatar,subscriber_count,status`, { headers });
+    // Legacy fallbacks for links shared before usernames existed.
+    res = await fetch(`${SB_URL}/rest/v1/channels?id=eq.${encodeURIComponent(ref)}&select=${cols}`, { headers });
+    rows = res.ok ? await res.json() : [];
+  }
+  if (!rows.length) {
+    res = await fetch(`${SB_URL}/rest/v1/channels?invite_code=eq.${encodeURIComponent(ref)}&select=${cols}`, { headers });
     rows = res.ok ? await res.json() : [];
   }
   return rows[0] || null;
 }
 
-export default async function handler(req) {
-  const url = new URL(req.url);
-  const channelRef = url.searchParams.get('channel');
-  const postId = url.searchParams.get('post');
-  const ua = req.headers.get('user-agent') || '';
-  const isCrawler = CRAWLER_UA.test(ua);
+async function fetchGroup(ref) {
+  const headers = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+  const cols = 'id,name,avatar,username,is_private';
+  const res = await fetch(`${SB_URL}/rest/v1/group_chats?username=eq.${encodeURIComponent(ref)}&select=${cols}`, { headers });
+  const rows = res.ok ? await res.json() : [];
+  return rows[0] || null;
+}
 
-  // Real destination inside the actual app — same query-param format
-  // _captureDeepLinkFromUrl() already parses, so app behavior is unchanged.
-  const appUrl = SITE_ORIGIN + '/?channel=' + encodeURIComponent(channelRef || '') + (postId ? '&post=' + encodeURIComponent(postId) : '');
-
-  if (!channelRef) {
-    return Response.redirect(appUrl, 302);
-  }
-
-  // Real visitors: skip the lookup entirely and send them straight into the
-  // app. No point spending a Supabase round trip on someone who's not a
-  // crawler — the app itself re-resolves the channel on load anyway.
-  if (!isCrawler) {
-    return Response.redirect(appUrl, 302);
-  }
-
-  let channel = null;
-  try {
-    channel = await fetchChannel(channelRef);
-  } catch (e) {
-    channel = null; // fall through to generic fallback tags below
-  }
-
-  const bannedOrMissing = !channel || channel.status === 'banned';
-  const title = bannedOrMissing ? FALLBACK_TITLE : `${channel.name} · Social Plus Channel`;
-  const desc = bannedOrMissing
-    ? FALLBACK_DESC
-    : (channel.bio && channel.bio.trim()
-        ? channel.bio.trim().slice(0, 200)
-        : `Join ${channel.name} on Social Plus${channel.subscriber_count ? ` — ${channel.subscriber_count} subscribers` : ''}. Predict, post & earn.`);
-  const image = bannedOrMissing ? DEFAULT_OG_IMAGE : resolveOgImage(channel.avatar);
-
-  const html = `<!DOCTYPE html>
+function buildPreviewHtml(title, desc, image, appUrl) {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -132,7 +124,9 @@ export default async function handler(req) {
 <p>Redirecting to <a href="${escapeHtml(appUrl)}">${escapeHtml(title)}</a>…</p>
 </body>
 </html>`;
+}
 
+function previewResponse(html) {
   return new Response(html, {
     status: 200,
     headers: {
@@ -145,7 +139,111 @@ export default async function handler(req) {
   });
 }
 
-// NOTE: _channelPostShareUrl() in index.html has already been updated to
-// point here (base = origin + '/api/channel-preview') — no manual patch
-// needed, this file just needs to be dropped into /api/ in the Vercel
-// project alongside the app.
+// Fetches the actual index.html from this same deployment and returns it
+// as-is — used for the pass-through path (real visitors, and any path that
+// isn't a channel/group username) so this function acts as pure middleware
+// with zero behavior change for anyone except crawlers hitting a real
+// channel/group link.
+async function passThroughToApp(req) {
+  const origin = new URL(req.url).origin;
+  const res = await fetch(origin + '/index.html', { headers: { 'user-agent': req.headers.get('user-agent') || '' } });
+  const body = await res.text();
+  return new Response(body, {
+    status: res.status,
+    headers: { 'content-type': 'text/html; charset=utf-8' }
+  });
+}
+
+export default async function handler(req) {
+  const url = new URL(req.url);
+  const ua = req.headers.get('user-agent') || '';
+  const isCrawler = CRAWLER_UA.test(ua);
+
+  // ── Legacy query-string form: /api/channel-preview?channel=<ref>&post=<id> ──
+  // Kept working forever for links shared before the username system existed.
+  const legacyChannelRef = url.searchParams.get('channel');
+  if (legacyChannelRef !== null) {
+    const postId = url.searchParams.get('post');
+    const appUrl = SITE_ORIGIN + '/?channel=' + encodeURIComponent(legacyChannelRef) + (postId ? '&post=' + encodeURIComponent(postId) : '');
+    if (!isCrawler) return Response.redirect(appUrl, 302);
+    let channel = null;
+    try { channel = await fetchChannel(legacyChannelRef); } catch (e) { channel = null; }
+    return previewResponse(buildLegacyPreview(channel, appUrl));
+  }
+
+  // ── New path-based form: /<username> or /<username>/broadcast/<postId> ──
+  const segs = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+
+  // Not a candidate username path at all (root, a real in-app route, a
+  // static asset) — get out of the way immediately, no Supabase calls.
+  if (segs.length === 0 || RESERVED_FIRST_SEGMENTS.has(segs[0].toLowerCase())) {
+    return passThroughToApp(req);
+  }
+
+  const username = segs[0].toLowerCase();
+  const isBroadcast = segs[1] === 'broadcast' && segs[2];
+  const broadcastId = isBroadcast ? segs[2] : null;
+
+  // Real visitors: let the client-side resolver handle it (same page, same
+  // path stays in the address bar so the SPA's own path parsing works) — no
+  // point spending a Supabase round trip here on someone who isn't a crawler.
+  if (!isCrawler) {
+    return passThroughToApp(req);
+  }
+
+  // Crawler: try channel first (matches the ambiguous-namespace resolution
+  // order used client-side in _resolveUsernamePathOnLoad), then group.
+  let channel = null, group = null;
+  try { channel = await fetchChannel(username); } catch (e) { channel = null; }
+  if (!channel) {
+    try { group = await fetchGroup(username); } catch (e) { group = null; }
+  }
+
+  const appUrl = SITE_ORIGIN + '/' + encodeURIComponent(username) + (broadcastId ? '/broadcast/' + encodeURIComponent(broadcastId) : '');
+
+  if (channel) {
+    const bannedOrMissing = channel.status === 'banned';
+    const title = bannedOrMissing ? FALLBACK_TITLE : `${channel.name} · Social Plus Channel`;
+    const desc = bannedOrMissing
+      ? FALLBACK_DESC
+      : (channel.bio && channel.bio.trim()
+          ? channel.bio.trim().slice(0, 200)
+          : `Join ${channel.name} on Social Plus${channel.subscriber_count ? ` — ${channel.subscriber_count} subscribers` : ''}. Predict, post & earn.`);
+    const image = bannedOrMissing ? DEFAULT_OG_IMAGE : resolveOgImage(channel.avatar);
+    return previewResponse(buildPreviewHtml(title, desc, image, appUrl));
+  }
+
+  if (group) {
+    // Private groups: still show a preview (someone with the direct invite
+    // link is meant to be able to preview it before joining) — is_private
+    // only hides it from search/discovery, not from someone holding the link.
+    const title = `${group.name} · Social Plus Group`;
+    const desc = `Join ${group.name} on Social Plus.`;
+    const image = resolveOgImage(group.avatar);
+    return previewResponse(buildPreviewHtml(title, desc, image, appUrl));
+  }
+
+  // Neither a channel nor a group matched this username — could be a stale
+  // link, or genuinely not a channel/group path at all. Fall back to the
+  // generic site card rather than guessing further.
+  return previewResponse(buildPreviewHtml(FALLBACK_TITLE, FALLBACK_DESC, DEFAULT_OG_IMAGE, SITE_ORIGIN));
+}
+
+function buildLegacyPreview(channel, appUrl) {
+  const bannedOrMissing = !channel || channel.status === 'banned';
+  const title = bannedOrMissing ? FALLBACK_TITLE : `${channel.name} · Social Plus Channel`;
+  const desc = bannedOrMissing
+    ? FALLBACK_DESC
+    : (channel.bio && channel.bio.trim()
+        ? channel.bio.trim().slice(0, 200)
+        : `Join ${channel.name} on Social Plus${channel.subscriber_count ? ` — ${channel.subscriber_count} subscribers` : ''}. Predict, post & earn.`);
+  const image = bannedOrMissing ? DEFAULT_OG_IMAGE : resolveOgImage(channel.avatar);
+  return buildPreviewHtml(title, desc, image, appUrl);
+}
+
+// NOTE: index.html's _channelPostShareUrl() and _groupInviteUrl() now
+// generate plain path links (plusng.com.ng/<username>) with NO /api/ prefix
+// — see the vercel.json rewrite rule below, which is what routes those
+// paths through this function instead. The old ?channel= query-string form
+// is still handled above (see "Legacy query-string form") so links shared
+// before this update keep working indefinitely.
