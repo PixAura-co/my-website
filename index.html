@@ -9257,22 +9257,36 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
   </div>`;
 }
 
-// Renders one compact card ad at the top of the comment thread overlay.
+// Renders one compact card ad at the top of the comment thread overlay,
+// and a second one at the bottom when the thread is short (<=15 comments)
+// — a long thread already has the top ad and burying a second one at the
+// bottom of 100+ comments would rarely get seen anyway, so it's only
+// worth the extra slot on short threads where the bottom is reachable.
 // Uses the 'comment_thread' placement so it's independent from feed/channel
 // placements — an ad only shows here if the admin explicitly ticks it on
 // for that placement. Skipped for Premium subscribers and the owner (same
 // _amIAdFree() gate as everywhere else, including the preview-as-user toggle).
-async function _renderCommentOverlayAd(container) {
+async function _renderCommentOverlayAd(container, commentCount) {
   if (!container || _amIAdFree()) return;
   try {
     const ads = await _loadAdsConfig();
     const cardAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'card' && (a.placements||[]).indexOf('comment_thread') !== -1; });
     if (!cardAds.length) return;
-    const ad = cardAds[Math.floor(Math.random() * cardAds.length)];
-    const tmp = document.createElement('div');
-    tmp.innerHTML = _buildAdCardCompact(ad);
-    container.insertBefore(tmp.firstElementChild, container.firstChild);
-    if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
+    const topAd = cardAds[Math.floor(Math.random() * cardAds.length)];
+    const topTmp = document.createElement('div');
+    topTmp.innerHTML = _buildAdCardCompact(topAd);
+    container.insertBefore(topTmp.firstElementChild, container.firstChild);
+    if (!_adSessionSeen.has(topAd.id)) { _adSessionSeen.add(topAd.id); _bumpAdStat(topAd.id, 'impressions'); }
+
+    if ((commentCount || 0) <= 15) {
+      // Pick again (may land on the same ad, or a different one if more than
+      // one is configured for this placement — either is fine here).
+      const bottomAd = cardAds[Math.floor(Math.random() * cardAds.length)];
+      const bottomTmp = document.createElement('div');
+      bottomTmp.innerHTML = _buildAdCardCompact(bottomAd);
+      container.appendChild(bottomTmp.firstElementChild);
+      if (!_adSessionSeen.has(bottomAd.id)) { _adSessionSeen.add(bottomAd.id); _bumpAdStat(bottomAd.id, 'impressions'); }
+    }
   } catch(e) { /* comments still render fine without the ad */ }
 }
 // Renders one compact card ad inserted near the top of the Messages page's
@@ -9382,7 +9396,7 @@ function openCommentOverlay(postId) {
     ? post.comments.map(c => _buildCommentItemHTML(c, _overlayPostId)).join('')
     : `<div id="commentSheetEmpty">No comments yet. Be the first!</div>`;
   body.innerHTML = commentsList;
-  _renderCommentOverlayAd(body);
+  _renderCommentOverlayAd(body, cnt);
 
   // Render input
   const commentsEnabled = !post || post.commentsOn !== false;
@@ -10169,11 +10183,11 @@ function _doRenderPosts() {
     // "For You" — Kris's broadcast posts (predictions/updates/app updates) + every public profile post
     filtered = filtered.concat(window._forYouProfilePosts || []);
     filtered.sort((a, b) => new Date(b.time||0) - new Date(a.time||0));
-  } else if (activeFilter === 'prediction') filtered = filtered.filter(p => p.type === 'prediction' || !p.type || p.type === 'app_update');
-  else if (activeFilter === 'general') filtered = filtered.filter(p => p.type === 'general' || p.type === 'app_update');
+  } else if (activeFilter === 'prediction') filtered = filtered.filter(p => p.type === 'prediction' || !p.type || p.type === 'app_update' || p.type === 'feature_announcement');
+  else if (activeFilter === 'general') filtered = filtered.filter(p => p.type === 'general' || p.type === 'app_update' || p.type === 'feature_announcement');
   else if (['won','lost','pending'].includes(activeFilter)) {
     filtered = filtered.filter(p => {
-      if (p.type === 'general' || p.type === 'app_update') return false;
+      if (p.type === 'general' || p.type === 'app_update' || p.type === 'feature_announcement') return false;
       return (p.result || 'pending') === activeFilter;
     });
   } else if (activeFilter === 'following') {
@@ -10524,6 +10538,26 @@ function renderPost(post) {
   const isGeneral = post.type === 'general';
 
   // ── APP UPDATE CARD (Social Plus bot posts) ──
+  if (post.type === 'feature_announcement') {
+    const ownerDelFa = (isOwner) ? `<button class="post-social-btn" onclick="event.stopPropagation();deletePost('${post.id}')" style="color:rgba(255,69,58,0.7);margin-left:auto;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg> Delete</button>` : '';
+    return `<div class="post-card update" id="post-${post.id}" onclick="openFeatureAnnouncementOverlay('${post.id}')" style="cursor:pointer;border:1.5px solid rgba(245,197,24,0.35);background:linear-gradient(160deg,rgba(245,197,24,0.06) 0%,rgba(0,0,0,0) 60%);">
+      <div class="post-head">
+        <div class="post-identity">
+          <div class="post-avi" style="background:rgba(245,197,24,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);border:1.5px solid rgba(245,197,24,0.3);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div>
+            <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
+            <div class="post-time" style="display:inline-flex;align-items:center;gap:4px;">✨ What's New · ${timeAgo}</div>
+          </div>
+        </div>
+        ${ownerDelFa}
+      </div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-top:12px;letter-spacing:-0.2px;">${escHtml(post.title || '')}</div>
+      <div style="font-size:13.5px;color:var(--text2);line-height:1.55;margin-top:6px;">${escHtml(post.body || '')}</div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--gold);">See what changed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>`;
+  }
   if (post.type === 'app_update') {
     const ownerDelete2 = (isOwner) ? `<button class="del-btn" onclick="deletePost('${post.id}')">Delete</button>` : '';
     const dlBtn = post.downloadLink
@@ -17739,9 +17773,17 @@ async function signupStepNext() {
   } catch(e) {}
 })();
 
-// ── Deep-link capture: ?post=<id> or ?group=<id>&invite=1 ──
-// Captured immediately at load, same pattern as referral capture above,
-// then consumed once the feed/session is ready (see _consumePendingDeepLink).
+// ── Deep-link capture: ?post=<id> or ?group=<id>&invite=1, OR the new
+// path-based short links: /<username> and /<username>/broadcast/<postId>.
+//
+// IMPORTANT (server config): path-based links only work if Netlify/EdgeOne
+// is set up to rewrite ALL unmatched paths back to /index.html (a standard
+// single-page-app rewrite rule) instead of returning a 404 — since this is
+// one static HTML file, there's no real route at /plusupdates on disk.
+//   Netlify: add a _redirects file (or netlify.toml) with:
+//     /*    /index.html   200
+//   EdgeOne: add a rewrite rule matching /* -> /index.html (200, not 30x)
+// Without that rewrite, path-based links 404 before this JS ever runs.
 (function _captureDeepLinkFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -17753,6 +17795,27 @@ async function signupStepNext() {
     // channel may be a real channel id OR an invite_code (see _channelPostShareUrl) —
     // resolved against both in _consumePendingDeepLink().
     if (channel) window._pendingDeepLinkChannel = { ref: channel, post: post || null };
+
+    // Path-based form: /<username> or /<username>/broadcast/<postId>.
+    // Reserved first-segments (api, settings, etc.) are skipped so this
+    // never intercepts a real in-app route or the edge function path.
+    // NOTE: duplicates the reserved list defined later (near _channelSlug)
+    // rather than referencing it — this IIFE runs at parse time before
+    // that `const` is reached, and touching an unreached `const` here
+    // would throw (temporal dead zone), not safely read as undefined.
+    // Keep both lists in sync if reserved words ever change.
+    const RESERVED_EARLY = ['api','admin','www','app','settings','profile','login','signup','explore','wallet','premium','support','help','about','terms','privacy','broadcast','post','channel','group','user','users','static','assets'];
+    if (!post && !group && !channel) {
+      const segs = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+      if (segs.length >= 1 && !RESERVED_EARLY.includes(segs[0].toLowerCase())) {
+        const uname = segs[0].toLowerCase();
+        const isBroadcast = segs[1] === 'broadcast' && segs[2];
+        // Ambiguous on purpose: could be a channel OR a group username
+        // (they share one namespace). _resolveUsernamePathOnLoad() checks
+        // both tables once Supabase is reachable, after boot.
+        window._pendingDeepLinkUsername = { username: uname, broadcastId: isBroadcast ? segs[2] : null };
+      }
+    }
   } catch(e) {}
 })();
 
@@ -17829,9 +17892,14 @@ async function _openChannelByRefFromLink(ref, postId) {
     let c = await getChannel(ref); // fast path: ref is the real id
     if (!c) {
       // Fall back to invite_code lookup — this is the path actual shared
-      // links take, since _channelPostShareUrl prefers invite_code.
+      // links took before usernames existed.
       const rows = await SB.query('channels', `?invite_code=eq.${encodeURIComponent(ref)}&select=*`).catch(() => []);
       c = rows && rows[0];
+    }
+    if (!c) {
+      // Fall back to username lookup — the current default for shared links.
+      const rows2 = await SB.query('channels', `?username=eq.${encodeURIComponent(ref)}&select=*`).catch(() => []);
+      c = rows2 && rows2[0];
     }
     if (!c) { showToast('That channel link is no longer valid.', 'error'); return; }
     if (_channelIsBanned(c)) { showToast('This channel is unavailable.', 'error'); return; }
@@ -17866,11 +17934,44 @@ async function _openChannelByRefFromLink(ref, postId) {
   } catch(e) { console.warn('[deep link] channel open failed:', e); }
 }
 
+// Resolves the new path-based short links (/<username> or
+// /<username>/broadcast/<postId>) against BOTH channels and group_chats,
+// since they share one namespace. Channels are checked first — broadcasts
+// only make sense for channels, so a broadcastId present is a strong hint,
+// but a plain /<username> could still be either.
+async function _resolveUsernamePathOnLoad(username, broadcastId) {
+  try {
+    const chanRows = await SB.query('channels', `?username=eq.${encodeURIComponent(username)}&select=*`).catch(() => []);
+    const channel = chanRows && chanRows[0];
+    if (channel) {
+      if (_channelIsBanned(channel)) { showToast('This channel is unavailable.', 'error'); return; }
+      await _openChannelByRefFromLink(channel.username, broadcastId);
+      return;
+    }
+    const groupRows = await SB.query('group_chats', `?username=eq.${encodeURIComponent(username)}&select=*`).catch(() => []);
+    const group = groupRows && groupRows[0];
+    if (group) {
+      // Route through the same invite-join flow as the legacy ?group=&invite=1
+      // link so joining behavior (adds current user as a member) is identical.
+      window._pendingDeepLinkGroup = { id: group.id, invite: true };
+      if (typeof _consumePendingDeepLink === 'function') _consumePendingDeepLink();
+      return;
+    }
+    showToast('That link is no longer valid.', 'error');
+  } catch(e) { console.warn('[deep link] username path resolve failed:', e); }
+}
+
 // Consumes ?post=/?group= once the app is ready (called after loadPosts() on boot).
 // If not logged in, the link is preserved and the login prompt happens first —
 // the group-join branch simply requires currentUser so it no-ops safely until then.
 async function _consumePendingDeepLink() {
   try {
+    const uname = window._pendingDeepLinkUsername;
+    if (uname && uname.username) {
+      window._pendingDeepLinkUsername = null;
+      setTimeout(function() { _resolveUsernamePathOnLoad(uname.username, uname.broadcastId); }, 400);
+      return;
+    }
     const ch = window._pendingDeepLinkChannel;
     if (ch && ch.ref) {
       window._pendingDeepLinkChannel = null;
@@ -21949,7 +22050,12 @@ closeChat = function() {
       <div onclick="_selectChannelAvatar(this,'__gradient__linear-gradient(135deg,#F5C518,#ff9500)')" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#F5C518,#ff9500);border:2px solid rgba(255,255,255,0.1);cursor:pointer;flex-shrink:0;"></div>
       <div onclick="_selectChannelAvatar(this,'__gradient__linear-gradient(135deg,#5e5ce6,#c4b5fd)')" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#5e5ce6,#c4b5fd);border:2px solid rgba(255,255,255,0.1);cursor:pointer;flex-shrink:0;"></div>
     </div>
-    <input id="channelNameInput" placeholder="Channel name (e.g. Match Day Tips)" maxlength="50" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;"/>
+    <input id="channelNameInput" placeholder="Channel name (e.g. Match Day Tips)" maxlength="50" oninput="_autofillChannelUsernameFromName()" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;"/>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+      <span style="font-size:13.5px;color:var(--text3);flex-shrink:0;">plusng.com.ng/</span>
+      <input id="channelUsernameInput" placeholder="username" maxlength="30" style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px;font-family:var(--font);font-size:13.5px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+    </div>
+    <div id="channelUsernameCreateStatus" style="font-size:11px;margin:0 0 10px 2px;min-height:14px;"></div>
     <textarea id="channelBioInput" placeholder="What's this channel about?" maxlength="200" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;resize:none;min-height:70px;margin-bottom:14px;-webkit-appearance:none;"></textarea>
 
     <button onclick="submitCreateChannel()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">Create Channel</button>
@@ -24129,13 +24235,15 @@ function renderAlertsPage() {
 <!-- Stub panels (kept for backward-compat with internal JS) -->
 <div id="notifOverlay" style="display:none!important;"></div>
 <div id="msgsOverlay" style="display:none!important;"></div>
-<div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow-y:auto;">
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.92);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);border-bottom:1px solid var(--glass-border);">
+<div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="subpage-topbar" style="position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeSuggestedOverlay()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
     <div style="font-size:17px;font-weight:700;">People</div>
     <div style="width:60px"></div>
   </div>
-  <div style="padding:14px 16px 100px;max-width:620px;margin:0 auto;width:100%;" id="suggestedOverlayList"></div>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(64px + env(safe-area-inset-top,0px)) 16px 100px;box-sizing:border-box;">
+    <div style="max-width:620px;margin:0 auto;width:100%;" id="suggestedOverlayList"></div>
+  </div>
 </div>
 
 
@@ -25435,8 +25543,13 @@ window.handlePumApkSelect = async function(input) {
       <button onclick="closeCreateGroupSheet()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>
     <div style="padding:16px 20px 20px;">
-      <input id="gcNameInput" placeholder="Group name…" maxlength="40"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:14px;-webkit-appearance:none;"/>
+      <input id="gcNameInput" placeholder="Group name…" maxlength="40" oninput="_autofillGroupUsernameFromName()"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;"/>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+        <span style="font-size:13.5px;color:var(--text3);flex-shrink:0;">plusng.com.ng/</span>
+        <input id="gcUsernameInput" placeholder="username" maxlength="30" style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:13.5px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+      </div>
+      <div id="gcUsernameStatus" style="font-size:11px;margin:0 0 12px 2px;min-height:14px;"></div>
       <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Add Members</div>
       <div id="gcMemberList" style="max-height:220px;overflow-y:auto;margin-bottom:16px;"></div>
       <button onclick="submitCreateGroupChat()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-0.2px;">Create Group</button>
@@ -25570,6 +25683,65 @@ function _channelSlug(name) {
   return (name || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'channel';
 }
 
+// ── Username system (channels + groups) ──────────────────────
+// Usernames are lowercase, no spaces/symbols, 3–30 chars. Stored in
+// `channels.username` / `groups.username`, unique per-table (see
+// username-migration.sql). Reserved words block collisions with real
+// in-app routes so /api/link-resolve never has to guess.
+const _RESERVED_USERNAMES = ['api','admin','www','app','settings','profile','login','signup','explore','wallet','premium','support','help','about','terms','privacy','broadcast','post','channel','group','user','users','static','assets'];
+function _normalizeUsername(raw) {
+  return (raw || '').toLowerCase().trim().replace(/[^a-z0-9_]/g, '').slice(0, 30);
+}
+function _usernameLooksValid(u) {
+  return !!u && u.length >= 3 && u.length <= 30 && !_RESERVED_USERNAMES.includes(u);
+}
+// Checks a candidate username against BOTH channels and groups (they share
+// one namespace on the link surface, e.g. plusng.com.ng/<username>), and
+// optionally excludes the record currently being edited (self-collision).
+async function _isUsernameTaken(username, opts) {
+  const excludeChannelId = opts && opts.excludeChannelId;
+  const excludeGroupId = opts && opts.excludeGroupId;
+  try {
+    const [chanRows, groupRows] = await Promise.all([
+      SB.query('channels', `?username=eq.${encodeURIComponent(username)}&select=id`).catch(() => []),
+      SB.query('group_chats', `?username=eq.${encodeURIComponent(username)}&select=id`).catch(() => [])
+    ]);
+    const chanHit = (chanRows || []).find(r => r.id !== excludeChannelId);
+    const groupHit = (groupRows || []).find(r => r.id !== excludeGroupId);
+    return !!(chanHit || groupHit);
+  } catch(e) { return false; } // fail open — Supabase unique index is the real backstop
+}
+// Live availability check wired to an input's oninput. Debounced.
+let _usernameCheckTimer = null;
+function _bindUsernameAvailabilityCheck(inputId, statusId, opts) {
+  const input = document.getElementById(inputId);
+  const status = document.getElementById(statusId);
+  if (!input || !status) return;
+  // Distinguish a real keystroke from the programmatic autofill dispatch in
+  // _autofillChannelUsernameFromName() — only real typing should stop the
+  // autofill-until-touched behavior.
+  input.addEventListener('keydown', function() { input._userEdited = true; });
+  input.addEventListener('input', function() {
+    const raw = _normalizeUsername(input.value);
+    if (input.value !== raw) input.value = raw;
+    clearTimeout(_usernameCheckTimer);
+    if (!raw) { status.textContent = ''; return; }
+    if (!_usernameLooksValid(raw)) {
+      status.textContent = raw.length < 3 ? 'Too short (min 3 characters)' : 'That username isn\'t available';
+      status.style.color = '#ff453a';
+      return;
+    }
+    status.textContent = 'Checking…';
+    status.style.color = 'var(--text3)';
+    _usernameCheckTimer = setTimeout(async function() {
+      const taken = await _isUsernameTaken(raw, opts || {});
+      if (input.value !== raw) return; // user kept typing
+      status.textContent = taken ? 'Already taken' : '✓ Available';
+      status.style.color = taken ? '#ff453a' : '#34c759';
+    }, 400);
+  });
+}
+
 async function _myOwnedChannels() {
   const key = _myUsernameKey();
   if (!key) return [];
@@ -25640,7 +25812,7 @@ async function getAllChannels() {
     const list = rows || [];
     // Auto-lift any expired statuses found in this batch (fire-and-forget)
     list.forEach(function(c) { if (c.status !== 'active' && c.status_until && new Date(c.status_until).getTime() <= Date.now()) _autoLiftExpiredChannelStatus(c); });
-    const active = list.filter(function(c) { return !_channelIsBanned(c); }); // banned channels never appear in discovery
+    const active = list.filter(function(c) { return !_channelIsBanned(c) && !c.is_private; }); // banned or private channels never appear in discovery
     // Premium-owned channels rank above free ones: prestige > premium > pro > free,
     // then by subscriber_count within each tier group.
     return _sortChannelsByTierThenSubs(active);
@@ -25733,14 +25905,20 @@ async function _bumpChannelSubscriberCount(channelId, delta) {
   } catch(e) {}
 }
 
-async function createChannel(name, bio, avatar) {
+async function createChannel(name, bio, avatar, username) {
   const key = _myUsernameKey();
   if (!key) { openUserModal(); return null; }
   const gate = await _canCreateChannel();
   if (!gate.ok) { showToast(gate.reason, 'error'); return null; }
   const id = 'chan_' + _channelSlug(name) + '_' + Date.now();
+  // Fall back to the auto-slug (old behavior) if no username was supplied
+  // or it didn't pass validation — createChannel always succeeds with SOME
+  // username so every channel is reachable at a short link from day one.
+  let finalUsername = _normalizeUsername(username || _channelSlug(name));
+  if (!_usernameLooksValid(finalUsername)) finalUsername = _channelSlug(name) + Date.now().toString(36).slice(-4);
+  if (await _isUsernameTaken(finalUsername)) finalUsername = finalUsername + Date.now().toString(36).slice(-4);
   const channel = {
-    id, name: (name || '').trim(), handle: _channelSlug(name),
+    id, name: (name || '').trim(), handle: _channelSlug(name), username: finalUsername, is_private: false,
     bio: (bio || '').trim(), avatar: avatar || '__emoji__📢',
     owner: key, created_at: new Date().toISOString(),
     linked_group_id: null, status: 'active', status_until: null,
@@ -26864,7 +27042,7 @@ async function _renderChannelPostCard(p, channel, preloaded) {
   const myReactions = new Set(reactions.filter(r => r.username === myKey).map(r => r.emoji));
   const counts = {};
   reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji]||0) + 1; });
-  const shareUrl = _channelPostShareUrl(channel.id, p.id, channel.invite_code);
+  const shareUrl = _channelPostShareUrl(channel.id, p.id, channel.invite_code, channel);
 
   const reactionTray = CHANNEL_REACTION_EMOJIS.map(e => {
     const active = myReactions.has(e);
@@ -27149,25 +27327,30 @@ function _showManualCopySheet(text, label) {
   sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
   document.body.appendChild(sheet);
 }
-function _channelPostShareUrl(channelId, postId, inviteCode) {
-  // Prefer a dedicated invite_code over the raw channel id when available —
-  // this is what makes "reset invite link" possible: rotating the code
-  // invalidates old links without touching the channel's real id (which
-  // every post/subscriber/reaction row still references).
+function _channelPostShareUrl(channelId, postId, inviteCode, channelObj) {
+  // Username-based short links (plusng.com.ng/<username> or
+  // plusng.com.ng/<username>/broadcast/<n>) when the channel has a
+  // username set. Falls back to the old /api/channel-preview?channel=
+  // query-string form for channels that haven't been assigned one yet
+  // (shouldn't happen after the migration backfill, but stay safe).
   //
-  // Routed through /api/channel-preview (a Vercel Edge Function) instead of
-  // straight to the app root. Reason: this is a single static HTML file, so
-  // link-preview crawlers (Telegram, WhatsApp, etc.) always saw the same
-  // generic "Social Plus — Predict, Post & Earn" card no matter which
-  // channel was shared — they don't run JS, so they can't resolve which
-  // channel a #channel=/?channel= param points to. The edge function looks
-  // up the real channel and returns a channel-specific preview card to
-  // crawlers, then 302-redirects real visitors straight into the app using
-  // this same ?channel=&post= format that _captureDeepLinkFromUrl() parses,
-  // so in-app behavior is identical to before.
+  // IMPORTANT: /api/channel-preview (Vercel Edge Function) still needs to
+  // be updated server-side to recognize path-based URLs and generate the
+  // right link-preview card for crawlers (Telegram/WhatsApp) — see the
+  // NOTE further down at _resolveUsernamePathOnLoad(). Until that edge
+  // function is patched, path-based links will open correctly in-app via
+  // _resolveUsernamePathOnLoad() below, but crawlers may show a generic
+  // preview card instead of a channel-specific one.
+  const uname = channelObj && channelObj.username;
+  if (uname) {
+    const base = window.location.origin + '/' + encodeURIComponent(uname);
+    return postId ? base + '/broadcast/' + encodeURIComponent(postId) : base;
+  }
+  // Legacy fallback (no username yet — old links keep working forever
+  // since _captureDeepLinkFromUrl() still parses ?channel=&post=)
   const ref = inviteCode || channelId;
-  const base = window.location.origin + '/api/channel-preview';
-  return base + '?channel=' + encodeURIComponent(ref) + (postId ? '&post=' + encodeURIComponent(postId) : '');
+  const legacyBase = window.location.origin + '/api/channel-preview';
+  return legacyBase + '?channel=' + encodeURIComponent(ref) + (postId ? '&post=' + encodeURIComponent(postId) : '');
 }
 
 // Old entry point ("Browse All Channels" button, etc.) — now just opens the
@@ -27470,7 +27653,23 @@ async function openCreateChannelSheet() {
   document.querySelectorAll('#channelAvatarPicker > div').forEach(d => d.style.borderColor = 'rgba(255,255,255,0.1)');
   const firstEmoji = sheet.querySelector('#channelAvatarPicker > div');
   if (firstEmoji) firstEmoji.style.borderColor = 'var(--gold)';
+  const unameInput = document.getElementById('channelUsernameInput');
+  if (unameInput) { unameInput.value = ''; unameInput._autofilled = true; }
+  const unameStatus = document.getElementById('channelUsernameCreateStatus');
+  if (unameStatus) unameStatus.textContent = '';
+  _bindUsernameAvailabilityCheck('channelUsernameInput', 'channelUsernameCreateStatus');
   sheet.style.display = 'flex';
+}
+// Suggests a username as the person types the channel name, but only until
+// they've actually typed into the username field themselves — matches the
+// familiar "auto-slug until touched" pattern from most sign-up forms.
+function _autofillChannelUsernameFromName() {
+  const nameInput = document.getElementById('channelNameInput');
+  const unameInput = document.getElementById('channelUsernameInput');
+  if (!nameInput || !unameInput) return;
+  if (unameInput._userEdited) return;
+  unameInput.value = _normalizeUsername((nameInput.value || '').replace(/\s+/g, ''));
+  unameInput.dispatchEvent(new Event('input'));
 }
 function closeCreateChannelSheet() {
   const sheet = document.getElementById('createChannelSheet');
@@ -27479,15 +27678,22 @@ function closeCreateChannelSheet() {
 async function submitCreateChannel() {
   const nameInput = document.getElementById('channelNameInput');
   const bioInput = document.getElementById('channelBioInput');
+  const usernameInput = document.getElementById('channelUsernameInput');
   const name = (nameInput && nameInput.value.trim()) || '';
   if (!name) { showToast('Please enter a channel name.', 'error'); return; }
   const gate = await _canCreateChannel();
   if (!gate.ok) { showToast(gate.reason, 'error'); return; }
+  const rawUsername = _normalizeUsername(usernameInput ? usernameInput.value : '');
+  if (rawUsername && !_usernameLooksValid(rawUsername)) {
+    showToast(rawUsername.length < 3 ? 'Username must be at least 3 characters.' : 'That username can\'t be used.', 'error');
+    return;
+  }
+  if (rawUsername && await _isUsernameTaken(rawUsername)) { showToast('That username is already taken.', 'error'); return; }
   const btn = document.querySelector('#createChannelSheet button[onclick="submitCreateChannel()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
   let channel = null;
   try {
-    channel = await createChannel(name, bioInput ? bioInput.value : '', _selectedChannelAvatar);
+    channel = await createChannel(name, bioInput ? bioInput.value : '', _selectedChannelAvatar, rawUsername);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Create Channel'; }
   }
@@ -27495,6 +27701,7 @@ async function submitCreateChannel() {
   closeCreateChannelSheet();
   if (nameInput) nameInput.value = '';
   if (bioInput) bioInput.value = '';
+  if (usernameInput) { usernameInput.value = ''; usernameInput._userEdited = false; }
   showToast('Channel created!', 'success');
   renderExploreChannels();
   // If the Channels list page is open underneath (create sheet is opened
@@ -27615,7 +27822,7 @@ async function openChannelDetail(channelId) {
           : `<button onclick="_quickSubscribeToggle('${escHtml(c.id)}',this)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};">${isSub ? '✓ Subscribed' : 'Subscribe'}</button>`}
         ${isSub ? _channelMuteBtnHtml(c.id, isMuted) : ''}
         ${canManage ? `<button onclick="openChannelSubscriberManager('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Subscribers</button>` : ''}
-        <button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>
+        <button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code, c))}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>
         ${canManage && !isOwnerOfChannel ? `<button onclick="openChannelManage('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Channel Settings</button>` : ''}
         ${isOwner ? `<button onclick="openSuperAdmin();setSuperAdminTab('channels');setTimeout(()=>_saOpenChannelModeration('${escHtml(c.id)}'),150)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,69,58,0.3);background:rgba(255,69,58,0.08);color:#ff453a;">Moderate</button>` : ''}
       </div>
@@ -28057,12 +28264,32 @@ async function openChannelManage(channelId) {
         ? `💰 Monetization is <b style="color:var(--gold);">active</b> for this channel. Social Plus pays out Plus Coins daily at 12:00 AM based on your channel's performance.`
         : `Social Plus will monetize your channel once it meets requirements — you'll then earn Plus Coins daily at 12:00 AM based on performance. This is activated by the Social Plus team.`}
     </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Channel Username</div>
+    <div style="margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13.5px;color:var(--text3);flex-shrink:0;">plusng.com.ng/</span>
+        <input id="channelManageUsernameInput" value="${escHtml(c.username || '')}" placeholder="username" maxlength="30" ${isOwnerForManage ? '' : 'disabled'} style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+      </div>
+      <div id="channelManageUsernameStatus" style="font-size:11px;margin-top:5px;min-height:14px;"></div>
+      ${isOwnerForManage ? `<button onclick="_saveChannelUsernameUI('${escHtml(c.id)}')" style="margin-top:8px;font-family:var(--font);font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;">Save Username</button>` : ''}
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Privacy</div>
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:14px;padding:12px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">Private Channel</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.5;">Hidden from search and suggestions. The only way in is the invite link.</div>
+      </div>
+      ${isOwnerForManage
+        ? `<button id="channelManagePrivateToggle" onclick="_toggleChannelPrivacyUI('${escHtml(c.id)}',this)" aria-pressed="${c.is_private ? 'true' : 'false'}" style="flex-shrink:0;width:46px;height:26px;border-radius:100px;border:none;cursor:pointer;background:${c.is_private ? 'var(--gold)' : 'rgba(255,255,255,0.14)'};position:relative;transition:background 0.15s;"><span style="position:absolute;top:3px;left:${c.is_private ? '23px' : '3px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.15s;"></span></button>`
+        : `<span style="font-size:11px;font-weight:700;color:${c.is_private ? 'var(--gold)' : 'var(--text3)'};">${c.is_private ? 'On' : 'Off'}</span>`}
+    </div>
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Invite Link</div>
     <div style="display:flex;gap:8px;">
-      <input readonly value="${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:12px;color:var(--text2);"/>
-      <button onclick="_copyChannelInviteLink('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code))}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;white-space:nowrap;">Copy</button>
+      <input readonly value="${escHtml(_channelPostShareUrl(c.id, null, c.invite_code, c))}" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:12px;color:var(--text2);"/>
+      <button onclick="_copyChannelInviteLink('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code, c))}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;white-space:nowrap;">Copy</button>
       ${isOwnerForManage ? `<button onclick="_resetChannelInviteLinkUI('${escHtml(c.id)}')" title="Reset invite link — old links stop working" style="width:38px;height:38px;flex-shrink:0;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>` : ''}
     </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5;">Old links with this channel's ID still work — nothing you've already shared will break.</div>
 
     <div style="font-size:12px;font-weight:600;color:#ff453a;margin:22px 0 8px;">Danger Zone</div>
     <button onclick="_clearAllBroadcastsUI('${escHtml(c.id)}')" style="width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;">
@@ -28080,6 +28307,7 @@ async function openChannelManage(channelId) {
     </button>` : ''}
   `;
   sheet.style.display = 'flex';
+  if (isOwnerForManage) _bindUsernameAvailabilityCheck('channelManageUsernameInput', 'channelManageUsernameStatus', { excludeChannelId: c.id });
   const tbMng = document.getElementById('appTabbar');
   if (tbMng) tbMng.classList.add('tabbar-hidden');
   if (!linkedGroup) {
@@ -28114,6 +28342,50 @@ async function _saveChannelBioUI(channelId) {
   if (!ok) return;
   showToast('Description updated.', 'success');
   if (_currentChannelId === channelId && typeof openChannelDetail === 'function') openChannelDetail(channelId);
+}
+
+async function _saveChannelUsernameUI(channelId) {
+  const input = document.getElementById('channelManageUsernameInput');
+  const status = document.getElementById('channelManageUsernameStatus');
+  const raw = _normalizeUsername(input ? input.value : '');
+  if (!_usernameLooksValid(raw)) {
+    showToast(raw.length < 3 ? 'Username must be at least 3 characters.' : 'That username can\'t be used.', 'error');
+    return;
+  }
+  const taken = await _isUsernameTaken(raw, { excludeChannelId: channelId });
+  if (taken) { showToast('That username is already taken.', 'error'); return; }
+  try {
+    await SB.update('channels', { username: raw }, `id=eq.${encodeURIComponent(channelId)}`);
+    _invalidateChannelCache(channelId);
+    showToast('Username updated — old links still work.', 'success');
+    if (status) { status.textContent = ''; }
+    if (_currentChannelId === channelId && typeof openChannelManage === 'function') openChannelManage(channelId);
+  } catch(e) {
+    console.error('[saveChannelUsername] failed:', e);
+    const detail = (e && e.body) ? e.body : (e && e.message) ? e.message : '';
+    if (/unique|duplicate|23505/i.test(detail)) showToast('That username is already taken.', 'error');
+    else if (/column .* does not exist|42703/i.test(detail)) showToast('The channels table needs the username column added — run the migration first.', 'error');
+    else showToast('Could not save username — try again.', 'error');
+  }
+}
+
+async function _toggleChannelPrivacyUI(channelId, btn) {
+  const c = await getChannel(channelId);
+  if (!c) return;
+  const next = !c.is_private;
+  if (btn) { btn.disabled = true; }
+  try {
+    await SB.update('channels', { is_private: next }, `id=eq.${encodeURIComponent(channelId)}`);
+    _invalidateChannelCache(channelId);
+    showToast(next ? 'Channel is now private — hidden from search and suggestions.' : 'Channel is now public.', 'success');
+    if (_currentChannelId === channelId && typeof openChannelManage === 'function') openChannelManage(channelId);
+  } catch(e) {
+    console.error('[toggleChannelPrivacy] failed:', e);
+    const detail = (e && e.body) ? e.body : (e && e.message) ? e.message : '';
+    if (/column .* does not exist|42703/i.test(detail)) showToast('The channels table needs the is_private column added — run the migration first.', 'error');
+    else showToast('Could not update privacy setting — try again.', 'error');
+    if (btn) { btn.disabled = false; }
+  }
 }
 
 // ── Reset invite link ──────────────────────────────────────────────────
@@ -28253,6 +28525,11 @@ async function openCreateGroupChat() {
   var sheet = document.getElementById('createGroupSheet');
   if (!sheet) return;
   sheet.style.display = 'flex';
+  var gcUnameInput = document.getElementById('gcUsernameInput');
+  if (gcUnameInput) { gcUnameInput.value = ''; gcUnameInput._userEdited = false; }
+  var gcUnameStatus = document.getElementById('gcUsernameStatus');
+  if (gcUnameStatus) gcUnameStatus.textContent = '';
+  _bindUsernameAvailabilityCheck('gcUsernameInput', 'gcUsernameStatus');
   var listEl = document.getElementById('gcMemberList');
   listEl.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:6px 0;">Loading…</div>';
   window._gcSelectedMembers = new Set();
@@ -28280,6 +28557,15 @@ async function openCreateGroupChat() {
   }).join('');
 }
 
+function _autofillGroupUsernameFromName() {
+  const nameInput = document.getElementById('gcNameInput');
+  const unameInput = document.getElementById('gcUsernameInput');
+  if (!nameInput || !unameInput) return;
+  if (unameInput._userEdited) return;
+  unameInput.value = _normalizeUsername((nameInput.value || '').replace(/\s+/g, ''));
+  unameInput.dispatchEvent(new Event('input'));
+}
+
 function _gcToggleMember(username, el) {
   if (!window._gcSelectedMembers) window._gcSelectedMembers = new Set();
   if (window._gcSelectedMembers.has(username)) {
@@ -28302,14 +28588,28 @@ function closeCreateGroupSheet() {
 
 async function submitCreateGroupChat() {
   var nameInput = document.getElementById('gcNameInput');
+  var usernameInput = document.getElementById('gcUsernameInput');
   var name = (nameInput && nameInput.value.trim()) || '';
   if (!name) { showToast('Please enter a group name.', 'error'); return; }
   if (!window._gcSelectedMembers || window._gcSelectedMembers.size === 0) { showToast('Add at least one member.', 'error'); return; }
+  var rawUsername = _normalizeUsername(usernameInput ? usernameInput.value : '');
+  if (rawUsername && !_usernameLooksValid(rawUsername)) {
+    showToast(rawUsername.length < 3 ? 'Username must be at least 3 characters.' : 'That username can\'t be used.', 'error');
+    return;
+  }
+  if (rawUsername && await _isUsernameTaken(rawUsername)) { showToast('That username is already taken.', 'error'); return; }
   var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   var members = [myKey, ...Array.from(window._gcSelectedMembers)];
+  // Always land on SOME username so the group is reachable at a short
+  // link immediately — falls back to a slug of the name, same pattern
+  // used for channels in createChannel().
+  var finalGroupUsername = rawUsername || _normalizeUsername(name.replace(/\s+/g, '')) || ('group' + Date.now().toString(36).slice(-6));
+  if (!rawUsername && await _isUsernameTaken(finalGroupUsername)) finalGroupUsername = finalGroupUsername + Date.now().toString(36).slice(-4);
   var group = {
     id: 'grp_' + Date.now(),
     name: name,
+    username: finalGroupUsername,
+    is_private: false,
     members: members,
     messages: [],
     created_by: myKey,
@@ -28319,6 +28619,7 @@ async function submitCreateGroupChat() {
   await _saveGroup(group);
   closeCreateGroupSheet();
   if (nameInput) nameInput.value = '';
+  if (usernameInput) { usernameInput.value = ''; usernameInput._userEdited = false; }
   showToast('Group "' + name + '" created!', 'success');
   var addedMembers = Array.from(window._gcSelectedMembers || []);
   addedMembers.forEach(function(memberKey) {
@@ -28537,6 +28838,47 @@ async function _demoteGroupAdminUI(username) {
 
 // Regenerates the group's shareable invite code, invalidating old links —
 // same pattern as channels' invite-code reset.
+async function _saveGroupUsernameUI(groupId) {
+  var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+  var group = _groupCache[groupId];
+  if (!group) return;
+  if (!_groupIsAdmin(group, myKey)) { showToast('Only a group admin can change the username.', 'error'); return; }
+  var input = document.getElementById('gcMgmtUsernameInput');
+  var raw = _normalizeUsername(input ? input.value : '');
+  if (!_usernameLooksValid(raw)) {
+    showToast(raw.length < 3 ? 'Username must be at least 3 characters.' : 'That username can\'t be used.', 'error');
+    return;
+  }
+  var taken = await _isUsernameTaken(raw, { excludeGroupId: groupId });
+  if (taken) { showToast('That username is already taken.', 'error'); return; }
+  group.username = raw;
+  try {
+    await _saveGroup(group);
+    showToast('Username updated — old links still work.', 'success');
+    openGroupMgmt();
+  } catch(e) {
+    console.error('[saveGroupUsername] failed:', e);
+    showToast('Could not save username — try again.', 'error');
+  }
+}
+
+async function _toggleGroupPrivacyUI(groupId) {
+  var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+  var group = _groupCache[groupId];
+  if (!group) return;
+  if (!_groupIsAdmin(group, myKey)) { showToast('Only a group admin can change this.', 'error'); return; }
+  group.is_private = !group.is_private;
+  try {
+    await _saveGroup(group);
+    showToast(group.is_private ? 'Group is now private — hidden from search and suggestions.' : 'Group is now public.', 'success');
+    openGroupMgmt();
+  } catch(e) {
+    console.error('[toggleGroupPrivacy] failed:', e);
+    group.is_private = !group.is_private; // roll back
+    showToast('Could not update privacy setting — try again.', 'error');
+  }
+}
+
 async function _resetGroupInviteLinkUI(groupId) {
   var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   var group = _groupCache[groupId];
@@ -28549,11 +28891,14 @@ async function _resetGroupInviteLinkUI(groupId) {
   openGroupMgmt();
 }
 function _groupInviteUrl(group) {
-  // IMPORTANT: must match the ?group=<id>&invite=1 format that
-  // _captureDeepLinkFromUrl()/_consumePendingDeepLink() actually parse on
-  // load (see near the top of the file). This used to build a ?joinGroup=
-  // link keyed on invite_code, which nothing ever read — links opened but
-  // silently did nothing.
+  // Username-based short link when the group has one set (plusng.com.ng/<username>)
+  // — resolved by _resolveUsernamePathOnLoad() into the same invite flow as
+  // the legacy query-string link. Falls back to the old ?group=<id>&invite=1
+  // format (still fully supported by _captureDeepLinkFromUrl()) if no
+  // username is set yet.
+  if (group && group.username) {
+    return location.origin + '/' + encodeURIComponent(group.username);
+  }
   var base = location.origin + location.pathname;
   return base + '?group=' + encodeURIComponent(group.id) + '&invite=1';
 }
@@ -28722,14 +29067,36 @@ function openGroupMgmt() {
           : ('<span style="font-size:11px;color:var(--text3);">' + (group.messages_disabled ? 'On' : 'Off') + '</span>'))
     +   '</div>'
 
+    + '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Group Username</div>'
+    + '<div style="margin-bottom:6px;">'
+    +   '<div style="display:flex;align-items:center;gap:8px;">'
+    +     '<span style="font-size:13.5px;color:var(--text3);flex-shrink:0;">plusng.com.ng/</span>'
+    +     '<input id="gcMgmtUsernameInput" value="' + escHtml(group.username || '') + '" placeholder="username" maxlength="30" ' + (isAdmin ? '' : 'disabled') + ' style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;"/>'
+    +   '</div>'
+    +   '<div id="gcMgmtUsernameStatus" style="font-size:11px;margin-top:5px;min-height:14px;"></div>'
+    +   (isAdmin ? '<button onclick="_saveGroupUsernameUI(\''+escHtml(group.id)+'\')" style="margin-top:8px;font-family:var(--font);font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;">Save Username</button>' : '')
+    + '</div>'
+
+    + '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 10px;">Privacy</div>'
+    + '<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:14px;padding:12px;margin-bottom:16px;">'
+    +   '<div style="flex:1;">'
+    +     '<div style="font-size:13px;font-weight:600;color:var(--text);">Private Group</div>'
+    +     '<div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.5;">Hidden from search and suggestions. The only way in is the invite link.</div>'
+    +   '</div>'
+    +   (isAdmin
+        ? '<button id="gcMgmtPrivateToggle" onclick="_toggleGroupPrivacyUI(\''+escHtml(group.id)+'\')" style="flex-shrink:0;width:46px;height:26px;border-radius:100px;border:none;cursor:pointer;background:' + (group.is_private ? 'var(--gold)' : 'rgba(255,255,255,0.14)') + ';position:relative;transition:background 0.15s;"><span style="position:absolute;top:3px;left:' + (group.is_private ? '23px' : '3px') + ';width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.15s;"></span></button>'
+        : '<span style="font-size:11px;font-weight:700;color:' + (group.is_private ? 'var(--gold)' : 'var(--text3)') + ';">' + (group.is_private ? 'On' : 'Off') + '</span>')
+    + '</div>'
+
     + '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Invite</div>'
-    + '<div style="display:flex;gap:8px;margin-bottom:16px;">'
+    + '<div style="display:flex;gap:8px;margin-bottom:6px;">'
     + '<button onclick="copyGroupInviteLink()" style="flex:1;display:flex;align-items:center;gap:10px;text-align:left;padding:12px 14px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.22);color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">'
     +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
     +   '<span style="flex:1;">Copy invite link</span>'
     + '</button>'
     + (isAdmin ? '<button onclick="_resetGroupInviteLinkUI(\''+escHtml(group.id)+'\')" title="Reset invite link — old links stop working" style="width:44px;flex-shrink:0;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>' : '')
     + '</div>'
+    + '<div style="font-size:11px;color:var(--text3);margin-bottom:16px;line-height:1.5;">Old links to this group still work — nothing you\'ve already shared will break.</div>'
 
     + (isAdmin ? '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Add Members</div>'
       + '<div id="gcMgmtAddList" style="max-height:160px;overflow-y:auto;margin-bottom:16px;"></div>'
@@ -28739,6 +29106,7 @@ function openGroupMgmt() {
     + '</div></div>';
 
   sheet.style.display = 'flex';
+  if (isAdmin) _bindUsernameAvailabilityCheck('gcMgmtUsernameInput', 'gcMgmtUsernameStatus', { excludeGroupId: group.id });
 
   if (isAdmin) {
     var addList = document.getElementById('gcMgmtAddList');
@@ -30521,6 +30889,20 @@ setTimeout(function(){ _wireDMMessages(); _startObserver(); }, 600);
     <div id="auHistorySection">
       <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px;">Version History</div>
       <div id="auHistoryList"></div>
+    </div>
+
+    <!-- Feature Announcement: notify everyone about new in-app changes -->
+    <!-- (separate from the APK "App Update" push above — this is for -->
+    <!-- announcing features like the new username/link system, no APK needed) -->
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px;">Feature Announcement</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Posts a card everyone sees in their feed. Tapping it opens a full explainer overlay — no APK involved.</div>
+      <input id="fa-title" placeholder="Headline (e.g. Channel & group usernames are here)" class="c-input" style="margin-bottom:14px;"/>
+      <textarea id="fa-summary" rows="2" placeholder="One-line teaser shown on the feed card…" class="c-textarea c-input" style="margin-bottom:14px;height:56px;"></textarea>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:8px;">Explainer (shown when tapped)</div>
+      <textarea id="fa-body" rows="6" placeholder="Explain what changed, one point per line…" class="c-textarea c-input" style="margin-bottom:14px;height:140px;"></textarea>
+      <button id="fa-push-btn" onclick="doPushFeatureAnnouncement()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#F5C518,#ffe066);border:none;color:#000;cursor:pointer;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(245,197,24,0.35);margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Notify Everyone</button>
+      <div id="fa-err" style="display:none;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--red);margin-top:8px;"></div>
     </div>
 
   </div>
@@ -32520,14 +32902,29 @@ async function _loadAdsConfig(forceRefresh) {
   }
 }
 async function _saveAdsConfig(ads) {
-  _adsCache = ads;
+  // BUGFIX: this used to be a raw single-attempt fetch() with NO r.ok check
+  // and NO retry — it set _adsCache = ads optimistically before the request
+  // even went out, so the admin panel (and Dave's own session, reading from
+  // that cache) looked correct even when the actual Supabase write silently
+  // failed (RLS denial, bad payload, brief network hiccup, etc). Every OTHER
+  // user then loaded the OLD ads_config row from Supabase and saw nothing —
+  // with zero error anywhere. Routed through SB._writeWithRetry so a failed
+  // save now retries and throws, and the caller can tell the admin it didn't
+  // actually save instead of silently lying about it.
   try {
-    await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ key: 'ads_config', value: JSON.stringify(ads) })
-    });
-  } catch(e) { console.warn('[ads] config save failed:', e); }
+    const r = await SB._writeWithRetry(function() {
+      return fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: 'ads_config', value: JSON.stringify(ads) })
+      });
+    }, 'save ads_config');
+    _adsCache = ads; // only cache locally once the write is CONFIRMED to have succeeded
+    return true;
+  } catch(e) {
+    console.error('[ads] config save failed — NOT saved to Supabase:', e);
+    return false;
+  }
 }
 // Fire-and-forget counter bump — a bit of eventual-consistency drift under
 // concurrent users is fine for a lightweight engagement metric, not worth
@@ -32618,27 +33015,37 @@ async function injectAdCards() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
   container.querySelectorAll('.sp-ad-block').forEach(function(el){ el.remove(); });
-  if (_amIAdFree()) return;
-  const ads = await _loadAdsConfig();
-  const feedAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'post' && (a.placements||['feed']).indexOf('feed') !== -1; });
-  if (!feedAds.length) return;
-  const postEls = Array.from(container.querySelectorAll(':scope > .post-card, :scope > .post'));
-  if (!postEls.length) return;
-  const groups = Math.max(1, Math.ceil(postEls.length / 10));
-  for (let g = 0; g < groups; g++) {
-    const start = g * 10;
-    const groupSize = Math.min(10, postEls.length - start);
-    if (groupSize <= 0) continue;
-    const anchorIndex = start + Math.floor(Math.random() * groupSize);
-    const anchor = postEls[anchorIndex];
-    if (!anchor || !anchor.parentNode) continue;
-    const ad = feedAds[Math.floor(Math.random() * feedAds.length)];
-    const tmp = document.createElement('div');
-    tmp.innerHTML = _buildAdPostCard(ad);
-    const wrapper = tmp.firstElementChild;
-    if (anchor.nextSibling) container.insertBefore(wrapper, anchor.nextSibling);
-    else container.appendChild(wrapper);
-    if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
+  try {
+    if (_amIAdFree()) return;
+    const ads = await _loadAdsConfig();
+    const feedAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'post' && (a.placements||['feed']).indexOf('feed') !== -1; });
+    if (!feedAds.length) { console.info('[ads] no enabled feed ads found — ads=', ads); return; }
+    const postEls = Array.from(container.querySelectorAll(':scope > .post-card, :scope > .post'));
+    if (!postEls.length) return;
+    const groups = Math.max(1, Math.ceil(postEls.length / 10));
+    for (let g = 0; g < groups; g++) {
+      const start = g * 10;
+      const groupSize = Math.min(10, postEls.length - start);
+      if (groupSize <= 0) continue;
+      const anchorIndex = start + Math.floor(Math.random() * groupSize);
+      const anchor = postEls[anchorIndex];
+      if (!anchor || !anchor.parentNode) continue;
+      const ad = feedAds[Math.floor(Math.random() * feedAds.length)];
+      const tmp = document.createElement('div');
+      tmp.innerHTML = _buildAdPostCard(ad);
+      const wrapper = tmp.firstElementChild;
+      if (anchor.nextSibling) container.insertBefore(wrapper, anchor.nextSibling);
+      else container.appendChild(wrapper);
+      if (!_adSessionSeen.has(ad.id)) { _adSessionSeen.add(ad.id); _bumpAdStat(ad.id, 'impressions'); }
+    }
+  } catch(e) {
+    // Previously this whole function had no try/catch, so ANY failure here
+    // (a thrown error deep in _amIAdFree, _loadAdsConfig, _buildAdPostCard,
+    // etc.) silently killed ad rendering for that user with zero visible
+    // symptom anywhere — not even a console error, since nothing awaited
+    // this fire-and-forget call at any of its 3 call sites. Logging loudly
+    // here is the fastest way to catch the real cause if it happens again.
+    console.error('[ads] injectAdCards failed:', e);
   }
 }
 // Renders the card-format ad at the top of a channel's broadcast list.
@@ -35455,7 +35862,8 @@ async function _saSaveAd() {
   };
   if (_saEditingAdIndex !== null && _saEditingAdIndex !== undefined) ads[_saEditingAdIndex] = adObj;
   else ads.push(adObj);
-  await _saveAdsConfig(ads);
+  const saveOk = await _saveAdsConfig(ads);
+  if (!saveOk) { showToast('Could not save the ad — check your connection and try again.', 'error'); return; }
   _saCloseAdEditor();
   _saRenderAdsList();
   showToast('Ad saved', 'success');
@@ -35464,7 +35872,8 @@ async function _saDeleteAd() {
   if (_saEditingAdIndex === null || _saEditingAdIndex === undefined) return;
   const ads = await _loadAdsConfig();
   ads.splice(_saEditingAdIndex, 1);
-  await _saveAdsConfig(ads);
+  const saveOk = await _saveAdsConfig(ads);
+  if (!saveOk) { showToast('Could not delete the ad — check your connection and try again.', 'error'); return; }
   _saCloseAdEditor();
   _saRenderAdsList();
   showToast('Ad deleted', 'success');
@@ -36774,6 +37183,88 @@ async function handleAupApkSelect(input) {
     if (progLbl) progLbl.textContent = 'Upload failed: ' + err.message;
     showToast('APK upload failed: ' + err.message, 'error');
   }
+}
+
+// ── Feature Announcement: notify everyone in-feed about a new feature ──
+// Publishes a `feature_announcement` post via the SAME posts-table path
+// every other post uses, so it reaches everyone's feed the normal way —
+// no need to enumerate user accounts or touch notifications table directly.
+// Tapping the card opens a full-screen explainer overlay (see
+// openFeatureAnnouncementOverlay()) instead of a download flow.
+async function doPushFeatureAnnouncement() {
+  const title = (document.getElementById('fa-title') || {}).value?.trim() || '';
+  const summary = (document.getElementById('fa-summary') || {}).value?.trim() || '';
+  const body = (document.getElementById('fa-body') || {}).value?.trim() || '';
+  const errEl = document.getElementById('fa-err');
+  const btn = document.getElementById('fa-push-btn');
+  if (errEl) errEl.style.display = 'none';
+  if (!title || !summary) {
+    if (errEl) { errEl.textContent = 'Headline and teaser are required.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; btn.textContent = 'Publishing…'; }
+  try {
+    const id = 'faann_' + Date.now();
+    await SB.upsert('posts', {
+      id, type: 'feature_announcement',
+      title, body: summary, analysis: body, // `analysis` field reused to carry the full explainer text — no schema change needed
+      comments_on: true, timestamp: new Date().toISOString(),
+      result: 'pending', booking_codes: [], media: []
+    }, 'id');
+    showToast('Announcement posted — everyone will see it in their feed.', 'success');
+    document.getElementById('fa-title').value = '';
+    document.getElementById('fa-summary').value = '';
+    document.getElementById('fa-body').value = '';
+    if (typeof loadPosts === 'function') loadPosts();
+  } catch(e) {
+    console.error('[doPushFeatureAnnouncement] failed:', e);
+    if (errEl) { errEl.textContent = '❌ Failed to publish — check your connection and try again.'; errEl.style.display = 'block'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Notify Everyone'; }
+  }
+}
+
+// Full-screen explainer overlay opened when a feature_announcement card is tapped.
+function openFeatureAnnouncementOverlay(postId) {
+  const post = (typeof posts !== 'undefined') && posts.find(p => String(p.id) === String(postId));
+  if (!post) return;
+  let overlay = document.getElementById('featureAnnounceOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'featureAnnounceOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:20200;background:var(--bg);flex-direction:column;overflow:hidden;';
+    document.body.appendChild(overlay);
+  }
+  // Split the explainer body into lines and render each as a bullet point —
+  // simplest way to keep the admin form free-text while still giving the
+  // overlay a scannable "what's new" list layout.
+  const points = (post.analysis || post.body || '').split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+  const pointsHtml = points.length
+    ? points.map(function(pt) {
+        return `<div style="display:flex;gap:12px;margin-bottom:16px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="flex:1;font-size:14.5px;color:var(--text2);line-height:1.6;padding-top:2px;">${linkify(escHtml(pt))}</div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:14px;color:var(--text3);">${escHtml(post.body || '')}</div>`;
+  overlay.innerHTML = `
+    <div style="position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
+      <div style="width:60px;"></div>
+      <div style="font-size:15px;font-weight:700;">What's New</div>
+      <button onclick="document.getElementById('featureAnnounceOverlay').style.display='none'" style="width:60px;text-align:right;font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">Done</button>
+    </div>
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(70px + env(safe-area-inset-top,0px)) 20px 60px;box-sizing:border-box;">
+      <div style="max-width:560px;margin:0 auto;">
+        <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,rgba(245,197,24,0.2),rgba(245,197,24,0.08));border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div style="font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--text);line-height:1.25;margin-bottom:20px;">${escHtml(post.title || "What's New")}</div>
+        ${pointsHtml}
+      </div>
+    </div>`;
+  overlay.style.display = 'flex';
 }
 
 async function doAupPush() {
