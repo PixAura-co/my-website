@@ -7645,7 +7645,16 @@ async function _fetchRankedPostsPage(pageSize, seenIds) {
   const now = Date.now();
   const scored = pool.map(p => {
     const ageHrs = Math.max(0, (now - new Date(p.timestamp || 0).getTime()) / 3600000);
-    const engagement = (p.views || 0) * 0.02 + (commentCounts[p.id] || 0) * 3;
+    // BUGFIX: engagement used to be uncapped (views*0.02 + comments*3) while
+    // recencyBoost topped out at 48. Any post with ~2,400 views or ~16
+    // comments could score higher than every possible new post, permanently
+    // burying anything freshly posted under a handful of old popular posts
+    // — which is exactly what "feed shows loading then reverts to
+    // yesterday's posts" was: a real fresh fetch every time, just always
+    // losing the ranking to the same stale winners. Capping engagement well
+    // below the recency ceiling means a brand-new post can never be
+    // mathematically un-rankable no matter how much older posts racked up.
+    const engagement = Math.min((p.views || 0) * 0.02 + (commentCounts[p.id] || 0) * 3, 20);
     // simple recency decay so week-old viral posts don't permanently dominate
     const recencyBoost = Math.max(0, 48 - ageHrs);
     return { post: p, score: engagement + recencyBoost, seen: seenIds.has(p.id) };
@@ -7911,25 +7920,30 @@ async function loadPosts() {
       postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
     }
     if (!postsData || !postsData.length) {
-      // Only surface the hard failure UI for a genuine failure (server
-      // reachable but errored, or still unreachable after the retry) or a
-      // confirmed-real "0 rows" from Supabase — not a benign empty pool
-      // sitting behind a slow connection.
-      if (window._lastRankedPoolFailed || (typeof _sbOnline !== 'undefined' && _sbOnline !== false)) {
-        window._lastLoadPostsError = await _diagnoseFeedFailure();
-        // Owner-only — a raw diagnostic string ("Supabase rejected the
-        // query — HTTP 500…") in a toast reads as broken/alarming to a
-        // regular user with no context for what it means. Dave can debug
-        // from the empty-state screen below, which carries the same info
-        // and is also owner-gated.
-        if (isOwner && typeof window._showIsland === 'function') {
-          window._showIsland({ type: 'error', title: 'Feed came back empty', sub: window._lastLoadPostsError, duration: 7000 });
+      // Only surface the hard red diagnostic screen for a GENUINE
+      // connectivity failure — Supabase actually unreachable/timed out, or
+      // it responded with a real HTTP error. "Reachable but 0 rows" (or a
+      // ranking-query bug that returns none while rows exist) is NOT a
+      // failure state from the user's point of view — it should just fall
+      // through to the calm skeleton/empty-state UI in _doRenderPosts, not
+      // an alarming red error screen. This was previously inverted: it
+      // fired the hard-failure screen whenever Supabase WAS reachable,
+      // which is backwards — that's the one case that definitely isn't a
+      // failure.
+      if (window._lastRankedPoolFailed) {
+        // Confirmed network miss during this call — worth double-checking
+        // with a real probe so the diagnostic (if ever shown) is accurate.
+        const _diag = await _diagnoseFeedFailure();
+        const _reallyUnreachable = /Could not reach Supabase|rejected the posts query/.test(_diag);
+        window._lastLoadPostsError = _reallyUnreachable ? _diag : null;
+        if (_reallyUnreachable && isOwner && typeof window._showIsland === 'function') {
+          window._showIsland({ type: 'error', title: 'Feed came back empty', sub: _diag, duration: 7000 });
         }
       } else {
-        // Offline/unreachable and nothing local to show — let the normal
-        // skeleton/empty-state logic in _doRenderPosts handle it instead of
-        // slapping a diagnostic error screen over what's really just "no
-        // connection yet."
+        // Supabase was reachable the whole time — an empty result here is
+        // either a genuinely empty table or a query-side quirk, neither of
+        // which warrants the red "Feed failed to load" screen. Let the
+        // normal skeleton/empty-state logic handle it quietly.
         window._lastLoadPostsError = null;
       }
     } else {
@@ -10234,45 +10248,50 @@ function _doRenderPosts() {
       container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Couldn't load feed</div><div class="empty-sub">Check your connection and try again.</div><button onclick="if(typeof _refreshForYouProfilePosts==='function')_refreshForYouProfilePosts();if(typeof loadPosts==='function')loadPosts();" style="margin-top:14px;font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Retry</button></div>`;
       return;
     }
-    // ── Real diagnostic instead of a generic dead-end — OWNER ONLY ─────
-    // An empty feed is never expected at this platform's current scale —
-    // treat it as a failure to explain, not a normal "check back later"
-    // state. Always shows the real reason (from _diagnoseFeedFailure or a
-    // thrown error), no console access needed — "Copy diagnostic" grabs it.
-    // Regular users get a calm, generic empty state below instead: the red
-    // "Feed failed to load" wording + raw error text/monospace diagnostic
-    // is meant for Dave to debug with, not something a normal user should
-    // see and worry about — it reads as broken/alarming with no context.
-    const _diagOnline = typeof _sbOnline !== 'undefined' ? _sbOnline : 'unknown';
-    const _diagErr = window._lastLoadPostsError || 'Unknown — posts came back empty with no error reported. Tap Reload to re-check.';
-    const _diagCache = (function() { try { return JSON.parse(localStorage.getItem('ka_posts_cache')||'[]').length; } catch(e) { return 'unreadable'; } })();
-    const _diagText = `Social Plus diagnostic\nSupabase reachable: ${_diagOnline}\nWhy the feed is empty: ${_diagErr}\nCached posts: ${_diagCache}\nTime: ${new Date().toISOString()}`;
-    window._lastDiagText = _diagText;
-    // ── Auto-retry with backoff ─────────────────────────────────────────
-    // The failure screen used to just sit there until someone tapped
-    // Reload (which was a full window.location.reload() — slow, and loses
-    // scroll position/any in-progress typing elsewhere on the page). Now
-    // the moment this screen renders, it quietly retries loadPosts() in
-    // the background on its own: 2s, then 5s, then 10s. Most transient
-    // hiccups (a slow cold connection, a momentary Supabase blip) resolve
-    // within one of these and the feed just fills in — nobody has to
-    // notice or tap anything. Capped at 3 attempts so a genuinely broken
-    // backend doesn't retry forever in the background; the manual Reload
-    // button is still there for that case.
-    window._feedAutoRetryCount = (window._feedAutoRetryCount || 0);
-    if (window._feedAutoRetryTimer) { clearTimeout(window._feedAutoRetryTimer); window._feedAutoRetryTimer = null; }
-    if (window._feedAutoRetryCount < 3) {
-      const _retryDelays = [2000, 5000, 10000];
-      const _delay = _retryDelays[window._feedAutoRetryCount];
-      window._feedAutoRetryCount++;
-      window._feedAutoRetryTimer = setTimeout(function() {
-        window._feedAutoRetryTimer = null;
-        if (typeof loadPosts === 'function') loadPosts();
-      }, _delay);
+    // ── Real diagnostic instead of a generic dead-end — OWNER ONLY, AND ──
+    // ── ONLY FOR A GENUINE CONNECTIVITY FAILURE ──────────────────────────
+    // The red "Feed failed to load" screen (with raw diagnostic text) is
+    // reserved for a real, confirmed failure — Supabase unreachable, timed
+    // out, or returned an actual error. window._lastLoadPostsError is only
+    // ever set (non-null) by loadPosts() in that exact case now — a
+    // reachable-but-empty result clears it to null. So if it's null here,
+    // this is NOT a failure (just an empty/still-settling feed) and must
+    // fall through to the calm generic empty state below for everyone,
+    // owner included — no more guessing with a hardcoded "Unknown" message.
+    if (window._lastLoadPostsError) {
+      const _diagOnline = typeof _sbOnline !== 'undefined' ? _sbOnline : 'unknown';
+      const _diagErr = window._lastLoadPostsError;
+      const _diagCache = (function() { try { return JSON.parse(localStorage.getItem('ka_posts_cache')||'[]').length; } catch(e) { return 'unreadable'; } })();
+      const _diagText = `Social Plus diagnostic\nSupabase reachable: ${_diagOnline}\nWhy the feed is empty: ${_diagErr}\nCached posts: ${_diagCache}\nTime: ${new Date().toISOString()}`;
+      window._lastDiagText = _diagText;
+      // ── Auto-retry with backoff ─────────────────────────────────────────
+      // The failure screen used to just sit there until someone tapped
+      // Reload (which was a full window.location.reload() — slow, and loses
+      // scroll position/any in-progress typing elsewhere on the page). Now
+      // the moment this screen renders, it quietly retries loadPosts() in
+      // the background on its own: 2s, then 5s, then 10s. Most transient
+      // hiccups (a slow cold connection, a momentary Supabase blip) resolve
+      // within one of these and the feed just fills in — nobody has to
+      // notice or tap anything. Capped at 3 attempts so a genuinely broken
+      // backend doesn't retry forever in the background; the manual Reload
+      // button is still there for that case.
+      window._feedAutoRetryCount = (window._feedAutoRetryCount || 0);
+      if (window._feedAutoRetryTimer) { clearTimeout(window._feedAutoRetryTimer); window._feedAutoRetryTimer = null; }
+      if (window._feedAutoRetryCount < 3) {
+        const _retryDelays = [2000, 5000, 10000];
+        const _delay = _retryDelays[window._feedAutoRetryCount];
+        window._feedAutoRetryCount++;
+        window._feedAutoRetryTimer = setTimeout(function() {
+          window._feedAutoRetryTimer = null;
+          if (typeof loadPosts === 'function') loadPosts();
+        }, _delay);
+      }
+      if (isOwner) {
+        container.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--red);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Feed failed to load</div><div class="empty-sub" style="color:var(--red);opacity:0.9;font-size:12px;font-family:monospace;word-break:break-word;padding:0 12px;">${escHtml(_diagErr)}</div><div style="margin-top:10px;font-size:11px;color:var(--text3);opacity:0.7;">Supabase reachable: ${_diagOnline} · Cached posts: ${_diagCache}${window._feedAutoRetryTimer ? ' · Retrying automatically…' : ''}</div><div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload Feed</button><button onclick="navigator.clipboard&&navigator.clipboard.writeText(window._lastDiagText||'').then(()=>{if(typeof showToast==='function')showToast('Diagnostic copied','success');});" style="font-family:var(--font);font-size:12px;font-weight:600;padding:10px 18px;border-radius:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text2);cursor:pointer;">Copy diagnostic</button></div></div>`;
+        return;
+      }
     }
-    if (isOwner) {
-      container.innerHTML = `<div class="empty"><div class="empty-icon" style="color:var(--red);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">Feed failed to load</div><div class="empty-sub" style="color:var(--red);opacity:0.9;font-size:12px;font-family:monospace;word-break:break-word;padding:0 12px;">${escHtml(_diagErr)}</div><div style="margin-top:10px;font-size:11px;color:var(--text3);opacity:0.7;">Supabase reachable: ${_diagOnline} · Cached posts: ${_diagCache}${window._feedAutoRetryTimer ? ' · Retrying automatically…' : ''}</div><div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload Feed</button><button onclick="navigator.clipboard&&navigator.clipboard.writeText(window._lastDiagText||'').then(()=>{if(typeof showToast==='function')showToast('Diagnostic copied','success');});" style="font-family:var(--font);font-size:12px;font-weight:600;padding:10px 18px;border-radius:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text2);cursor:pointer;">Copy diagnostic</button></div></div>`;
-    } else {
+    {
       container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></div><div class="empty-title">Nothing here right now</div><div class="empty-sub" style="opacity:0.75;">Check back in a bit, or pull to refresh.</div><div style="margin-top:14px;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload</button></div></div>`;
     }
     return;
@@ -26265,8 +26284,19 @@ async function voteChannelPoll(pollId, optionId) {
     }, 'id');
     return true;
   } catch(e) {
-    console.error('[voteChannelPoll] failed:', e);
-    showToast('Could not submit vote — try again.', 'error');
+    console.error('[voteChannelPoll] failed:', e && (e.status || ''), e && (e.body || e.message || e));
+    // TEMP DEBUG: surface the real Postgres error to the owner instead of
+    // swallowing it into a generic toast — voting has been silently
+    // failing and console.error alone isn't visible without devtools.
+    // Regular users still just get the calm generic message.
+    if (isOwner) {
+      const detail = e && e.isNetworkError
+        ? 'Network error — could not reach Supabase.'
+        : `HTTP ${e && e.status || '?'}: ${(e && e.body) ? e.body.slice(0, 300) : (e && e.message) || 'no details'}`;
+      showToast('Vote failed — ' + detail, 'error');
+    } else {
+      showToast('Could not submit vote — try again.', 'error');
+    }
     return false;
   }
 }
@@ -32446,6 +32476,16 @@ async function _saveWalletTasksConfig(tasks) {
 var _adsCache = null;
 var _adSessionSeen = new Set(); // impression de-dupe for this session only
 
+// BUGFIX: this used to cache ANY result — including a failed fetch or a
+// transient empty response — into _adsCache = [] permanently for the rest
+// of the session. Every ad placement (feed/comment_thread/messages_list)
+// shares this one cache, so a single bad fetch (cold start, momentary
+// network blip, a 5xx) on ANY of them silently killed ads everywhere for
+// that whole session, on any device, with nothing but a console.warn to
+// show for it. Now only a genuinely successful, non-empty response is
+// cached; a failure or unexpected empty result returns [] for that one
+// call WITHOUT poisoning _adsCache, so the next call (next screen, next
+// pull-to-refresh) gets a real retry instead of being stuck forever.
 async function _loadAdsConfig(forceRefresh) {
   if (_adsCache && !forceRefresh) return _adsCache;
   try {
@@ -32455,13 +32495,29 @@ async function _loadAdsConfig(forceRefresh) {
     if (r.ok) {
       const rows = await r.json();
       if (rows && rows[0] && rows[0].value) {
-        _adsCache = JSON.parse(rows[0].value);
-        return _adsCache;
+        const parsed = JSON.parse(rows[0].value);
+        _adsCache = parsed; // cache only on real success
+        window._lastAdsLoadError = null;
+        return parsed;
       }
+      // Row genuinely doesn't exist / has no value yet — this IS a real
+      // "no ads configured" state (e.g. nothing saved yet), safe to cache.
+      _adsCache = [];
+      window._lastAdsLoadError = null;
+      return _adsCache;
     }
-  } catch(e) { console.warn('[ads] config load failed:', e); }
-  _adsCache = [];
-  return _adsCache;
+    // Non-OK HTTP response — don't cache, so the next call retries.
+    let body = '';
+    try { body = await r.text(); } catch(e2) {}
+    window._lastAdsLoadError = `HTTP ${r.status}${body ? ': ' + body.slice(0,200) : ''}`;
+    console.warn('[ads] config load failed:', window._lastAdsLoadError);
+    return [];
+  } catch(e) {
+    // Network error/timeout — don't cache, so the next call retries.
+    window._lastAdsLoadError = (e && e.message) ? e.message : String(e);
+    console.warn('[ads] config load failed:', e);
+    return [];
+  }
 }
 async function _saveAdsConfig(ads) {
   _adsCache = ads;
@@ -35279,6 +35335,7 @@ async function _saOpenAdEditor(index) {
   _syncSelectDisplay('saAdType', 'saAdTypeDisplayLabel');
   _syncSelectDisplay('saAdCtaType', 'saAdCtaTypeDisplayLabel');
   _saAdCtaTypeChanged();
+  _saAdTypeChanged(false); // visual-only on open — don't wipe an existing mismatched placement, just flag it
   document.getElementById('saAdEditorOverlay').style.display = 'flex';
 }
 function _saCloseAdEditor() {
@@ -35290,7 +35347,31 @@ function _saOpenAdTypePicker() {
   _openGenericPicker('Ad Format', opts, sel.value, function(value, label) {
     sel.value = value;
     document.getElementById('saAdTypeDisplayLabel').textContent = label;
+    _saAdTypeChanged(true);
   });
+}
+// Greys out placement checkboxes that the chosen ad type can never
+// actually render in (see _saSaveAd's incompatible-placement check for why
+// this pairing exists). `forceUncheck` is true only when the user actively
+// changes the type dropdown — on initial editor open we still show the
+// mismatch visually (so an existing bad config like the one that started
+// this is obvious at a glance) but don't silently wipe a checkbox the
+// admin hasn't touched yet.
+function _saAdTypeChanged(forceUncheck) {
+  const type = document.getElementById('saAdType').value;
+  const feedRow = document.getElementById('saAdPlaceFeed');
+  const commentRow = document.getElementById('saAdPlaceComment');
+  const messagesRow = document.getElementById('saAdPlaceMessages');
+  if (!feedRow || !commentRow || !messagesRow) return;
+  const setRow = function(input, allowed) {
+    input.disabled = !allowed;
+    if (!allowed && forceUncheck) input.checked = false;
+    const label = input.closest('label');
+    if (label) label.style.opacity = allowed ? '1' : '0.4';
+  };
+  setRow(feedRow, type === 'post');
+  setRow(commentRow, type === 'card');
+  setRow(messagesRow, type === 'card');
 }
 function _saOpenAdCtaTypePicker() {
   const sel = document.getElementById('saAdCtaType');
@@ -35342,6 +35423,26 @@ async function _saSaveAd() {
   if (!title) { showToast('Title is required', 'error'); return; }
   if (!placements.length) { showToast('Pick at least one placement', 'error'); return; }
   if (ctaType === 'url' && ctaLabel && !ctaValue) { showToast('Enter a URL for the button, or clear the button label', 'error'); return; }
+  // BUGFIX: the form let you check ANY placement regardless of the ad's
+  // type, with no enforcement anywhere — 'feed' only ever renders type
+  // 'post' ads (injectAdCards), while 'comment_thread'/'messages_list' only
+  // ever render type 'card' ads (_renderCommentOverlayAd/_renderMessagesListAd).
+  // A card-type ad with "Home feed" checked LOOKED configured correctly —
+  // checkbox ticked, saved fine, no error — but could never actually show
+  // there, and vice versa. Rather than silently dropping the mismatched
+  // placement (which would look like data loss with no explanation), block
+  // the save and say exactly what's wrong and how to fix it.
+  const FEED_ONLY = ['feed'];
+  const CARD_ONLY = ['comment_thread', 'messages_list'];
+  const incompatible = type === 'post'
+    ? placements.filter(p => CARD_ONLY.includes(p))
+    : placements.filter(p => FEED_ONLY.includes(p));
+  if (incompatible.length) {
+    const otherType = type === 'post' ? 'Card' : 'Post';
+    const badLabels = incompatible.map(p => p === 'feed' ? 'Home feed' : p === 'comment_thread' ? 'Comment threads' : 'Messages list').join(', ');
+    showToast(`${badLabels} needs "${otherType}" type ads — this ad is type "${type === 'post' ? 'Post' : 'Card'}", so it can never show there. Uncheck it, or change the type above and save as a separate ad.`, 'error');
+    return;
+  }
   const ads = await _loadAdsConfig();
   const adObj = {
     id: (_saEditingAdIndex !== null && ads[_saEditingAdIndex]) ? ads[_saEditingAdIndex].id : 'ad_' + Date.now(),
