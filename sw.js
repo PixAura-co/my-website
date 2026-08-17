@@ -151,15 +151,37 @@ self.addEventListener('fetch', function(event) {
   // handled above) — just pass through untouched, no SW involvement.
 });
 
+// ── Real Web Push handler ──
+// This is the piece that fires even when the app is fully closed — distinct
+// from the in-app Dynamic Island system (_showPushNotif), which only works
+// while a tab/process is alive. Requires a server to actually send a push
+// using the VAPID private key; this listener just displays whatever arrives.
+self.addEventListener('push', function(event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {
+    data = { title: 'Social Plus', body: event.data ? event.data.text() : '' };
+  }
+  var title = data.title || 'Social Plus';
+  var options = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: data.tag || 'social-plus-push',
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 // Tapping a notification did nothing before — no listener existed at all.
 // Kept from the previous inline SW so notification-tap behavior is unchanged.
 self.addEventListener('notificationclick', function(e) {
   var tag = e.notification.tag;
+  var targetUrl = (e.notification.data && e.notification.data.url) || '/';
   e.notification.close();
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
     for (var i = 0; i < list.length; i++) {
       if ('focus' in list[i]) { list[i].postMessage({ type: 'predict-notif-click', tag: tag }); return list[i].focus(); }
     }
-    if (clients.openWindow) return clients.openWindow('/');
+    if (clients.openWindow) return clients.openWindow(targetUrl);
   }));
 });
