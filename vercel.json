@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/((?!api/|_next/|index\\.html|og-default\\.png|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!api/|_next/|index\\.html|sw\\.js|og-default\\.png|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/api/channel-preview"
     }
   ]
