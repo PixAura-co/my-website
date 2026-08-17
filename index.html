@@ -7413,7 +7413,7 @@ async function _autoMigrate() {
     ['reactions',     { post_id: '__probe__', username: '__probe__', emoji: '__probe__' }, 'post_id,username,emoji'],
     ['follows',       { follower: '__probe__', following: '__probe__' }, 'follower,following'],
     ['notifications', { id: '__probe__', target_user: null, body: null, post_owner: null, post_id: null, time: new Date().toISOString(), read: false }, 'id'],
-    ['messages',      { id: '__probe__', sender: null, receiver: null, messages: [], updated_at: new Date().toISOString() }, 'id'],
+    ['messages',      { chat_key: '__probe__', sender: null, receiver: null, messages: [], participants: [], updated_at: new Date().toISOString() }, 'chat_key'],
     ['profile_posts', { id: '__probe__', username: null, body: null, media: [], visibility: 'public', pp_comments: [], likes: [], timestamp: new Date().toISOString() }, 'id'],
     ['group_chats',   { id: '__probe__', name: null, members: [], messages: [], created_by: null, avatar: '👥', created_at: new Date().toISOString() }, 'id'],
     ['premium_users', { username: '__probe__', tier: 'pro', subscribed_at: new Date().toISOString(), expires_at: new Date().toISOString(), is_trial: false }, 'username'],
