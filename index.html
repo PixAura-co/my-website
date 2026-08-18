@@ -4941,12 +4941,12 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
         <button onclick="closeMigrationTool()" style="background:rgba(255,255,255,0.08);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
       </div>
       <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">From (Old — exhausted)</div>
-        <div style="font-size:12px;color:#ccc;">equxjdhkypjmwyfbwncb.supabase.co</div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">From (current live project)</div>
+        <div style="font-size:12px;color:#ccc;" id="migFromLabel">—</div>
       </div>
       <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">To (New — current)</div>
-        <div style="font-size:12px;color:#ccc;">ikdcskzxsivrtysbgixi.supabase.co</div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">To (new destination)</div>
+        <div style="font-size:12px;color:#ccc;" id="migToLabel">—</div>
       </div>
       <div id="migProgressWrap" style="display:none;height:6px;background:#222;border-radius:3px;margin-bottom:14px;overflow:hidden;">
         <div id="migProgressBar" style="height:100%;background:#ff9f0a;width:0%;transition:width 0.3s;border-radius:3px;"></div>
@@ -36832,18 +36832,35 @@ function _legacyRenderPartnerSitesRow() {
 }
 
 // ── MIGRATION TOOL ──
-const MIG_OLD_URL = 'https://equxjdhkypjmwyfbwncb.supabase.co';
-const MIG_OLD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxdXhqZGhreXBqbXd5ZmJ3bmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMDAxNzQsImV4cCI6MjEwMTc3NjE3NH0.JizqS1yPFVPzGLBlwAkirKFqqDDLRUYRk4TLuWjzof8';
+// Source = the project index.html is CURRENTLY pointed at (SB_URL/SB_KEY,
+// declared earlier in this file) — read from there directly instead of a
+// hardcoded old URL/key, so this tool never goes stale again the way it did
+// last time (it was still pointing at the migration-before-last's source).
+const MIG_OLD_URL = SB_URL;
+const MIG_OLD_KEY = SB_KEY;
 // Destination is intentionally separate from the live SB_URL/SB_KEY.
 // Do NOT point SB_URL at the new project until this migration has completed successfully.
-const MIG_NEW_URL = 'https://ikdcskzxsivrtysbgixi.supabase.co';
-const MIG_NEW_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrZGNza3p4c2l2cnR5c2JnaXhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY1MTMsImV4cCI6MjEwMjEyMjUxM30.K42zd1MgWrtR0GoXrxDqBEhwP1cv_e0qg88b-izynL0';
+const MIG_NEW_URL = 'https://izkqysamtrokvemfzkzn.supabase.co';
+const MIG_NEW_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6a3F5c2FtdHJva3ZlbWZ6a3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMzUxMTAsImV4cCI6MjEwMjYxMTExMH0.-751_5Igp-AfHTelVweCu2eHNa4TsaR_dMJskvoD1ZE';
+// FULL table list — every table the app actually reads/writes anywhere in
+// this file, cross-checked against a live schema export. The previous list
+// only had 19 of these 38 and silently skipped every channel table and
+// every wallet table (channels, channel_members, channel_posts,
+// wallet_task_requests, wallet_withdrawals, wallet_transfers, etc.) — that
+// gap is almost certainly what went missing in the last migration. Do not
+// trim this list without checking it against a fresh grep of SB.query /
+// SB.upsert / SB.update / SB.delete calls in this file first.
 const MIG_TABLES = [
   'accounts','posts','comments','follows','reactions',
-  'notifications','profile_posts','messages','group_chats',
+  'notifications','profile_posts','messages','group_chats','group_seen',
   'chat_seen','statuses','app_config','premium_users',
-  'premium_requests','blocked_users','streaks',
-  'user_settings','verif_requests','admin_controls'
+  'premium_requests','premium_transfer_requests','blocked_users','streaks',
+  'user_settings','verif_requests','admin_controls',
+  'channels','channel_members','channel_moderation','channel_poll_votes',
+  'channel_polls','channel_posts','channel_reactions','channel_subscribers',
+  'device_sessions','dm_messages','flagged_accounts','push_subscriptions',
+  'wallet_boosts','wallet_payout_methods','wallet_task_claims',
+  'wallet_task_requests','wallet_transfers','wallet_withdrawals'
 ];
 let migFailedTables = [];
 
@@ -36851,6 +36868,14 @@ function openMigrationTool() {
   if (!isOwner) return;
   document.getElementById('migrationToolOverlay').style.display = 'block';
   document.body.style.overflow = 'hidden';
+  // Show the ACTUAL configured source/destination rather than a hardcoded
+  // label — this is what silently went stale last time (the labels kept
+  // showing an old project ref long after the real MIG_OLD_URL/MIG_NEW_URL
+  // had moved on to a newer pair).
+  const fromEl = document.getElementById('migFromLabel');
+  const toEl = document.getElementById('migToLabel');
+  if (fromEl) fromEl.textContent = MIG_OLD_URL.replace('https://', '').replace('.supabase.co', '');
+  if (toEl) toEl.textContent = MIG_NEW_URL.replace('https://', '').replace('.supabase.co', '');
 }
 function closeMigrationTool() {
   document.getElementById('migrationToolOverlay').style.display = 'none';
