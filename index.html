@@ -107,245 +107,6 @@ img { content-visibility: auto; }
 .res-btn-active { outline: 2px solid currentColor; outline-offset: 1px; opacity: 1 !important; font-weight: 800 !important; }
 @keyframes _livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
 
-/* ═══════════════════════════════════════════════
-   SOCIAL PLUS CUSTOM KEYBOARD
-═══════════════════════════════════════════════ */
-#predictKeyboard {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 999999;
-  background: rgba(24, 24, 30, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 -4px 40px rgba(0,0,0,0.55), 0 -1px 0 rgba(255,255,255,0.06) inset;
-  padding: 10px 4px max(18px, env(safe-area-inset-bottom, 12px));
-  display: none;
-  flex-direction: column;
-  gap: 9px;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.22s ease;
-  --kb-vv-offset: 0px;
-  transform: translateY(100%);
-  opacity: 0;
-}
-#predictKeyboard.kb-visible {
-  display: flex;
-  transform: translateY(0) translateY(var(--kb-vv-offset));
-  opacity: 1;
-}
-body.light-mode #predictKeyboard {
-  background: rgba(209, 213, 219, 0.88);
-  border-top-color: rgba(0,0,0,0.10);
-  box-shadow: 0 -2px 20px rgba(0,0,0,0.18);
-}
-.kb-row {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0 2px;
-}
-/* Base key */
-.kb-key {
-  height: 44px;
-  min-width: 0;
-  flex-basis: 0;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.15);
-  border: none;
-  color: #fff;
-  font-family: var(--font, 'DM Sans', sans-serif);
-  font-size: 17px;
-  font-weight: 400;
-  letter-spacing: -0.2px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  max-width: 40px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.07) inset;
-  transition: background 0.08s, transform 0.08s;
-  position: relative;
-  -webkit-tap-highlight-color: transparent;
-}
-.kb-key:active, .kb-key.kb-pressed {
-  background: rgba(255,255,255,0.32);
-  transform: scale(0.93);
-  box-shadow: 0 0 0 rgba(0,0,0,0.5);
-}
-/* Light mode keys */
-body.light-mode .kb-key {
-  background: #ffffff;
-  color: #111;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.30), 0 0 0 0.5px rgba(0,0,0,0.08) inset;
-}
-body.light-mode .kb-key:active, body.light-mode .kb-key.kb-pressed {
-  background: rgba(255,255,255,0.6);
-}
-/* Modifier keys (shift, backspace, return, etc.) */
-.kb-key-mod {
-  background: rgba(255,255,255,0.07);
-  font-size: 14px;
-  min-width: 0;
-  max-width: none;
-  flex: 1.35;
-}
-body.light-mode .kb-key-mod {
-  background: rgba(180,180,190,0.85);
-  color: #111;
-}
-/* Space bar */
-.kb-key-space {
-  flex: 5;
-  max-width: 220px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.55);
-  letter-spacing: 0.3px;
-  background: rgba(255,255,255,0.15);
-}
-body.light-mode .kb-key-space {
-  color: rgba(0,0,0,0.4);
-  background: #ffffff;
-}
-/* Number/sym toggle */
-.kb-key-123 {
-  max-width: 46px;
-  font-size: 14px;
-  font-weight: 600;
-}
-/* Return key */
-.kb-key-return {
-  max-width: none;
-  flex: 2;
-  font-size: 13px;
-  font-weight: 500;
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.7);
-}
-body.light-mode .kb-key-return {
-  background: rgba(180,180,190,0.85);
-  color: #111;
-}
-/* Active (toggled) modifier */
-.kb-key-mod.kb-active {
-  background: rgba(245,197,24,0.22);
-  color: var(--gold, #F5C518);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 0 0 1px rgba(245,197,24,0.35) inset;
-}
-/* Suggestion bar */
-#kbSuggestions {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  height: 36px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  margin-bottom: 2px;
-  flex-shrink: 0;
-}
-body.light-mode #kbSuggestions {
-  border-bottom-color: rgba(0,0,0,0.07);
-}
-.kb-suggestion {
-  flex: 1;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.75);
-  padding: 4px 6px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.1s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 33%;
-}
-.kb-suggestion:active { background: rgba(255,255,255,0.1); }
-body.light-mode .kb-suggestion { color: rgba(0,0,0,0.75); }
-.kb-suggestion-divider {
-  width: 1px;
-  height: 18px;
-  background: rgba(255,255,255,0.12);
-  flex-shrink: 0;
-}
-body.light-mode .kb-suggestion-divider { background: rgba(0,0,0,0.12); }
-/* Number row small label on top of letter key */
-.kb-key-numhint {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.4);
-  pointer-events: none;
-  line-height: 1;
-}
-body.light-mode .kb-key-numhint { color: rgba(0,0,0,0.3); }
-/* Caps lock indicator dot */
-.kb-caps-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--gold, #F5C518);
-  position: absolute;
-  bottom: 6px; left: 50%; transform: translateX(-50%);
-  display: none;
-}
-.kb-key-mod.kb-caps-on .kb-caps-dot { display: block; }
-/* Keyboard emoji panel */
-#kbEmojiPanel {
-  display: none;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 6px 4px 2px;
-  max-height: 160px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-#kbEmojiPanel.open { display: flex; }
-.kb-emoji-btn {
-  font-size: 24px;
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  background: none; border: none; cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-  flex-shrink: 0;
-}
-.kb-emoji-btn:active { background: rgba(255,255,255,0.12); }
-body.light-mode .kb-emoji-btn:active { background: rgba(0,0,0,0.07); }
-
-/* Belt-and-suspenders: help suppress native IME on all primary targets */
-.modal-input, .profile-input, .profile-bio-input {
-  -webkit-user-modify: read-write-plaintext-only;
-}
-
-.kb-popup {
-  position: fixed;
-  background: #fff;
-  color: #111;
-  border-radius: 10px;
-  font-size: 22px;
-  font-weight: 400;
-  width: 44px; height: 56px;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
-  z-index: 9999999;
-  opacity: 0;
-  transition: opacity 0.08s;
-  transform: translateY(-100%) translateX(-50%);
-  top: 0; left: 0;
-}
-.kb-popup.show { opacity: 1; }
 
 .settings-icon-group { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; overflow: visible; margin-bottom: 12px; }
 .settings-icon-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; transition: background 0.12s; -webkit-tap-highlight-color: transparent; border-radius: 16px; }
@@ -2862,7 +2623,7 @@ body:not(.light-mode) {
   transform: translateX(-50%);
   width: calc(100% - 32px) !important;
   max-width: 420px !important;
-  border-radius: 100px !important;
+  border-radius: 22px !important;
   top: calc(14px + env(safe-area-inset-top, 0px)) !important;
   height: 62px !important;
   min-height: 62px !important;
@@ -4243,10 +4004,10 @@ function showPWAInstallBanner() {
         </div>
       </div>
       <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Username</div>
-      <input class="modal-input" id="usernameInput" placeholder="Name or username" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:12px;"/>
+      <input class="modal-input" id="usernameInput" placeholder="Name or username" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:12px;"/>
       <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Password</div>
       <div class="pw-wrap" style="margin-bottom:6px;">
-        <input class="modal-input" id="userPasswordInput" type="password" placeholder="Your password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"/>
+        <input class="modal-input" id="userPasswordInput" type="password" placeholder="Your password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
         <button class="pw-eye" type="button" onclick="togglePw('userPasswordInput',this)" tabindex="-1">
           <svg id="eye-userPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
@@ -4285,19 +4046,19 @@ function showPWAInstallBanner() {
       <!-- Step 1: Name -->
       <div class="signup-step" id="sstep-1">
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;">First Name</div>
-        <input class="modal-input" id="newDisplayNameInput" placeholder="Your name" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"/>
+        <input class="modal-input" id="newDisplayNameInput" placeholder="Your name" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
         <div class="modal-error" id="signupError1"></div>
       </div>
 
       <!-- Step 2: Username -->
       <div class="signup-step" id="sstep-2" style="display:none;">
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;">Username</div>
-        <input class="modal-input" id="newUsernameInput" placeholder="e.g. john99" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"
+        <input class="modal-input" id="newUsernameInput" placeholder="e.g. john99" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"
           oninput="(function(el){var raw=el.value;var cleaned=raw.replace(/[^a-zA-Z0-9_]/g,'');if(cleaned!==raw){el.value=cleaned;if(typeof _showIsland==='function')_showIsland({type:'error',title:'Invalid character',sub:'Only letters, numbers and _ allowed'});}})(this)"/>
         <div class="modal-error" id="signupError2"></div>
 
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin-top:16px;margin-bottom:6px;">Referral code <span style="text-transform:none;font-weight:500;color:rgba(255,255,255,0.25);">(optional)</span></div>
-        <input class="modal-input" id="newReferralInput" placeholder="Enter a username" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"
+        <input class="modal-input" id="newReferralInput" placeholder="Enter a username" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"
           oninput="(function(el){var raw=el.value;var cleaned=raw.replace(/[^a-zA-Z0-9_]/g,'');if(cleaned!==raw)el.value=cleaned;window._pendingReferralCode=el.value.trim()?el.value.trim().toLowerCase():null;var row=document.getElementById('signupRefRow');if(row)row.style.display='none';})(this)"/>
         <div id="signupRefRow" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);border-radius:12px;font-size:12.5px;color:var(--gold);">
           🎁 Invited by <span id="signupRefName" style="font-weight:700;"></span>
@@ -4307,7 +4068,7 @@ function showPWAInstallBanner() {
       <!-- Step 3: Email -->
       <div class="signup-step" id="sstep-3" style="display:none;">
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;">Email</div>
-        <input class="modal-input" id="newEmailInput" placeholder="your@email.com" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"/>
+        <input class="modal-input" id="newEmailInput" placeholder="your@email.com" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
         <div style="font-size:11.5px;color:rgba(255,255,255,0.32);margin-top:8px;">Used for account recovery only. You can skip this for now.</div>
         <div class="modal-error" id="signupError3"></div>
       </div>
@@ -4316,14 +4077,14 @@ function showPWAInstallBanner() {
       <div class="signup-step" id="sstep-4" style="display:none;">
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;">Password</div>
         <div class="pw-wrap">
-          <input class="modal-input" id="newPasswordInput" type="password" placeholder="Create one" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"/>
+          <input class="modal-input" id="newPasswordInput" type="password" placeholder="Create one" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
           <button class="pw-eye" type="button" onclick="togglePw('newPasswordInput',this)" tabindex="-1">
             <svg id="eye-newPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:0.5px;text-transform:uppercase;margin:12px 0 6px;">Confirm</div>
         <div class="pw-wrap">
-          <input class="modal-input" id="confirmPasswordInput" type="password" placeholder="Repeat it" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:0;"/>
+          <input class="modal-input" id="confirmPasswordInput" type="password" placeholder="Repeat it" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
           <button class="pw-eye" type="button" onclick="togglePw('confirmPasswordInput',this)" tabindex="-1">
             <svg id="eye-confirmPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -4362,10 +4123,10 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   <div class="modal" style="max-width:340px;margin:0;">
     <div style="font-size:19px;font-weight:800;color:rgba(255,255,255,0.94);margin-bottom:4px;">Reset Password</div>
     <div style="font-size:12.5px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Enter your username and recovery code.</div>
-    <input class="modal-input" id="fpUsernameInput" placeholder="Username" maxlength="30" style="margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
-    <input class="modal-input" id="fpRecoveryInput" placeholder="Recovery code" style="margin-bottom:10px;text-transform:uppercase;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+    <input class="modal-input" id="fpUsernameInput" placeholder="Username" maxlength="30" style="margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+    <input class="modal-input" id="fpRecoveryInput" placeholder="Recovery code" style="margin-bottom:10px;text-transform:uppercase;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
     <div class="pw-wrap" style="margin-bottom:6px;">
-      <input class="modal-input" id="fpNewPasswordInput" type="password" placeholder="New password" style="margin-bottom:0;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+      <input class="modal-input" id="fpNewPasswordInput" type="password" placeholder="New password" style="margin-bottom:0;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
       <button class="pw-eye" type="button" onclick="togglePw('fpNewPasswordInput',this)" tabindex="-1">
         <svg id="eye-fpNewPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
@@ -4395,7 +4156,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   </div>
   <div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:6px;">Locked</div>
   <div style="font-size:13px;color:var(--text3);margin-bottom:20px;text-align:center;">Enter your password to continue</div>
-  <input class="modal-input" id="appLockPasswordInput" type="password" placeholder="Password" style="max-width:280px;margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+  <input class="modal-input" id="appLockPasswordInput" type="password" placeholder="Password" style="max-width:280px;margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
   <div class="modal-error" id="appLockError" style="margin-bottom:14px;"></div>
   <button class="modal-btn" style="max-width:280px;" onclick="submitAppLockPassword()">Unlock →</button>
 </div>
@@ -4869,12 +4630,12 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     <div id="personalInfoSection">
       <div class="profile-section">
         <div class="profile-section-label">Bio</div>
-        <textarea class="profile-bio-input" id="profileBioInput" placeholder="Tell people about yourself… (use @ to tag someone)" maxlength="150" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"></textarea>
+        <textarea class="profile-bio-input" id="profileBioInput" placeholder="Tell people about yourself… (use @ to tag someone)" maxlength="150" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea>
         <button class="profile-save-btn" onclick="saveBioOnly()" style="margin-top:10px;width:100%;">Save Bio</button>
       </div>
       <div class="profile-section">
         <div class="profile-section-label">Profile Link</div>
-        <input class="profile-input" id="profileLinkInput" placeholder="https://yoursite.com or any link" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="margin-bottom:10px;"/>
+        <input class="profile-input" id="profileLinkInput" placeholder="https://yoursite.com or any link" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:10px;"/>
         <button class="profile-save-btn" onclick="saveProfileLink()" style="width:100%;">Save Link</button>
       </div>
       <div class="profile-section">
@@ -4887,7 +4648,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
         <div id="loginDetailsSection" style="display:none;margin-top:10px;">
           <div class="profile-field">
             <div class="profile-field-label">Display Name</div>
-            <input class="profile-input" id="profileDisplayNameInput" placeholder="Your display name" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+            <input class="profile-input" id="profileDisplayNameInput" placeholder="Your display name" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
           </div>
           <!-- Save display name only — quick button -->
           <button class="profile-save-btn" onclick="saveDisplayNameOnly()" style="margin-bottom:14px;">Save Display Name</button>
@@ -4895,12 +4656,12 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
           <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:14px;"></div>
           <div class="profile-field" id="profileUsernameField">
             <div class="profile-field-label">Username</div>
-            <input class="profile-input" id="profileUsernameInput" placeholder="Your username" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+            <input class="profile-input" id="profileUsernameInput" placeholder="Your username" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
           </div>
           <div class="profile-field">
             <div class="profile-field-label">New Password (leave blank to keep current)</div>
             <div class="pw-wrap">
-              <input class="profile-input" type="password" id="profilePasswordInput" placeholder="New password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+              <input class="profile-input" type="password" id="profilePasswordInput" placeholder="New password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
               <button class="pw-eye" type="button" onclick="togglePw('profilePasswordInput',this)" tabindex="-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
@@ -4909,7 +4670,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
           <div class="profile-field">
             <div class="profile-field-label">Confirm New Password</div>
             <div class="pw-wrap">
-              <input class="profile-input" type="password" id="profileConfirmInput" placeholder="Confirm new password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none"/>
+              <input class="profile-input" type="password" id="profileConfirmInput" placeholder="Confirm new password" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
               <button class="pw-eye" type="button" onclick="togglePw('profileConfirmInput',this)" tabindex="-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
@@ -5603,28 +5364,6 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
         <div style="flex-shrink:0;">
           <label class="toggle-sw" style="margin:0;">
             <input type="checkbox" id="adaptSystemToggle" onchange="onAdaptSystemToggle(this.checked)"/>
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-      </div>
-    </div>
-    <!-- Keyboard -->
-    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Keyboard</div>
-    <div class="settings-icon-group" style="margin-bottom:20px;">
-      <div class="settings-icon-row" onclick="togglePredictKeyboard()">
-        <div class="settings-icon-circle" style="background:rgba(245,197,24,0.13);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="5" width="20" height="14" rx="3"/>
-            <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M8 13h.01M12 13h.01M16 13h.01M6 13h.01M18 13h.01M8 17h8"/>
-          </svg>
-        </div>
-        <div class="settings-icon-info">
-          <div class="settings-icon-label">Social Plus Keyboard</div>
-          <div class="settings-icon-desc" id="kbDefaultDesc">Used for sign-in &amp; account fields</div>
-        </div>
-        <div id="kbDefaultToggleWrap" style="flex-shrink:0;">
-          <label class="toggle-sw" style="margin:0;">
-            <input type="checkbox" id="kbDefaultToggle" onchange="onKbDefaultToggle(this.checked)"/>
             <span class="toggle-track"></span>
           </label>
         </div>
@@ -6625,6 +6364,7 @@ const LS = {
 
 // ── Supabase connectivity state ── (declared early so debug panel can read it)
 let _sbOnline = true;
+let _sbFailStreak = 0; // consecutive failed connectivity probes/queries — see _checkSB and SB.query
 let _sbChecked = false;
 
 const openCommentIds = new Set(); // track which comment sections are open
@@ -6634,18 +6374,60 @@ async function _checkSB() {
   // Re-check if: never checked, explicitly invalidated, or cached result > 20s old
   const cacheAge = Date.now() - _sbLastCheckedAt;
   if (_sbChecked && cacheAge < 20000) return _sbOnline;
+  let reachable;
   try {
     const r = await Promise.race([
       fetch(`${SB_URL}/rest/v1/posts?limit=1`, { headers: SB.headers }),
       new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 5000))
     ]);
-    const wasOffline = !_sbOnline;
-    _sbOnline = r && (r.ok || r.status === 406); // 406 = no rows = still reachable
-    if (wasOffline && _sbOnline) { _cache['all_accounts'] = null; }
-  } catch(e) { _sbOnline = false; }
+    reachable = r && (r.ok || r.status === 406); // 406 = no rows = still reachable
+  } catch(e) { reachable = false; }
+  const wasOffline = !_sbOnline;
+  if (reachable) {
+    _sbFailStreak = 0;
+    _sbOnline = true;
+    if (wasOffline) { _cache['all_accounts'] = null; }
+  } else {
+    // One slow/failed probe is common on an ordinary connection under real-
+    // world conditions (a single dropped packet, a cold Wi-Fi handoff) and
+    // isn't actually "bad connection" — it was flipping _sbOnline and firing
+    // the banner on nearly every 20s recheck, then immediately clearing it
+    // again on the next successful call, which read as constant popping.
+    // Require 2 consecutive failures before treating this as a real outage.
+    _sbFailStreak = (_sbFailStreak || 0) + 1;
+    if (_sbFailStreak >= 2) _sbOnline = false;
+  }
   _sbChecked = true;
   _sbLastCheckedAt = Date.now();
+  _syncConnectionBanner();
   return _sbOnline;
+}
+
+// ── Connection banner ─────────────────────────────────────────────────
+// navigator.onLine only fires for a HARD disconnect (airplane mode, wifi
+// off) — it stays `true` on a bad/flaky connection where requests are
+// timing out or failing, which is the more common real-world case and
+// previously left the app just silently hanging with no explanation.
+// This mirrors _sbOnline (already updated by every query/write path in
+// SB, including timeouts and repeated failures) into the same persistent
+// Dynamic Island used for the hard-offline case, so ANY detected
+// connectivity trouble — slow, flaky, or fully down — surfaces the same
+// clear "no connection" banner instead of the app just seeming frozen.
+//
+// _connBannerShown only flips (and only then do we touch the UI) on a
+// genuine change of state — not on every call — so a normal successful
+// request right after a normal successful request is a silent no-op here,
+// instead of re-showing/re-hiding a toast on every single query.
+let _connBannerShown = false;
+function _syncConnectionBanner() {
+  if (typeof window._showIsland !== 'function') return;
+  if (!_sbOnline && !_connBannerShown) {
+    _connBannerShown = true;
+    window._showIsland({ type: 'offline', title: 'Connection trouble', sub: 'Some actions may not save — retrying…', duration: 0, stackKey: 'conn-status' });
+  } else if (_sbOnline && _connBannerShown) {
+    _connBannerShown = false;
+    window._showIsland({ type: 'network', title: 'Back online', sub: 'Connected', duration: 2800, stackKey: 'conn-status' });
+  }
 }
 
 const SB = {
@@ -6691,7 +6473,17 @@ const SB = {
         } catch(e) {}
       }
       return data;
-    } catch(e) { _sbOnline = false; return LS.query(table, params); }
+    } catch(e) {
+      // One stalled/failed individual query (this table's fetch specifically,
+      // separate from the general _checkSB probe above) shouldn't alone flip
+      // the whole app to "offline" and pop the banner — that was firing far
+      // too often on ordinary network variance. Route it through the same
+      // fail-streak counter as _checkSB so a single blip is absorbed
+      // silently and only a real pattern of failures surfaces anything.
+      _sbFailStreak = (_sbFailStreak || 0) + 1;
+      if (_sbFailStreak >= 2) { _sbOnline = false; _syncConnectionBanner(); }
+      return LS.query(table, params);
+    }
   },
   // ── Write retry helper ──────────────────────────────────────────────
   // Writes (upsert/update/delete) must never silently diverge into
@@ -6711,6 +6503,8 @@ const SB = {
         const r = await doFetch();
         if (r.ok) {
           _sbOnline = true;
+          _sbFailStreak = 0;
+          _syncConnectionBanner();
           return r;
         }
         sawHttpError = true;
@@ -6742,7 +6536,8 @@ const SB = {
     // made one bad write (e.g. a missing DB constraint) cascade into every
     // other action on the page falsely showing a connection error too.
     if (sawNetworkFailure && !sawHttpError) {
-      _sbOnline = false; _sbChecked = false; // force a fresh connectivity check next time
+      _sbOnline = false; _sbChecked = false; _sbFailStreak = 2; // treat as confirmed — already retried 3x
+      _syncConnectionBanner();
     }
     throw lastErr || new Error(`${label} failed`);
   },
@@ -10033,7 +9828,7 @@ async function selfBoostProfilePostLikes(postId) {
     + '<div style="width:38px;height:38px;border-radius:11px;background:rgba(167,139,250,0.13);border:1px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="#a78bfa" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>'
     + '<div><div style="font-size:15px;font-weight:800;color:#fff;">Boost Post Likes</div>'
     + '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + remaining + ' of ' + MAX_BOOST + ' boosts remaining' + (isSelfPremium ? ' ★' : '') + '</div></div></div>'
-    + '<input id="_selfBplCount" type="number" min="1" max="' + remaining + '" value="' + Math.min(20, remaining) + '" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>'
+    + '<input id="_selfBplCount" type="number" min="1" max="' + remaining + '" value="' + Math.min(20, remaining) + '" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>'
     + '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:18px;">' + (isSelfPremium ? 'Premium subscribers' : 'Verified users') + ' can boost up to ' + MAX_BOOST + ' likes per post.' + (isSelfPremium ? '' : ' Upgrade to Premium for more!') + '</div>'
     + '<button onclick="_applySelfBpl(\'' + postId + '\',' + remaining + ')" style="width:100%;font-family:var(--font);font-size:14px;font-weight:700;padding:13px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:none;color:#fff;cursor:pointer;margin-bottom:8px;">❤️ Boost Likes</button>'
     + '<button onclick="document.getElementById(\'_selfBplModal\').remove()" style="width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45);cursor:pointer;">Cancel</button></div>';
@@ -10104,7 +9899,7 @@ async function openBoostProfileLikesPanel() {
     + '<select id="_bplUser" style="display:none;">' + opts + '</select>'
     + '<div id="_bplUserDisplay" onclick="_bplOpenUserPicker()" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><span id="_bplUserDisplayLabel"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg></div>'
     + '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Likes to Add per Post</div>'
-    + '<input id="_bplCount" type="number" min="1" max="500" value="20" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:20px;"/>'
+    + '<input id="_bplCount" type="number" min="1" max="500" value="20" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:20px;"/>'
     + '<button onclick="_applyBPL()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#ff3b30,#c0392b);border:none;color:#fff;cursor:pointer;margin-bottom:10px;">❤️ Boost Likes</button>'
     + '<button onclick="document.getElementById(\'_bplModal\').remove()" style="width:100%;font-family:var(--font);font-size:14px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);cursor:pointer;">Cancel</button></div>';
   document.body.appendChild(modal);
@@ -11301,7 +11096,7 @@ function renderVerifRequestSection() {
   }
   el.innerHTML = `
     <div class="profile-section-label" style="margin-top:4px;">Request Verification Badge</div>
-    <textarea id="verifReasonInput" class="profile-bio-input" placeholder="Why should your account be verified? (optional)" maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="none" style="min-height:54px;margin-bottom:8px;"></textarea>
+    <textarea id="verifReasonInput" class="profile-bio-input" placeholder="Why should your account be verified? (optional)" maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="min-height:54px;margin-bottom:8px;"></textarea>
     <button class="profile-save-btn" style="background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.4);color:var(--gold);" onclick="submitVerifRequest()">
       Request Verification ✓
     </button>`;
@@ -12838,7 +12633,7 @@ async function boostProfilePostLikes(userKey, postId) {
     modal.innerHTML = '<div style="width:100%;max-width:320px;background:rgba(22,18,34,0.98);border:1px solid rgba(167,139,250,0.3);border-top-color:rgba(167,139,250,0.55);border-radius:24px;padding:24px 20px;box-shadow:0 24px 60px rgba(0,0,0,0.7);">'
       + '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boost Likes</div>'
       + '<div style="font-size:12px;color:var(--text3);margin-bottom:16px;">How many likes to add? (max 200)</div>'
-      + '<input id="_boostCountInput" type="number" min="1" max="200" value="20" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;margin-bottom:14px;"/>'
+      + '<input id="_boostCountInput" type="number" min="1" max="200" value="20" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;margin-bottom:14px;"/>'
       + '<button id="_boostOkBtn" style="width:100%;font-family:var(--font);font-size:14px;font-weight:700;padding:13px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:none;color:#fff;cursor:pointer;margin-bottom:8px;">OK</button>'
       + '<button id="_boostCancelBtn" style="width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:13px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--text2);cursor:pointer;">Cancel</button>'
       + '</div>';
@@ -17365,20 +17160,22 @@ window.setUserUI = function() {
 };
 })();
 (function() {
-  var _netWasOffline = !navigator.onLine;
+  // Unified with _syncConnectionBanner (see SB definition above) via the
+  // shared _connBannerShown flag and 'conn-status' stackKey — otherwise a
+  // hard offline event and a flaky-connection detection could each think
+  // they're the first to show the banner and stack two of them, or one
+  // could clear its own flag while the other's is still set, leaving a
+  // stale banner on screen after reconnecting.
   function _onOffline() {
-    _netWasOffline = true;
-    if (typeof _showIsland === 'function') {
-      _showIsland({ type: 'offline', title: 'No connection', sub: 'Check your network', duration: 0 });
-    }
+    _sbOnline = false;
+    if (typeof _syncConnectionBanner === 'function') _syncConnectionBanner();
   }
   function _onOnline() {
-    if (_netWasOffline) {
-      _netWasOffline = false;
-      if (typeof _showIsland === 'function') {
-        _showIsland({ type: 'network', title: 'Back online', sub: 'Connected', duration: 2800 });
-      }
-    }
+    // A hard "online" event just means the OS reports a network interface —
+    // it doesn't guarantee Supabase itself is reachable, so let the next
+    // _checkSB() / query / write confirm that rather than clearing the
+    // banner optimistically here.
+    if (typeof _checkSB === 'function') _checkSB();
   }
   window.addEventListener('offline', _onOffline);
   window.addEventListener('online', _onOnline);
@@ -20011,13 +19808,6 @@ function openAppearancePage() {
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   if (window._kaPushBack) window._kaPushBack();
-  // Sync keyboard toggle state
-  const tog = document.getElementById('kbDefaultToggle');
-  const desc = document.getElementById('kbDefaultDesc');
-  if (tog) tog.checked = !!window._kbDefault;
-  if (desc) desc.textContent = window._kbDefault
-    ? 'Used everywhere in the app'
-    : 'Used for sign-in & account fields';
   // Sync adapt system toggle
   const adaptTog = document.getElementById('adaptSystemToggle');
   const adaptDesc = document.getElementById('adaptSystemDesc');
@@ -20037,18 +19827,6 @@ function closeAppearancePage() {
   const overlay = document.getElementById('appearanceOverlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
-}
-function togglePredictKeyboard() {
-  const tog = document.getElementById('kbDefaultToggle');
-  if (tog) { tog.checked = !tog.checked; onKbDefaultToggle(tog.checked); }
-}
-function onKbDefaultToggle(on) {
-  if (window._kbSetDefault) window._kbSetDefault(on);
-  const desc = document.getElementById('kbDefaultDesc');
-  if (desc) desc.textContent = on
-    ? 'Used everywhere in the app'
-    : 'Used for sign-in & account fields';
-  showToast(on ? 'Social Plus Keyboard set as default' : 'Social Plus Keyboard set to auth only', 'success');
 }
 
 // ── Admin: clear all posts / accounts ──
@@ -20774,11 +20552,22 @@ function showVerifiedInfo(e) {
 
 <script>
 // ── User Manager ──
-function openUserManager() {
+async function openUserManager() {
   if (!isOwner) return;
   toggleSettingsPanel();
   document.getElementById('userManagerOverlay').style.display = 'flex';
   _cache['all_accounts'] = null; // force fresh fetch so new users like hardeh appear
+  const list = document.getElementById('userManagerList');
+  if (list) list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);">Loading users…</div>`;
+  // Premium filter chip depends on _premiumTiers, which otherwise only
+  // reflects whatever was cached in localStorage from whenever it last
+  // refreshed — possibly stale or empty this session. Without this, the
+  // Premium chip could silently show "No users found" even when premium
+  // users exist, which looks identical to the filter itself being broken.
+  await Promise.allSettled([
+    _refreshPremiumTiersCache(),
+    (async () => { try { _cache['all_accounts'] = await SB.query('accounts', ''); } catch(e) { /* renderUserManager has its own fallback */ } })()
+  ]);
   renderUserManager();
 }
 function closeUserManager() {
@@ -20818,10 +20607,20 @@ async function renderUserManager() {
   const q = (document.getElementById('userManagerSearch').value || '').toLowerCase().trim();
   // ── Admin gets the RAW account list — no validity filter — so ghost accounts like hadehbis appear ──
   let allAccts;
+  let loadFailed = false;
   try {
     allAccts = await SB.query('accounts', '') || [];
+    if (allAccts.length) _cache['all_accounts'] = allAccts;
   } catch(e) {
     allAccts = _cache['all_accounts'] || [];
+    loadFailed = true;
+  }
+  if (!allAccts.length && loadFailed) {
+    list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);">
+      Couldn't load the user list — check your connection and try again.
+      <div style="margin-top:10px;"><button onclick="renderUserManager()" style="font-family:var(--font);font-size:13px;font-weight:700;padding:8px 18px;border-radius:100px;background:rgba(245,197,24,0.14);border:1px solid rgba(245,197,24,0.35);color:var(--gold);cursor:pointer;">Retry</button></div>
+    </div>`;
+    return;
   }
   // Filter out truly empty rows and built-in system accounts
   const bannedLS = JSON.parse(localStorage.getItem('ka_banned') || '[]');
@@ -31016,9 +30815,9 @@ setTimeout(function(){ _wireDMMessages(); _startObserver(); }, 600);
       <button onclick="closeSmartBoostModal()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">✕</button>
     </div>
     <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Min Views per Post</div>
-    <input id="smartBoostMin" type="number" min="100" max="999" value="300" placeholder="e.g. 300" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>
+    <input id="smartBoostMin" type="number" min="100" max="999" value="300" placeholder="e.g. 300" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>
     <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Max Views per Post <span style="font-weight:400;color:rgba(255,255,255,0.25);">(rare, older posts → up to 1k)</span></div>
-    <input id="smartBoostMax" type="number" min="300" max="1000" value="700" placeholder="e.g. 700" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:6px;"/>
+    <input id="smartBoostMax" type="number" min="300" max="1000" value="700" placeholder="e.g. 700" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:6px;"/>
     <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:20px;">Only boosts posts below the minimum — already-boosted posts are skipped. Older posts (7d+) may get up to 1,000 views. Reactions distributed realistically.</div>
     <button onclick="applySmartBoostAll()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:none;color:#fff;cursor:pointer;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(167,139,250,0.35);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Smart Boost All Posts</button>
     <button onclick="closeSmartBoostModal()" style="width:100%;font-family:var(--font);font-size:14px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);cursor:pointer;">Cancel</button>
@@ -31053,10 +30852,10 @@ setTimeout(function(){ _wireDMMessages(); _startObserver(); }, 600);
     </div>
 
     <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Add Views</div>
-    <input id="boostViewsInput" type="number" min="0" placeholder="e.g. 500" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>
+    <input id="boostViewsInput" type="number" min="0" placeholder="e.g. 500" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:14px;"/>
 
     <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;">Add Reactions</div>
-    <input id="boostReactionsInput" type="number" min="0" placeholder="e.g. 50" inputmode="none" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:20px;"/>
+    <input id="boostReactionsInput" type="number" min="0" placeholder="e.g. 50" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:20px;"/>
 
     <button onclick="applyBoost()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:none;color:#fff;cursor:pointer;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(167,139,250,0.35);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Apply Boost</button>
     <button onclick="removeBoost()" style="width:100%;font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:14px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.28);color:#ff453a;cursor:pointer;margin-bottom:10px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Remove Boost</button>
@@ -40537,827 +40336,6 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
   } else {
     _attachTabLongPress(); _attachInput();
   }
-})();
-</script>
-
-<!-- ═══════════════════════════════════════════════
-     SOCIAL PLUS CUSTOM KEYBOARD
-════════════════════════════════════════════════ -->
-<div id="predictKeyboard" aria-hidden="true">
-  <!-- Emoji panel (hidden until emoji key tapped) -->
-  <div id="kbEmojiPanel">
-    <!-- populated by JS -->
-  </div>
-  <!-- Suggestions bar -->
-  <div id="kbSuggestions">
-    <div class="kb-suggestion" id="kbSug0" onclick="kbInsertSuggestion(0)"></div>
-    <div class="kb-suggestion-divider"></div>
-    <div class="kb-suggestion" id="kbSug1" onclick="kbInsertSuggestion(1)"></div>
-    <div class="kb-suggestion-divider"></div>
-    <div class="kb-suggestion" id="kbSug2" onclick="kbInsertSuggestion(2)"></div>
-  </div>
-  <!-- Row 1 -->
-  <div class="kb-row" id="kbRow1"></div>
-  <!-- Row 2 -->
-  <div class="kb-row" id="kbRow2"></div>
-  <!-- Row 3: shift + letters + backspace -->
-  <div class="kb-row" id="kbRow3"></div>
-  <!-- Row 4: 123 / space / return -->
-  <div class="kb-row" id="kbRow4"></div>
-</div>
-<!-- Key pop preview -->
-<div class="kb-popup" id="kbPopup"></div>
-
-<script>
-(function(){
-'use strict';
-
-// ── State ──────────────────────────────────────
-var KB = {
-  visible: false,
-  target: null,        // active input/textarea
-  mode: 'alpha',       // 'alpha' | 'num' | 'sym' | 'numpad'
-  shifted: false,      // shift on
-  capsLock: false,     // caps lock
-  lastShiftTap: 0,
-  popup: null,
-  popupTimer: null,
-  suggestions: [],
-  wordBank: [
-    'the','and','for','are','but','not','you','all','can','her',
-    'was','one','our','out','day','get','has','him','his','how',
-    'man','new','now','old','see','two','way','who','boy','did',
-    'its','let','put','say','she','too','use','win','yes','yet',
-    'bet','odds','goal','team','match','score','home','away','draw',
-    'pick','vote','lost','won','live','stats','form','tips',
-    'predict','league','cup','final','kick','half','time','full',
-    'prediction','football','soccer','basketball','tennis','cricket'
-  ]
-};
-
-// ── Layout definitions ─────────────────────────
-var ALPHA_ROWS = [
-  ['q','w','e','r','t','y','u','i','o','p'],
-  ['a','s','d','f','g','h','j','k','l'],
-  ['z','x','c','v','b','n','m']
-];
-var NUM_ROWS = [
-  ['1','2','3','4','5','6','7','8','9','0'],
-  ['-','/',':', ';','(',')',  '$','&','@','"'],
-  ['.',',','?','!','\'']
-];
-var SYM_ROWS = [
-  ['[',']','{','}','#','%','^','*','+','='],
-  ['_','\\','|','~','<','>','€','£','¥','·'],
-  ['.',',','?','!','\'']
-];
-
-// ── Build keyboard ─────────────────────────────
-function buildKeyboard() {
-  KB.popup = document.getElementById('kbPopup');
-  renderAlpha();
-  renderRow4();
-}
-
-function clearRows() {
-  ['kbRow1','kbRow2','kbRow3','kbRow4'].forEach(function(id){
-    var el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
-}
-
-function renderAlpha() {
-  clearRows();
-
-  // ── Numpad layout for number/tel inputs ──
-  if (KB.mode === 'numpad') {
-    renderNumpad();
-    return;
-  }
-
-  var rows = KB.mode === 'alpha' ? ALPHA_ROWS
-           : KB.mode === 'num'   ? NUM_ROWS
-           : SYM_ROWS;
-
-  // Row 1
-  var r1 = document.getElementById('kbRow1');
-  rows[0].forEach(function(ch) { r1.appendChild(makeCharKey(ch)); });
-
-  // Row 2 (centered with spacer on alpha)
-  var r2 = document.getElementById('kbRow2');
-  if (KB.mode === 'alpha') {
-    var spacer = document.createElement('div');
-    spacer.style.cssText = 'flex:0.5;min-width:0;';
-    r2.appendChild(spacer);
-    rows[1].forEach(function(ch) { r2.appendChild(makeCharKey(ch)); });
-    r2.appendChild(spacer.cloneNode());
-  } else {
-    rows[1].forEach(function(ch) { r2.appendChild(makeCharKey(ch)); });
-  }
-
-  // Row 3
-  var r3 = document.getElementById('kbRow3');
-  if (KB.mode === 'alpha') {
-    r3.appendChild(makeShiftKey());
-    var sp3 = document.createElement('div'); sp3.style.cssText = 'flex:0.3;';
-    r3.appendChild(sp3);
-    rows[2].forEach(function(ch) { r3.appendChild(makeCharKey(ch)); });
-    r3.appendChild(sp3.cloneNode());
-    r3.appendChild(makeBackspaceKey());
-  } else {
-    r3.appendChild(makeModKey(KB.mode === 'num' ? '#+=': '123', function(){
-      KB.mode = KB.mode === 'num' ? 'sym' : 'num';
-      renderAlpha(); renderRow4();
-    }));
-    var sp3c = document.createElement('div'); sp3c.style.cssText = 'flex:0.2;'; r3.appendChild(sp3c);
-    rows[2].forEach(function(ch) { r3.appendChild(makeCharKey(ch)); });
-    r3.appendChild(sp3c.cloneNode());
-    r3.appendChild(makeBackspaceKey());
-  }
-
-  renderRow4();
-}
-
-// ── Phone-style numpad ──────────────────────────
-function renderNumpad() {
-  // Hide rows 1–3, use row1 as grid container
-  var r1 = document.getElementById('kbRow1');
-  var r2 = document.getElementById('kbRow2');
-  var r3 = document.getElementById('kbRow3');
-  var r4 = document.getElementById('kbRow4');
-  r2.style.display = 'none';
-  r3.style.display = 'none';
-
-  r1.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 4px;';
-  var numpadKeys = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
-  numpadKeys.forEach(function(ch) {
-    var btn = document.createElement('button');
-    btn.className = 'kb-key';
-    btn.style.cssText = 'height:54px;max-width:none;font-size:22px;font-weight:300;border-radius:12px;';
-    btn.textContent = ch;
-    if (ch === '⌫') {
-      btn.innerHTML = '<svg width="22" height="18" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>';
-      btn.className += ' kb-key-mod';
-      var delTimer = null, delInterval = null;
-      btn.addEventListener('pointerdown', function(e){ e.preventDefault(); kbBackspace();
-        delTimer = setTimeout(function(){ delInterval = setInterval(kbBackspace, 80); }, 450); });
-      var stop = function(){ clearTimeout(delTimer); clearInterval(delInterval); };
-      btn.addEventListener('pointerup', stop); btn.addEventListener('pointerleave', stop);
-    } else {
-      btn.addEventListener('pointerdown', function(e){ e.preventDefault(); kbInsert(ch); });
-    }
-    r1.appendChild(btn);
-  });
-
-  // Row 4: just a done button spanning full width
-  r4.innerHTML = '';
-  var doneBtn = document.createElement('button');
-  doneBtn.className = 'kb-key kb-key-mod kb-key-return';
-  doneBtn.style.cssText = 'flex:1;max-width:none;font-size:16px;font-weight:600;height:48px;';
-  doneBtn.textContent = 'Done';
-  doneBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); hideKeyboard(); });
-  r4.appendChild(doneBtn);
-}
-
-function renderRow4() {
-  if (KB.mode === 'numpad') return; // handled in renderNumpad
-  var r4 = document.getElementById('kbRow4');
-  r4.innerHTML = '';
-  // Ensure rows 2/3 are visible (may have been hidden by numpad)
-  var r2 = document.getElementById('kbRow2');
-  var r3 = document.getElementById('kbRow3');
-  if (r2) r2.style.display = '';
-  if (r3) r3.style.display = '';
-  var r1 = document.getElementById('kbRow1');
-  if (r1) r1.style.cssText = '';
-
-  // 123 or ABC toggle
-  var modeBtn = document.createElement('button');
-  modeBtn.className = 'kb-key kb-key-mod kb-key-123';
-  modeBtn.textContent = KB.mode === 'alpha' ? '123' : 'ABC';
-  modeBtn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    KB.mode = KB.mode === 'alpha' ? 'num' : 'alpha';
-    KB.shifted = false;
-    renderAlpha();
-  });
-  r4.appendChild(modeBtn);
-
-  // Emoji button
-  var emojiBtn = document.createElement('button');
-  emojiBtn.className = 'kb-key kb-key-mod';
-  emojiBtn.style.cssText = 'max-width:44px;flex:1;font-size:20px;';
-  emojiBtn.textContent = '😊';
-  emojiBtn.id = 'kbEmojiBtn';
-  emojiBtn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    kbToggleEmoji();
-  });
-  r4.appendChild(emojiBtn);
-
-  // Space
-  var spaceBtn = document.createElement('button');
-  spaceBtn.className = 'kb-key kb-key-space';
-  spaceBtn.textContent = 'space';
-  spaceBtn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    kbInsert(' ');
-    updateSuggestions();
-  });
-  r4.appendChild(spaceBtn);
-
-  // Return
-  var retBtn = document.createElement('button');
-  retBtn.className = 'kb-key kb-key-mod kb-key-return';
-  retBtn.id = 'kbReturnKey';
-  retBtn.textContent = getReturnLabel();
-  retBtn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    var t = KB.target;
-    if (!t) return;
-    if (t.tagName === 'TEXTAREA') {
-      kbInsert('\n');
-      return;
-    }
-    var id = t.id || '';
-    // Signup wizard fields advance the wizard instead of just closing the
-    // keyboard — this also means the keyboard correctly stays open/reopens
-    // for the next step's field rather than getting stuck hidden.
-    var signupFieldIds = ['newDisplayNameInput','newUsernameInput','newReferralInput','newEmailInput','newPasswordInput'];
-    if (signupFieldIds.indexOf(id) !== -1 && typeof signupStepNext === 'function') {
-      signupStepNext();
-      return; // don't hide — signupGoToStep's own focus() will re-trigger showKeyboard for the next field
-    }
-    var evEnter = new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, bubbles:true });
-    t.dispatchEvent(evEnter);
-    var form = t.closest('.modal, .profile-section, [id*="Overlay"]');
-    if (form) {
-      var btn = form.querySelector('.modal-btn, .profile-save-btn, button[onclick*="save"], button[onclick*="join"], button[onclick*="create"]');
-      if (btn) btn.click();
-    }
-    hideKeyboard();
-  });
-  r4.appendChild(retBtn);
-}
-
-function getReturnLabel() {
-  if (!KB.target) return 'return';
-  var tag = KB.target.tagName;
-  if (tag === 'TEXTAREA') return 'return';
-  var id = KB.target.id || '';
-  // Signup wizard fields: name/username/referral/email all advance the
-  // wizard rather than finishing outright, so they should read "next".
-  if (id === 'newDisplayNameInput' || id === 'newUsernameInput' || id === 'newReferralInput' || id === 'newEmailInput') return 'next';
-  if (id === 'newPasswordInput') return 'next'; // advances to confirm-password
-  if (id === 'confirmPasswordInput') return 'done'; // final step — actually submits
-  if (id.includes('Password') || id.includes('password')) return 'done';
-  if (id.includes('username') || id.includes('Username')) return 'next';
-  if (id.includes('email') || id.includes('Email')) return 'next';
-  return 'done';
-}
-
-function makeCharKey(ch) {
-  var btn = document.createElement('button');
-  btn.className = 'kb-key';
-  var display = (KB.shifted || KB.capsLock) && KB.mode === 'alpha' ? ch.toUpperCase() : ch;
-  btn.textContent = display;
-  btn.dataset.char = ch;
-
-  btn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    var out = (KB.shifted || KB.capsLock) && KB.mode === 'alpha' ? ch.toUpperCase() : ch;
-    showPopup(btn, out);
-    kbInsert(out);
-    // Auto un-shift after one char (not caps lock)
-    if (KB.shifted && !KB.capsLock) {
-      KB.shifted = false;
-      // Defer the row rebuild to the next frame instead of doing it
-      // synchronously inside this pointerdown handler. renderAlpha()/clearRows()
-      // wipes and recreates every key button via innerHTML — doing that while
-      // the browser is still mid-dispatch for this exact touch can make the
-      // NEXT pointer event on this same gesture resolve its target against a
-      // detached/replaced node (or the container behind it), which the
-      // document-level "tap outside closes keyboard" listener then reads as a
-      // tap outside #predictKeyboard — hiding the whole keyboard after the
-      // very first letter. Letting the current gesture finish first avoids that.
-      requestAnimationFrame(renderAlpha);
-    } else {
-      updateSuggestions();
-    }
-  });
-  return btn;
-}
-
-function makeShiftKey() {
-  var btn = document.createElement('button');
-  btn.className = 'kb-key kb-key-mod' + (KB.capsLock ? ' kb-caps-on' : '') + (KB.shifted ? ' kb-active' : '');
-  btn.id = 'kbShiftKey';
-  // Shift icon SVG
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + (KB.capsLock ? '#F5C518' : 'currentColor') + '" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 12h5v8h10v-8h5L12 2z"/></svg><span class="kb-caps-dot"></span>';
-  btn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    var now = Date.now();
-    if (now - KB.lastShiftTap < 350) {
-      // Double tap = caps lock
-      KB.capsLock = !KB.capsLock;
-      KB.shifted = KB.capsLock;
-    } else {
-      if (KB.capsLock) {
-        KB.capsLock = false;
-        KB.shifted = false;
-      } else {
-        KB.shifted = !KB.shifted;
-      }
-    }
-    KB.lastShiftTap = now;
-    renderAlpha();
-  });
-  return btn;
-}
-
-function makeBackspaceKey() {
-  var btn = document.createElement('button');
-  btn.className = 'kb-key kb-key-mod';
-  btn.innerHTML = '<svg width="20" height="16" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>';
-
-  // Hold to delete continuously
-  var deleteTimer = null;
-  var deleteInterval = null;
-  btn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    kbBackspace();
-    deleteTimer = setTimeout(function(){
-      deleteInterval = setInterval(kbBackspace, 80);
-    }, 450);
-  });
-  var stopDelete = function(){
-    clearTimeout(deleteTimer);
-    clearInterval(deleteInterval);
-  };
-  btn.addEventListener('pointerup', stopDelete);
-  btn.addEventListener('pointerleave', stopDelete);
-  return btn;
-}
-
-function makeModKey(label, onPress) {
-  var btn = document.createElement('button');
-  btn.className = 'kb-key kb-key-mod';
-  btn.textContent = label;
-  btn.addEventListener('pointerdown', function(e){
-    e.preventDefault();
-    if (onPress) onPress();
-  });
-  return btn;
-}
-
-// ── Input helpers ──────────────────────────────
-function kbInsert(ch) {
-  var t = KB.target;
-  if (!t || !kbTargetIsLive()) { hideKeyboard(); return; }
-  var start = t.selectionStart;
-  var end = t.selectionEnd;
-  var val = t.value || '';
-  t.value = val.slice(0, start) + ch + val.slice(end);
-  var newPos = start + ch.length;
-  t.setSelectionRange(newPos, newPos);
-  // Trigger input event so app state updates
-  t.dispatchEvent(new Event('input', { bubbles: true }));
-  updateSuggestions();
-}
-
-function kbBackspace() {
-  var t = KB.target;
-  if (!t || !kbTargetIsLive()) { hideKeyboard(); return; }
-  var start = t.selectionStart;
-  var end = t.selectionEnd;
-  var val = t.value || '';
-  if (start === end && start > 0) {
-    t.value = val.slice(0, start - 1) + val.slice(end);
-    t.setSelectionRange(start - 1, start - 1);
-  } else if (start !== end) {
-    t.value = val.slice(0, start) + val.slice(end);
-    t.setSelectionRange(start, start);
-  }
-  t.dispatchEvent(new Event('input', { bubbles: true }));
-  updateSuggestions();
-}
-
-// ── Suggestion engine ──────────────────────────
-function updateSuggestions() {
-  var t = KB.target;
-  var sugs = ['', '', ''];
-  if (t) {
-    var val = t.value || '';
-    var pos = t.selectionStart || val.length;
-    var before = val.slice(0, pos);
-    var lastWord = before.split(/\s/).pop().toLowerCase();
-    if (lastWord.length >= 1) {
-      var matches = KB.wordBank.filter(function(w){
-        return w.startsWith(lastWord) && w !== lastWord;
-      }).slice(0, 3);
-      while (matches.length < 3) matches.push('');
-      sugs = matches;
-    }
-  }
-  KB.suggestions = sugs;
-  ['kbSug0','kbSug1','kbSug2'].forEach(function(id, i){
-    var el = document.getElementById(id);
-    if (el) el.textContent = sugs[i] ? '"' + sugs[i] + '"' : '';
-  });
-}
-
-function kbInsertSuggestion(i) {
-  var w = KB.suggestions[i];
-  if (!w) return;
-  var t = KB.target;
-  if (!t || !kbTargetIsLive()) { hideKeyboard(); return; }
-  var val = t.value || '';
-  var pos = t.selectionStart || val.length;
-  var before = val.slice(0, pos);
-  var after = val.slice(pos);
-  var lastWord = before.split(/\s/).pop();
-  var newBefore = before.slice(0, before.length - lastWord.length) + w + ' ';
-  t.value = newBefore + after;
-  var np = newBefore.length;
-  t.setSelectionRange(np, np);
-  t.dispatchEvent(new Event('input', { bubbles: true }));
-  updateSuggestions();
-}
-
-// ── Emoji panel ────────────────────────────────
-var KB_EMOJIS = [
-  '😀','😂','🥰','😍','😎','🤩','😭','😤','😮','🤔',
-  '👍','👎','👏','🙌','🤝','💪','🙏','🫶','❤️','🔥',
-  '⚽','🏆','🎯','🎲','⭐','💯','✅','❌','🟢','🔴',
-  '💰','📊','🎉','🥳','🫡','😅','😬','🤣','😜','🤪',
-  '👀','💀','🫠','🤯','🥹','😇','🤑','😈','👾','🏅',
-  '🎖️','🥇','⚡','💥','🌟','✨','💫','🎊','🎁','🚀'
-];
-var _emojiPanelOpen = false;
-function kbToggleEmoji() {
-  _emojiPanelOpen = !_emojiPanelOpen;
-  var panel = document.getElementById('kbEmojiPanel');
-  var btn = document.getElementById('kbEmojiBtn');
-  if (!panel) return;
-  if (_emojiPanelOpen) {
-    // Populate if empty
-    if (!panel.children.length) {
-      KB_EMOJIS.forEach(function(em) {
-        var b = document.createElement('button');
-        b.className = 'kb-emoji-btn';
-        b.textContent = em;
-        b.addEventListener('pointerdown', function(e){
-          e.preventDefault();
-          kbInsert(em);
-          // Close panel after pick
-          _emojiPanelOpen = false;
-          panel.classList.remove('open');
-          if (btn) btn.textContent = '😊';
-        });
-        panel.appendChild(b);
-      });
-    }
-    panel.classList.add('open');
-    if (btn) btn.textContent = 'ABC';
-    // Hide suggestions bar while emoji open
-    var sug = document.getElementById('kbSuggestions');
-    if (sug) sug.style.display = 'none';
-  } else {
-    panel.classList.remove('open');
-    if (btn) btn.textContent = '😊';
-    var sug = document.getElementById('kbSuggestions');
-    if (sug) sug.style.display = '';
-  }
-}
-
-// ── Pop preview ────────────────────────────────
-function showPopup(btn, ch) {
-  if (!KB.popup) return;
-  var rect = btn.getBoundingClientRect();
-  KB.popup.textContent = ch;
-  KB.popup.style.left = (rect.left + rect.width / 2) + 'px';
-  KB.popup.style.top = (rect.top - 4) + 'px';
-  KB.popup.classList.add('show');
-  clearTimeout(KB.popupTimer);
-  KB.popupTimer = setTimeout(function(){ KB.popup.classList.remove('show'); }, 160);
-}
-
-// ── Show / hide ────────────────────────────────
-function showKeyboard(target) {
-  // Fast path: already showing for this exact target — just resync mode/shift,
-  // don't tear down and rebuild the whole keyboard (avoids visible flicker
-  // that made things feel unstable).
-  var sameTarget = (KB.target === target && KB.visible);
-
-  KB.target = target;
-
-  // Detect numpad mode for number/tel inputs
-  var inputType = (target.type || '').toLowerCase();
-  var isNumeric = inputType === 'number' || inputType === 'tel';
-  var prevMode = KB.mode;
-  KB.mode = isNumeric ? 'numpad' : 'alpha';
-  if (!sameTarget) {
-    KB.shifted = !isNumeric && !KB.capsLock && (target.value || '').length === 0;
-  }
-
-  if (sameTarget && KB.mode === prevMode) {
-    // Nothing structural changed — just make sure suggestions/viewport are fresh
-    updateSuggestions();
-    shiftViewport(true, document.getElementById('predictKeyboard'));
-    return;
-  }
-
-  // Always reset emoji panel state on a fresh show
-  _emojiPanelOpen = false;
-  var panel = document.getElementById('kbEmojiPanel');
-  if (panel) { panel.classList.remove('open'); }
-  var emojiBtn = document.getElementById('kbEmojiBtn');
-  if (emojiBtn) emojiBtn.textContent = '😊';
-  var sug = document.getElementById('kbSuggestions');
-  if (sug) sug.style.display = '';
-
-  buildKeyboard();
-  updateSuggestions();
-  var kb = document.getElementById('predictKeyboard');
-  kb.style.display = 'flex';
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      kb.classList.add('kb-visible');
-    });
-  });
-  KB.visible = true;
-  var retKey = document.getElementById('kbReturnKey');
-  if (retKey) retKey.textContent = getReturnLabel();
-  shiftViewport(true, kb);
-}
-
-// ── Detached-node guard: if KB.target got removed from the DOM by an
-//    app-side re-render mid-typing, drop the stale reference instead of
-//    silently writing into a dead node (which produced "glitchy" input loss). ──
-function kbTargetIsLive() {
-  return KB.target && document.body.contains(KB.target);
-}
-
-function hideKeyboard() {
-  var kb = document.getElementById('predictKeyboard');
-  kb.classList.remove('kb-visible');
-  kb.style.setProperty('--kb-vv-offset', '0px');
-  setTimeout(function(){ kb.style.display = 'none'; }, 280);
-  KB.visible = false;
-  KB.target = null;
-  if (KB._hideTimer) { clearTimeout(KB._hideTimer); KB._hideTimer = null; }
-  shiftViewport(false, kb);
-  // Close emoji panel
-  _emojiPanelOpen = false;
-  var panel = document.getElementById('kbEmojiPanel');
-  if (panel) panel.classList.remove('open');
-  var btn = document.getElementById('kbEmojiBtn');
-  if (btn) btn.textContent = '😊';
-  var sug = document.getElementById('kbSuggestions');
-  if (sug) sug.style.display = '';
-}
-
-// ── Find whichever full-screen fixed overlay is currently open, if any.
-//    These are position:fixed/inset:0 containers, so body padding-bottom
-//    does nothing to them — they need their own height shrunk so their
-//    flex children (composer, messages list) reflow above our keyboard
-//    instead of being covered by it. ──
-function _kbActiveOverlay() {
-  var ids = ['chatOverlay', 'groupChatOverlay'];
-  for (var i = 0; i < ids.length; i++) {
-    var el = document.getElementById(ids[i]);
-    if (!el) continue;
-    var isOpen = el.classList.contains('open') || getComputedStyle(el).display !== 'none';
-    if (isOpen) return el;
-  }
-  return null;
-}
-
-function shiftViewport(on, kb) {
-  var overlay = _kbActiveOverlay();
-  if (!on) {
-    document.body.style.paddingBottom = '';
-    if (overlay) {
-      overlay.style.height = '';
-      overlay.style.maxHeight = '';
-    }
-    return;
-  }
-  var h = kb ? kb.offsetHeight || 290 : 290;
-  if (overlay) {
-    // Shrink the overlay itself so its flex children (messages list,
-    // composer) reflow above the keyboard instead of being hidden under it.
-    overlay.style.height = 'calc(100dvh - ' + h + 'px)';
-    overlay.style.maxHeight = 'calc(100dvh - ' + h + 'px)';
-  } else {
-    document.body.style.paddingBottom = h + 'px';
-  }
-  // Scroll target into view
-  setTimeout(function(){
-    if (KB.target) {
-      KB.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-    // Also keep the messages list scrolled to the latest message
-    var msgs = document.getElementById('chatMessages') || document.getElementById('gcMessages');
-    if (msgs) msgs.scrollTop = msgs.scrollHeight;
-  }, 80);
-}
-
-// ── Track the visual viewport so the fixed keyboard doesn't get dislocated
-//    when Android surfaces a native overlay (autofill bar, "Save password?"
-//    prompt, Smart Lock). position:fixed tracks the LAYOUT viewport, not the
-//    visual one, so without this the keyboard can end up floating in the
-//    wrong place or get partially covered/pushed by that overlay. ──
-(function() {
-  if (!window.visualViewport) return;
-  function _onKbViewportChange() {
-    var kb = document.getElementById('predictKeyboard');
-    if (!kb || !KB.visible) return;
-    var vv = window.visualViewport;
-    var offsetFromBottom = window.innerHeight - (vv.height + vv.offsetTop);
-    // Positive offsetFromBottom means something (native overlay/IME) is
-    // covering the lower part of the layout viewport beyond what we control.
-    if (offsetFromBottom > 40) {
-      // A native surface has taken over down there — our keyboard can't
-      // safely coexist in that space. Hide ours rather than let both
-      // visually collide; the native one (e.g. Smart Lock) will resolve
-      // itself, and focusin will re-show ours once it's dismissed if the
-      // field is still focused.
-      hideKeyboard();
-      return;
-    }
-    kb.style.setProperty('--kb-vv-offset', KB.visible ? '-' + vv.offsetTop + 'px' : '0px');
-  }
-  window.visualViewport.addEventListener('resize', _onKbViewportChange);
-  window.visualViewport.addEventListener('scroll', _onKbViewportChange);
-})();
-
-// ── Target classes that always use custom keyboard ──
-var PRIMARY_SELECTORS = [
-  '.modal-input',          // auth sign-in / sign-up
-  '.profile-input',        // profile edit
-  '.profile-bio-input'     // bio edit
-];
-
-function isPrimaryTarget(el) {
-  if (!el) return false;
-  return PRIMARY_SELECTORS.some(function(sel){
-    return el.matches && el.matches(sel);
-  });
-}
-
-function isDefaultTarget(el) {
-  if (!el) return false;
-  return (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.type !== 'radio' && el.type !== 'file' && el.type !== 'range')
-      || el.tagName === 'TEXTAREA';
-}
-
-function shouldIntercept(el) {
-  return isPrimaryTarget(el) || (window._kbDefault && isDefaultTarget(el));
-}
-
-// ── Core suppression: stamp inputmode=none BEFORE the element
-//    ever gets focus, so Android never opens its IME ──────────
-function stampInputmode(el) {
-  if (!el) return;
-  el.setAttribute('inputmode', 'none');
-  // Also nuke autocomplete/autocorrect so Android doesn't attach a suggestion bar
-  if (!el._kbOrigAC) el._kbOrigAC = el.getAttribute('autocomplete') || 'off';
-  el.setAttribute('autocomplete', 'off');
-  el.setAttribute('autocorrect', 'off');
-  el.setAttribute('autocapitalize', 'none');
-  el.setAttribute('spellcheck', 'false');
-}
-
-function unstampInputmode(el) {
-  if (!el) return;
-  // Leave inputmode=none permanently on primary targets — native kb should never open
-  // For default targets the user might toggle kb off later, but for now leave it
-}
-
-// Pre-stamp all existing primary inputs at boot time
-function stampAllPrimary() {
-  PRIMARY_SELECTORS.forEach(function(sel) {
-    document.querySelectorAll(sel).forEach(stampInputmode);
-  });
-  // Also stamp all number/tel inputs since Android ignores inputmode=none on these at runtime
-  document.querySelectorAll('input[type="number"], input[type="tel"]').forEach(stampInputmode);
-}
-
-// Re-stamp whenever the DOM changes (modals opening etc.)
-var _stampObserver = new MutationObserver(function(mutations) {
-  mutations.forEach(function(m) {
-    m.addedNodes.forEach(function(node) {
-      if (node.nodeType !== 1) return;
-      if (shouldIntercept(node)) stampInputmode(node);
-      // Stamp primary selectors
-      node.querySelectorAll && PRIMARY_SELECTORS.forEach(function(sel) {
-        node.querySelectorAll(sel).forEach(stampInputmode);
-      });
-      // Stamp number/tel inputs (Android ignores runtime inputmode changes on these)
-      node.querySelectorAll && node.querySelectorAll('input[type="number"], input[type="tel"]').forEach(stampInputmode);
-      if (window._kbDefault) {
-        node.querySelectorAll && node.querySelectorAll('input, textarea').forEach(function(el) {
-          if (isDefaultTarget(el)) stampInputmode(el);
-        });
-      }
-    });
-  });
-});
-_stampObserver.observe(document.body, { childList: true, subtree: true });
-
-// ── Intercept touches on inputs BEFORE focus fires ──
-document.addEventListener('touchstart', function(e) {
-  var t = e.target;
-  if (!shouldIntercept(t)) return;
-  stampInputmode(t);
-  // Tapping a field that is ALREADY the focused element (e.g. after the
-  // Done/return key hid our keyboard without blurring the input) does not
-  // fire a new 'focusin' event, since focus never left it — so showKeyboard()
-  // would otherwise never run again until the user focuses a different field.
-  // Detect that case here and re-show explicitly.
-  if (document.activeElement === t && !KB.visible) {
-    if (KB._hideTimer) { clearTimeout(KB._hideTimer); KB._hideTimer = null; }
-    showKeyboard(t);
-  }
-}, { passive: true, capture: true });
-
-// ── Focus listener — show our keyboard ──
-document.addEventListener('focusin', function(e) {
-  var t = e.target;
-  if (!shouldIntercept(t)) return;
-  // Cancel any pending hide — we're staying on a valid target
-  if (KB._hideTimer) { clearTimeout(KB._hideTimer); KB._hideTimer = null; }
-  stampInputmode(t); // belt-and-suspenders
-  showKeyboard(t);
-}, true);
-
-// ── Blur listener — hide when focus leaves all inputs ──
-// Uses a longer, cancellable window + re-check on next frame so that
-// re-renders triggered by 'input' events (validation UI, toasts, step
-// transitions) don't cause a false-positive hide mid-typing.
-document.addEventListener('focusout', function(e) {
-  var t = e.target;
-  if (!shouldIntercept(t)) return;
-  if (KB._hideTimer) clearTimeout(KB._hideTimer);
-  KB._hideTimer = setTimeout(function(){
-    KB._hideTimer = null;
-    // Re-check on next frame too — covers cases where the DOM was mid-mutation
-    requestAnimationFrame(function(){
-      var active = document.activeElement;
-      if (!shouldIntercept(active) && KB.visible) {
-        hideKeyboard();
-      }
-    });
-  }, 220);
-}, true);
-
-// ── Tap outside keyboard hides it ──
-// Debounced by a frame: if a key press just rebuilt the keyboard's DOM (see
-// makeCharKey), the tail end of that same touch gesture can momentarily
-// resolve its target outside the (mid-rebuild) #predictKeyboard subtree.
-// Re-checking on the next frame, once the DOM has settled, avoids hiding the
-// keyboard for what is actually a tap on a key.
-document.addEventListener('pointerdown', function(e) {
-  if (!KB.visible) return;
-  var kb = document.getElementById('predictKeyboard');
-  if (kb && kb.contains(e.target)) return;
-  if (shouldIntercept(e.target)) return; // tapping another input — focusin will handle
-  var target = e.target;
-  requestAnimationFrame(function() {
-    if (!KB.visible) return;
-    var kbNow = document.getElementById('predictKeyboard');
-    // Re-check against the live target and the live keyboard element —
-    // if the target is now (or still) inside the keyboard, this wasn't
-    // really a tap outside it.
-    if (kbNow && target && kbNow.contains(target)) return;
-    if (document.activeElement && shouldIntercept(document.activeElement)) return;
-    if (KB._hideTimer) { clearTimeout(KB._hideTimer); KB._hideTimer = null; }
-    hideKeyboard();
-  });
-}, true);
-
-// ── Default keyboard setting (read from localStorage) ──
-window._kbDefault = localStorage.getItem('predictKbDefault') === '1';
-
-// ── Global API ─────────────────────────────────
-window._kbShow = showKeyboard;
-window._kbHide = hideKeyboard;
-window._kbSetDefault = function(on) {
-  window._kbDefault = on;
-  localStorage.setItem('predictKbDefault', on ? '1' : '0');
-  if (on) {
-    // Stamp all inputs now
-    document.querySelectorAll('input, textarea').forEach(function(el) {
-      if (isDefaultTarget(el)) stampInputmode(el);
-    });
-  }
-};
-
-// Boot: stamp primaries now
-stampAllPrimary();
-buildKeyboard();
-
 })();
 </script>
 
