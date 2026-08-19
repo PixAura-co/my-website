@@ -6,6 +6,12 @@
       "destination": "/api/channel-preview"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/daily-reminders",
+      "schedule": "0 19 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/sw.js",

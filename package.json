@@ -1,0 +1,9 @@
+{
+  "name": "social-plus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Social Plus — server-side Vercel functions (api/). The app itself is the single index.html file at the project root; this package.json exists only so Vercel installs the npm dependencies those api/ functions need (currently: web-push).",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}
