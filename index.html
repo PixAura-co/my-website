@@ -3501,7 +3501,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 // in a live tab). This is the piece that lets Android show a notification even
 // after the app process is fully killed. Call subscribeToPushNotifications()
 // after login, from wherever the "enable notifications" UI action lives.
-const VAPID_PUBLIC_KEY = 'BAUxzaVHrqUyQBwSY46oV80Tza6A988CpmLWwnPRaw2Uz39xCTckNUEEdKiLjAMPGHTehDrmM6CNpCj3sDytEIU';
+const VAPID_PUBLIC_KEY = 'BNBcVwx3xXhc-qD6fCHbhIJj7ZeklOIpZ2SzYq1q2mUF7z8e4pcelYvv5fh4H8-O4qTLBBnGCi99DLfvogd2rL8';
 
 function _urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -5821,6 +5821,31 @@ function getPremiumTier(usernameOrKey) {
   if (rec.expires_at) daysLeft = Math.max(0, Math.ceil((new Date(rec.expires_at).getTime() - Date.now()) / 86400000));
   return { tier: t.id, label: t.label, expires_at: rec.expires_at, daysLeft: daysLeft, isTrial: rec.is_trial === true };
 }
+// Fires an immediate in-app + push notification the first time this device
+// notices the user's premium has expired. Deliberately reads the RAW
+// _premiumTiers cache instead of calling getPremiumTier() — that function
+// collapses an expired record straight to null (by design, for gating
+// premium features elsewhere), which makes it impossible to tell "just
+// expired" apart from "was never premium". A localStorage flag keyed to the
+// specific expires_at timestamp stops this from re-firing every page load;
+// it's per-device (matches how push subscriptions are per-device too), and
+// re-arms automatically if the user re-subscribes and lets it lapse again.
+function _checkPremiumExpiryOnLoad() {
+  if (!currentUser) return;
+  const key = _myUsernameKey();
+  const rec = _premiumTiers[key];
+  if (!rec || !rec.expires_at) return; // never premium, or an evergreen/lifetime tier
+  if (new Date(rec.expires_at).getTime() > Date.now()) return; // still active
+  const flagKey = 'ka_premium_expiry_notified_' + key + '_' + rec.expires_at;
+  if (localStorage.getItem(flagKey)) return; // already notified for this specific lapse
+  localStorage.setItem(flagKey, '1');
+  const t = PREMIUM_TIERS[rec.tier] || PREMIUM_TIERS.pro;
+  const text = `⏰ Your ${t.label} plan has expired. Renew now to keep your perks.`;
+  if (typeof addNotif === 'function') addNotif(text);
+  if (typeof _showIsland === 'function') {
+    _showIsland({ title: 'Social Plus', sub: text, type: 'premium', stackKey: 'notif-' + key, onClick: function() { if (typeof openWalletPage === 'function') openWalletPage('premium'); } });
+  }
+}
 function formatPremiumCountdown(expiresAtIso) {
   if (!expiresAtIso) return 'Never expires';
   const ms = new Date(expiresAtIso).getTime() - Date.now();
@@ -6296,8 +6321,8 @@ function _ppUpdateAllCardInstances(postId, likes, reactions, myKey) {
   }, true);
 })();
 
-const SB_URL = 'https://ikdcskzxsivrtysbgixi.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrZGNza3p4c2l2cnR5c2JnaXhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY1MTMsImV4cCI6MjEwMjEyMjUxM30.K42zd1MgWrtR0GoXrxDqBEhwP1cv_e0qg88b-izynL0';
+const SB_URL = 'https://izkqysamtrokvemfzkzn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6a3F5c2FtdHJva3ZlbWZ6a3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMzUxMTAsImV4cCI6MjEwMjYxMTExMH0.-751_5Igp-AfHTelVweCu2eHNa4TsaR_dMJskvoD1ZE';
 /* ═══ SUPABASE TABLES REQUIRED (run once in SQL Editor) ═══════════
    -- Messages (DMs between users)
    create table if not exists messages (id text primary key, sender text not null, receiver text not null, messages jsonb default '[]', updated_at timestamptz default now());
@@ -9180,25 +9205,20 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
 // _amIAdFree() gate as everywhere else, including the preview-as-user toggle).
 async function _renderCommentOverlayAd(container, commentCount) {
   if (!container || _amIAdFree()) return;
+  // Only show an ad once the thread has at least 15 comments — below that,
+  // no ad renders at all (previously the top ad ignored commentCount
+  // entirely, and the bottom ad's threshold was inverted: it fired when
+  // commentCount was 15 or FEWER instead of 15 or more).
+  if ((commentCount || 0) < 15) return;
   try {
     const ads = await _loadAdsConfig();
     const cardAds = (ads || []).filter(function(a){ return a.enabled !== false && a.type === 'card' && (a.placements||[]).indexOf('comment_thread') !== -1; });
     if (!cardAds.length) return;
-    const topAd = cardAds[Math.floor(Math.random() * cardAds.length)];
-    const topTmp = document.createElement('div');
-    topTmp.innerHTML = _buildAdCardCompact(topAd);
-    container.insertBefore(topTmp.firstElementChild, container.firstChild);
-    if (!_adSessionSeen.has(topAd.id)) { _adSessionSeen.add(topAd.id); _bumpAdStat(topAd.id, 'impressions'); }
-
-    if ((commentCount || 0) <= 15) {
-      // Pick again (may land on the same ad, or a different one if more than
-      // one is configured for this placement — either is fine here).
-      const bottomAd = cardAds[Math.floor(Math.random() * cardAds.length)];
-      const bottomTmp = document.createElement('div');
-      bottomTmp.innerHTML = _buildAdCardCompact(bottomAd);
-      container.appendChild(bottomTmp.firstElementChild);
-      if (!_adSessionSeen.has(bottomAd.id)) { _adSessionSeen.add(bottomAd.id); _bumpAdStat(bottomAd.id, 'impressions'); }
-    }
+    const bottomAd = cardAds[Math.floor(Math.random() * cardAds.length)];
+    const bottomTmp = document.createElement('div');
+    bottomTmp.innerHTML = _buildAdCardCompact(bottomAd);
+    container.appendChild(bottomTmp.firstElementChild);
+    if (!_adSessionSeen.has(bottomAd.id)) { _adSessionSeen.add(bottomAd.id); _bumpAdStat(bottomAd.id, 'impressions'); }
   } catch(e) { /* comments still render fine without the ad */ }
 }
 // Renders one compact card ad inserted near the top of the Messages page's
@@ -14434,15 +14454,15 @@ function _showPushNotif(title, body, tag) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(function(reg) {
         reg.showNotification(title, {
-          body: body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
+          body: body || '', icon: '/icon-192.png', badge: '/icon-192.png',
           tag: tag || ('predict-' + Date.now()), renotify: true, vibrate: [100,50,100],
           data: { tag: tag || '' }
         });
       }).catch(function() {
-        _onTap(new Notification(title, { body: body || '', icon: '/icons/icon-192.png', tag: tag || ('predict-' + Date.now()) }));
+        _onTap(new Notification(title, { body: body || '', icon: '/icon-192.png', tag: tag || ('predict-' + Date.now()) }));
       });
     } else {
-      _onTap(new Notification(title, { body: body || '', icon: '/icons/icon-192.png', tag: tag || ('predict-' + Date.now()) }));
+      _onTap(new Notification(title, { body: body || '', icon: '/icon-192.png', tag: tag || ('predict-' + Date.now()) }));
     }
   } catch(e) {}
 }
@@ -14461,11 +14481,55 @@ function _scheduleStreakReminder() {
       const myKey = localStorage.getItem('ka_username_key') || '';
       const last = sd[myKey] ? sd[myKey].last : null;
       if (last !== new Date().toDateString()) {
-        _showPushNotif('🔥 Don\'t break your streak!', 'Check in today to keep your streak alive.', 'streak-reminder');
+        // addNotif() now fires _showPushNotif internally, so this single
+        // call covers both the in-app Alert entry and the push — no need
+        // to call _showPushNotif separately here too (that would double it).
         if (typeof addNotif === 'function') addNotif('🔥 Don\'t break your streak! Check in today to keep it alive.');
       }
     }, msUntil);
   }
+}
+
+// Suggests a recent post from someone the user follows that they likely
+// haven't seen, via a lightweight in-app + push notification. Runs at most
+// once per day per device (own localStorage flag) to avoid becoming noise.
+// Uses whatever's already loaded in window.posts (loadPosts() runs on boot
+// well before this fires at the 8s mark) rather than a fresh Supabase call,
+// since this is a "nice to have" nudge, not something that needs to be
+// byte-fresh.
+async function _maybeSuggestFeedPosts() {
+  if (!currentUser) return;
+  const myKey = _myUsernameKey();
+  const todayKey = 'ka_feed_suggest_' + myKey + '_' + new Date().toDateString();
+  if (localStorage.getItem(todayKey)) return;
+  try {
+    const followRows = await SB.query('follows', `?follower=eq.${encodeURIComponent(myKey)}&select=following`) || [];
+    if (!followRows.length) return; // nothing to suggest from if they follow nobody
+    const followingSet = new Set(followRows.map(function(r) { return (r.following || '').toLowerCase(); }));
+    const allPosts = window.posts || [];
+    const cutoff = Date.now() - 24 * 3600000; // last 24h, so this stays a "new post" nudge, not old content
+    const candidates = allPosts.filter(function(p) {
+      const author = (p.user || p.username || '').toLowerCase();
+      if (!author || author === myKey || !followingSet.has(author)) return false;
+      const t = new Date(p.time || p.created_at || p.timestamp || 0).getTime();
+      return t > cutoff;
+    }).sort(function(a, b) {
+      return new Date(b.time || b.created_at || 0) - new Date(a.time || a.created_at || 0);
+    });
+    if (!candidates.length) return;
+    localStorage.setItem(todayKey, '1');
+    const pick = candidates[0];
+    const authorKey = (pick.user || pick.username || '').toLowerCase();
+    const authorAcct = (_cache && _cache['acct_' + authorKey]) || null;
+    const authorName = (authorAcct && authorAcct.display_name) || pick.user || pick.username || 'someone you follow';
+    const snippet = (pick.body || pick.text || pick.content || '').trim().slice(0, 80);
+    const text = snippet
+      ? `✨ ${authorName} just posted: "${snippet}${snippet.length >= 80 ? '…' : ''}"`
+      : `✨ ${authorName} just posted something new — check it out.`;
+    if (typeof addNotifForUser === 'function') {
+      await addNotifForUser(myKey, text, authorKey, pick.id, 'post');
+    }
+  } catch (e) { /* not critical — silently skip if follows/posts aren't ready yet */ }
 }
 
 // ── Notification kind inference + unified click routing ──────────────────
@@ -14583,6 +14647,10 @@ function addNotif(text, postOwner, postId) {
   if (_notifCache[key].length > 50) _notifCache[key].length = 50;
   try { localStorage.setItem('ka_notifs_' + key, JSON.stringify(_notifCache[key])); } catch(e) {}
   refreshNotifBadge();
+  // addNotif is for local/self notifications only (e.g. "update available")
+  // — addNotifForUser handles the remote-target case and already pushes.
+  // This was previously silent for local notifications; now matches it.
+  _showPushNotif('Social Plus', text, 'predict-notif-' + notif.id);
 }
 async function addNotifForUser(targetUser, text, postOwner, postId, kind) {
   if (!targetUser) return;
@@ -14634,6 +14702,18 @@ async function addNotifForUser(targetUser, text, postOwner, postId, kind) {
       kind: kind || null
     }, 'id');
   } catch(e) { /* graceful fail */ }
+  // ── Real background push (reaches the recipient even if their app is
+  // fully closed — _showPushNotif above only works while their tab/process
+  // is alive). Fire-and-forget: never block or fail the notification flow
+  // if the send-push endpoint is slow/unreachable, since the in-app +
+  // Supabase notification above already succeeded either way. ──
+  try {
+    fetch('/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: key, title: 'Social Plus', body: text, tag: 'predict-notif-' + notifId })
+    }).catch(function(){});
+  } catch(e) {}
 }
 function refreshNotifBadge() {
   if (currentUser) {
@@ -20183,6 +20263,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser && !isOwner) {
     setTimeout(function() { if (typeof _startNotifPoll === 'function') _startNotifPoll(); }, 5000);
     setTimeout(function() { if (typeof _startChatNotifPoll === 'function') _startChatNotifPoll(); }, 5500);
+    setTimeout(function() { if (typeof _checkPremiumExpiryOnLoad === 'function') _checkPremiumExpiryOnLoad(); }, 3000);
+    setTimeout(function() { if (typeof _scheduleStreakReminder === 'function') _scheduleStreakReminder(); }, 3500);
+    setTimeout(function() { if (typeof _maybeSuggestFeedPosts === 'function') _maybeSuggestFeedPosts(); }, 8000);
   }
 
   // ── Security: device session + app lock for restored sessions ──
