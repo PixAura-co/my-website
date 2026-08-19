@@ -39,8 +39,8 @@
 
 export const config = { runtime: 'edge' };
 
-const SB_URL = 'https://ikdcskzxsivrtysbgixi.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrZGNza3p4c2l2cnR5c2JnaXhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY1MTMsImV4cCI6MjEwMjEyMjUxM30.K42zd1MgWrtR0GoXrxDqBEhwP1cv_e0qg88b-izynL0';
+const SB_URL = 'https://izkqysamtrokvemfzkzn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6a3F5c2FtdHJva3ZlbWZ6a3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMzUxMTAsImV4cCI6MjEwMjYxMTExMH0.-751_5Igp-AfHTelVweCu2eHNa4TsaR_dMJskvoD1ZE';
 
 // Same default site copy that already lives in index.html's static tags —
 // used as a fallback if the channel lookup fails for any reason, so a bad
