@@ -7056,6 +7056,15 @@ async function _migrateKrisFollowAlias() {
   } catch(e) { console.warn('Kris alias migration failed:', e); }
 }
 
+// Guards a background loadFollows() from clobbering the local optimistic
+// follow state for the current user while a toggleFollow/toggleFollowViewed
+// save is still in flight (upserting/deleting against Supabase). Without
+// this, a background sync tick that started before the click can land
+// after the optimistic UI update and silently overwrite _cache['follows']
+// with the pre-click server state — which then makes the *next* toggle
+// diff against stale data and can delete the row it just inserted.
+window._followWritePending = false;
+
 async function loadFollows() {
   let rows;
   let fromSupabase = false;
@@ -7064,6 +7073,25 @@ async function loadFollows() {
     fromSupabase = true;
   } catch(e) {
     try { rows = JSON.parse(localStorage.getItem('ka_db_follows') || '[]'); } catch(e2) { rows = []; }
+  }
+  if (window._followWritePending) {
+    // A follow/unfollow save is mid-flight for the current user — keep the
+    // fetched rows for everyone else, but don't stomp our own local state.
+    try {
+      const myKey = normalizeFollowKey(localStorage.getItem('ka_username_key') || (typeof currentUser !== 'undefined' ? currentUser : ''));
+      const localFollows = (_cache['follows'] && _cache['follows'][myKey]) || null;
+      const map = {};
+      rows.forEach(r => {
+        const follower = normalizeFollowKey(r.follower);
+        const following = normalizeFollowKey(r.following);
+        if (!follower || !following || follower === myKey) return;
+        if (!map[follower]) map[follower] = [];
+        if (!map[follower].includes(following)) map[follower].push(following);
+      });
+      if (localFollows) map[myKey] = localFollows;
+      _cache['follows'] = map;
+      return map;
+    } catch(e) { /* fall through to normal path below */ }
   }
   const map = {};
   rows.forEach(r => {
@@ -7109,26 +7137,31 @@ function saveFollowData(data) {
 async function _saveFollowDataImpl(data) {
   _cache['follows'] = data;
   if (!currentUser) return;
-  const myKey = normalizeFollowKey(localStorage.getItem('ka_username_key') || currentUser);
-  const myFollows = data[myKey] || [];
+  window._followWritePending = true;
   try {
-    const lsFollows = JSON.parse(localStorage.getItem('ka_db_follows') || '[]');
-    const others = lsFollows.filter(r => normalizeFollowKey(r.follower) !== myKey);
-    const updated = [...others, ...myFollows.map(f => ({ follower: myKey, following: f }))];
-    localStorage.setItem('ka_db_follows', JSON.stringify(updated));
-  } catch(e) {}
-  const existing = await SB.query('follows', `?follower=eq.${encodeURIComponent(myKey)}`) || [];
-  const existingSet = new Set(existing.map(f => normalizeFollowKey(f.following)));
-  const newSet = new Set(myFollows.map(normalizeFollowKey));
-  for (const f of newSet) {
-    if (!existingSet.has(f)) {
-      await SB.upsert('follows', { follower: myKey, following: f }, 'follower,following');
+    const myKey = normalizeFollowKey(localStorage.getItem('ka_username_key') || currentUser);
+    const myFollows = data[myKey] || [];
+    try {
+      const lsFollows = JSON.parse(localStorage.getItem('ka_db_follows') || '[]');
+      const others = lsFollows.filter(r => normalizeFollowKey(r.follower) !== myKey);
+      const updated = [...others, ...myFollows.map(f => ({ follower: myKey, following: f }))];
+      localStorage.setItem('ka_db_follows', JSON.stringify(updated));
+    } catch(e) {}
+    const existing = await SB.query('follows', `?follower=eq.${encodeURIComponent(myKey)}`) || [];
+    const existingSet = new Set(existing.map(f => normalizeFollowKey(f.following)));
+    const newSet = new Set(myFollows.map(normalizeFollowKey));
+    for (const f of newSet) {
+      if (!existingSet.has(f)) {
+        await SB.upsert('follows', { follower: myKey, following: f }, 'follower,following');
+      }
     }
-  }
-  for (const f of existingSet) {
-    if (!newSet.has(f)) {
-      await SB.delete('follows', `follower=eq.${encodeURIComponent(myKey)}&following=eq.${encodeURIComponent(f)}`);
+    for (const f of existingSet) {
+      if (!newSet.has(f)) {
+        await SB.delete('follows', `follower=eq.${encodeURIComponent(myKey)}&following=eq.${encodeURIComponent(f)}`);
+      }
     }
+  } finally {
+    window._followWritePending = false;
   }
 }
 
@@ -7478,6 +7511,135 @@ async function _diagnoseFeedFailure() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🧠 HOME FEED RANKING — interaction-aware smart algorithm
+// ════════════════════════════════════════════════════════════════════
+// Signals blended into a single score for every candidate post:
+//  1. Recent popularity   — views/comments/reactions, weighted toward the
+//                            last 2–3 days (decays hard after that).
+//  2. Following boost      — posts from accounts the user follows.
+//  3. Interaction affinity — accounts whose posts this user has reacted to
+//                            or opened comments on before get a repeat boost
+//                            (people tend to keep engaging with who they've
+//                            engaged with).
+//  4. Unseen nudge         — already existed; keeps refreshes feeling fresh.
+//  5. Resurfacing slots    — a small reserved quota lets old-but-strong
+//                            posts break back into the feed occasionally
+//                            instead of the feed being 100% recency-capped.
+//
+// None of this needs new Supabase tables for the MVP: popularity comes from
+// existing views/comments/reactions counts, following comes from the
+// existing follows table, and affinity comes from the existing reactions
+// table (who reacted to what) plus a small local-only log of comment-opens
+// (see _trackCommentOpen below) — engagement signals that were already
+// being written for other reasons, just not used for ranking yet.
+
+// Local-only, lightweight: which authors this device's user has opened
+// comments on recently. Not synced to Supabase — it's a ranking hint, not
+// a record of truth, so it's fine if it's per-device and caps out small.
+const _COMMENT_OPEN_LOG_KEY = 'ka_comment_open_log_v1';
+const _COMMENT_OPEN_LOG_MAX = 200;
+function _trackCommentOpen(authorKey) {
+  if (!authorKey) return;
+  try {
+    const key = normalizeFollowKey(authorKey);
+    if (!key) return;
+    let log = JSON.parse(localStorage.getItem(_COMMENT_OPEN_LOG_KEY) || '[]');
+    log.push({ a: key, t: Date.now() });
+    if (log.length > _COMMENT_OPEN_LOG_MAX) log = log.slice(log.length - _COMMENT_OPEN_LOG_MAX);
+    localStorage.setItem(_COMMENT_OPEN_LOG_KEY, JSON.stringify(log));
+  } catch(e) {}
+}
+// Returns a Set of author keys the user has shown repeat interest in
+// (reacted to their posts, or opened their comments), most-recent-first
+// signal only — this deliberately doesn't try to be exhaustive, just a
+// cheap affinity hint.
+function _getAffinityAuthors() {
+  const authors = new Set();
+  try {
+    const log = JSON.parse(localStorage.getItem(_COMMENT_OPEN_LOG_KEY) || '[]');
+    const cutoff = Date.now() - (30 * 24 * 3600000); // last 30 days
+    log.forEach(e => { if (e && e.a && e.t > cutoff) authors.add(e.a); });
+  } catch(e) {}
+  return authors;
+}
+// Reaction-based affinity: which authors has this user reacted to posts
+// from, across both the main feed reactions and profile-post reactions
+// already loaded into memory. Cheap — just scans what's already fetched,
+// no extra network round trip.
+function _getReactionAffinityAuthors(myKey) {
+  const authors = new Set();
+  if (!myKey) return authors;
+  try {
+    (posts || []).forEach(p => {
+      const reactedHere = Object.values(p.reactions || {}).some(arr => Array.isArray(arr) && arr.includes(myKey));
+      if (reactedHere) authors.add(normalizeFollowKey(p.user || OWNER_KEY));
+    });
+    (window._forYouProfilePosts || []).forEach(p => {
+      const reactedHere = Object.values(p.reactions || {}).some(arr => Array.isArray(arr) && arr.includes(myKey));
+      if (reactedHere) authors.add(normalizeFollowKey(p.authorKey));
+    });
+  } catch(e) {}
+  return authors;
+}
+
+// Shared scorer — takes a normalized candidate shape so it can rank both
+// Kris's main posts (posts table) and other users' profile posts the same
+// way. `views`/`commentCount`/`reactionCount` feed recent-popularity;
+// `authorKey` feeds following+affinity boosts; `timestamp` feeds recency
+// and the old-post resurfacing check.
+function _scoreFeedCandidate(c, ctx) {
+  const ageHrs = Math.max(0, (ctx.now - new Date(c.timestamp || 0).getTime()) / 3600000);
+  const authorNorm = c.authorKey ? normalizeFollowKey(c.authorKey) : null;
+
+  // Recent popularity — same shape as the existing formula, capped so it
+  // can never bury a genuinely fresh post, extended to factor in reactions
+  // (previously only views+comments were counted).
+  const popularity = Math.min(
+    (c.views || 0) * 0.02 + (c.commentCount || 0) * 3 + (c.reactionCount || 0) * 1.5,
+    20
+  );
+
+  // Recency: full weight inside the "recent window" (2–3 days), then a
+  // steep dropoff — this is what keeps the feed feeling current without
+  // fully zeroing out day-3 posts the way a hard cutoff would.
+  const RECENT_WINDOW_HRS = 60; // ~2.5 days
+  const recencyBoost = ageHrs <= RECENT_WINDOW_HRS
+    ? Math.max(0, 48 - (ageHrs / RECENT_WINDOW_HRS) * 24) // 48 → 24 across the window
+    : Math.max(0, 24 - (ageHrs - RECENT_WINDOW_HRS) * 0.15); // steep decay after
+
+  // Following boost — strong, deliberate signal: content from people you
+  // actually follow should reliably outrank strangers' equally-popular posts.
+  const followingBoost = (authorNorm && ctx.following.has(authorNorm)) ? 22 : 0;
+
+  // Interaction affinity — smaller than following (it's an inferred signal,
+  // not an explicit follow), but still meaningfully pushes up authors this
+  // user keeps engaging with.
+  const affinityBoost = (authorNorm && ctx.affinityAuthors.has(authorNorm)) ? 10 : 0;
+
+  const unseenBoost = ctx.seenIds && !ctx.seenIds.has(c.id) ? 20 : 0;
+
+  return popularity + recencyBoost + followingBoost + affinityBoost + unseenBoost;
+}
+
+// Picks a handful of old-but-strong posts to resurface even though they
+// fall outside the normal ranking window — "very few" by design: capped to
+// a small fixed count so the feed still reads as current, not stale.
+function _pickResurfacedPosts(allCandidates, alreadyChosenIds, ctx, maxResurfaced) {
+  const OLD_THRESHOLD_HRS = 72; // only consider posts older than ~3 days
+  const MIN_POPULARITY = 8;     // only genuinely well-performing old posts qualify
+  const pool = allCandidates.filter(c => {
+    if (alreadyChosenIds.has(c.id)) return false;
+    const ageHrs = (ctx.now - new Date(c.timestamp || 0).getTime()) / 3600000;
+    if (ageHrs <= OLD_THRESHOLD_HRS) return false;
+    const popularity = Math.min((c.views || 0) * 0.02 + (c.commentCount || 0) * 3 + (c.reactionCount || 0) * 1.5, 20);
+    return popularity >= MIN_POPULARITY;
+  });
+  // Prefer resurfacing posts tied to following/affinity first, then pure popularity.
+  pool.sort((a, b) => _scoreFeedCandidate(b, ctx) - _scoreFeedCandidate(a, ctx));
+  return pool.slice(0, maxResurfaced);
+}
+
 async function _fetchRankedPostsPage(pageSize, seenIds) {
   const POOL_SIZE = Math.max(pageSize * 4, 40);
   // Fetch the recent post pool and comment counts in parallel — they don't
@@ -7493,17 +7655,36 @@ async function _fetchRankedPostsPage(pageSize, seenIds) {
   // during THIS call, the empty pool is a timeout/network miss, not a
   // real empty state.
   const _onlineBefore = _sbOnline;
-  const [pool, commentRows] = await Promise.all([
+  const myKey = currentUser ? (typeof _myUsernameKey === 'function' ? _myUsernameKey() : currentUser.toLowerCase()) : null;
+  // ── Pool window is wide enough to also catch the "very few old posts" ──
+  // resurfacing candidates — POOL_SIZE alone (last ~40-ish posts) would
+  // never contain anything old enough to resurface, so a second, smaller
+  // query reaches further back specifically for that purpose. Follow data
+  // is fetched here too (in parallel, not serially after) because
+  // loadPosts() clears the follows cache right before calling this
+  // function — see the note below at `following` — so this can't just
+  // trust whatever's already cached without risking an extra round trip
+  // on the critical fast-first-paint path.
+  const _needsFreshFollows = myKey && (!getFollowData || !Object.keys(getFollowData()).length);
+  const [pool, oldPool, commentRows, reactionRows, followData] = await Promise.all([
     SB.query('posts', `?order=timestamp.desc&limit=${POOL_SIZE}&select=id,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link`).catch(() => []),
+    SB.query('posts', `?order=timestamp.desc&offset=${POOL_SIZE}&limit=150&select=id,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link`).catch(() => []),
     // id-only rows over a generous recent window — cheap, and only needs to be
     // roughly right for ranking, not exact.
-    SB.query('comments', `?order=time.desc&limit=400&select=post_id`).catch(() => [])
+    SB.query('comments', `?order=time.desc&limit=400&select=post_id`).catch(() => []),
+    // Reactions feed both popularity (reaction count) and, for the current
+    // user specifically, affinity (which authors they keep reacting to) —
+    // this used to be untracked for ranking purposes entirely.
+    SB.query('reactions', `?limit=2000&select=post_id,username`).catch(() => []),
+    _needsFreshFollows && typeof loadFollows === 'function' ? loadFollows().catch(() => ({})) : Promise.resolve(null)
   ]);
   window._lastRankedPoolFailed = (_onlineBefore !== false && _sbOnline === false);
   if (!pool || !pool.length) return [];
 
   const commentCounts = {};
   (commentRows || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
+  const reactionCounts = {};
+  (reactionRows || []).forEach(r => { reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1; });
 
   // Pinned posts (feature_announcement) always surface on Home regardless of
   // engagement score — a fresh "What's New" card with 0 views would otherwise
@@ -7518,34 +7699,68 @@ async function _fetchRankedPostsPage(pageSize, seenIds) {
   const pinnedIds = new Set(pinned.map(p => p.id));
   const rankablePool = pool.filter(p => !pinnedIds.has(p.id));
 
+  // ── Build ranking context: following + interaction affinity ──────────
+  // Main-feed `posts` rows are always Kris's own broadcast content (no
+  // per-post author column), so following/affinity boosts don't move these
+  // relative to each other — but the same context/scorer is reused for
+  // profile posts injected into "For You" (see _refreshForYouProfilePosts),
+  // which is where those signals actually differentiate results.
+  //
+  // NOTE: loadPosts() does `delete _cache['follows']` right before calling
+  // this function, so getFollowData() would read an empty cache on every
+  // full feed load — following boost would silently never apply. The
+  // Promise.all above already re-fetched follow data in that case
+  // (in parallel with everything else, so no extra latency); fall back to
+  // whatever's cached if that fetch didn't run or failed.
+  let following = new Set();
+  try {
+    const resolvedFollows = followData || (typeof getFollowData === 'function' ? getFollowData() : {});
+    following = new Set((resolvedFollows[myKey] || []).map(k => normalizeFollowKey(k)));
+  } catch(e) {}
+  const affinityAuthors = new Set();
+  try {
+    _getAffinityAuthors().forEach(a => affinityAuthors.add(a));
+    _getReactionAffinityAuthors(myKey).forEach(a => affinityAuthors.add(a));
+  } catch(e) {}
+
   const now = Date.now();
-  const scored = rankablePool.map(p => {
-    const ageHrs = Math.max(0, (now - new Date(p.timestamp || 0).getTime()) / 3600000);
-    // BUGFIX: engagement used to be uncapped (views*0.02 + comments*3) while
-    // recencyBoost topped out at 48. Any post with ~2,400 views or ~16
-    // comments could score higher than every possible new post, permanently
-    // burying anything freshly posted under a handful of old popular posts
-    // — which is exactly what "feed shows loading then reverts to
-    // yesterday's posts" was: a real fresh fetch every time, just always
-    // losing the ranking to the same stale winners. Capping engagement well
-    // below the recency ceiling means a brand-new post can never be
-    // mathematically un-rankable no matter how much older posts racked up.
-    const engagement = Math.min((p.views || 0) * 0.02 + (commentCounts[p.id] || 0) * 3, 20);
-    // simple recency decay so week-old viral posts don't permanently dominate
-    const recencyBoost = Math.max(0, 48 - ageHrs);
-    return { post: p, score: engagement + recencyBoost, seen: seenIds.has(p.id) };
+  const ctx = { now, following, affinityAuthors, seenIds };
+
+  const toCandidate = p => ({
+    id: p.id,
+    timestamp: p.timestamp,
+    views: p.views || 0,
+    commentCount: commentCounts[p.id] || 0,
+    reactionCount: reactionCounts[p.id] || 0,
+    authorKey: OWNER_KEY // main posts table has no per-post author; always Kris's own
   });
 
-  // Mostly-newest, high-engagement first; unseen posts get a nudge so a
-  // refresh surfaces a genuinely different mix rather than the identical set.
-  scored.sort((a, b) => {
-    const aAdj = a.score + (a.seen ? 0 : 20);
-    const bAdj = b.score + (b.seen ? 0 : 20);
-    return bAdj - aAdj;
-  });
+  const scored = rankablePool.map(p => ({ post: p, score: _scoreFeedCandidate(toCandidate(p), ctx) }));
+  scored.sort((a, b) => b.score - a.score);
 
   const rankedSlots = Math.max(pageSize - pinned.length, 0);
-  const top = scored.slice(0, rankedSlots).map(s => s.post);
+  let top = scored.slice(0, rankedSlots).map(s => s.post);
+
+  // ── Resurfacing: reserve a very small number of slots for old-but-strong
+  // posts that would otherwise never come back around. Kept deliberately
+  // tiny (max 1 per page, and only on pages beyond the very first) so the
+  // feed still reads as current rather than recycled.
+  const chosenIds = new Set([...pinned.map(p => p.id), ...top.map(p => p.id)]);
+  const maxResurfaced = seenIds.size > 0 ? 1 : 0; // skip on the very first cold load
+  if (maxResurfaced > 0 && (oldPool || []).length) {
+    const oldCandidates = oldPool.map(toCandidate);
+    const resurfacedCandidates = _pickResurfacedPosts(oldCandidates, chosenIds, ctx, maxResurfaced);
+    if (resurfacedCandidates.length) {
+      const byId = {};
+      oldPool.forEach(p => { byId[p.id] = p; });
+      const resurfacedPosts = resurfacedCandidates.map(c => byId[c.id]).filter(Boolean);
+      // Slot resurfaced posts into the middle of the page rather than the
+      // very top, so they read as a nice surprise, not a takeover.
+      const insertAt = Math.min(Math.floor(top.length / 2), top.length);
+      top = [...top.slice(0, insertAt), ...resurfacedPosts, ...top.slice(insertAt)].slice(0, rankedSlots + resurfacedPosts.length);
+    }
+  }
+
   return [...pinned, ...top];
 }
 
@@ -7892,6 +8107,11 @@ async function loadPosts() {
     }
     const _pageIds = (postsData || []).map(p => p.id);
     postsData.forEach(p => _seenIds.add(p.id));
+    // Preserve the smart-feed rank _fetchRankedPostsPage already computed —
+    // without this, the later merge-with-profile-posts step in
+    // _doRenderPosts had nothing but raw timestamp to sort by, silently
+    // discarding all the following/affinity/popularity work done above.
+    postsData.forEach((p, i) => { p._feedRank = i; });
     _feedProgress(0.3, 'Loading comments…');
 
     const [commentsData, reactionsData] = await Promise.all([
@@ -7941,6 +8161,7 @@ async function loadPosts() {
         views: p.views || 0,
         version: p.version || null,
         boostData: p.boost_data || null,
+        _feedRank: typeof p._feedRank === 'number' ? p._feedRank : null,
         downloadLink: p.download_link || (p.body && p.body.includes('__APKURL__')
           ? p.body.match(/__APKURL__(.*?)__APKURL__/)?.[1] || null
           : null)
@@ -8303,7 +8524,7 @@ async function _refreshForYouProfilePosts() {
         _isProfilePost: true,
         id: 'pp_' + p.username + '_' + p.id,
         author: displayName,
-        authorKey: p.username,
+        authorKey: (p.username || '').toLowerCase(),
         text: p.body,
         media: (p.media || []).filter(m => m && (m.dataUrl || m.url || m.src)),
         time: p.timestamp,
@@ -8315,6 +8536,39 @@ async function _refreshForYouProfilePosts() {
         reactions: (p.pp_reactions && typeof p.pp_reactions === 'object') ? p.pp_reactions : {}
       };
     });
+    // ── Score each profile post with the same smart-feed algorithm used
+    // for the main posts pool, so "For You" isn't pure recency anymore —
+    // following/affinity/popularity all factor in. Scores are attached
+    // (not pre-sorted here) since _doRenderPosts does the final merge+sort
+    // against the main posts array.
+    try {
+      const myKey = currentUser ? (typeof _myUsernameKey === 'function' ? _myUsernameKey() : currentUser.toLowerCase()) : null;
+      // loadPosts() clears _cache['follows'] right before firing this
+      // function (in parallel with, not after, its own follows reload —
+      // see the comment at _followsReady in loadPosts), so an empty cache
+      // here doesn't necessarily mean the user follows nobody. Reload if
+      // empty rather than silently scoring with followingBoost stuck at 0.
+      let followData = typeof getFollowData === 'function' ? getFollowData() : {};
+      if (myKey && (!followData || !Object.keys(followData).length) && typeof loadFollows === 'function') {
+        followData = await loadFollows().catch(() => ({}));
+      }
+      const following = new Set((followData[myKey] || []).map(k => normalizeFollowKey(k)));
+      const affinityAuthors = new Set();
+      _getAffinityAuthors().forEach(a => affinityAuthors.add(a));
+      _getReactionAffinityAuthors(myKey).forEach(a => affinityAuthors.add(a));
+      const now = Date.now();
+      const ctx = { now, following, affinityAuthors, seenIds: window._feedSeenPostIds || new Set() };
+      window._forYouProfilePosts.forEach(p => {
+        const reactionCount = Object.values(p.reactions || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+        p._score = _scoreFeedCandidate({
+          id: p.id, timestamp: p.timestamp,
+          views: (p.likes || []).length * 4, // profile posts have no view counter — likes are the closest popularity proxy
+          commentCount: (p.comments || []).length,
+          reactionCount,
+          authorKey: p.authorKey
+        }, ctx);
+      });
+    } catch(e) { /* scoring is a ranking nicety, never block the feed on it */ }
     window._forYouFeedFetchFailed = false;
     // Real success — reset the auto-retry counter/timer, same reasoning as
     // the ranked-feed reset above.
@@ -9264,6 +9518,10 @@ function openCommentOverlay(postId) {
   // shared links) since the author's posts may never have been fetched.
   const feedItem = (window._forYouProfilePosts || []).find(p => String(p.id) === String(postId))
     || (window._followingProfilePosts || []).find(p => String(p.id) === String(postId));
+  // Feed-ranking signal: opening someone's comments is a stronger interest
+  // signal than a passive scroll-by — log it so future feed loads weight
+  // that author's posts a bit higher (see _getAffinityAuthors).
+  if (feedItem && feedItem.authorKey && typeof _trackCommentOpen === 'function') _trackCommentOpen(feedItem.authorKey);
   if (feedItem && feedItem._isProfilePost && feedItem.postId) {
     const realPostId = feedItem.postId;
     const ownerKey = (feedItem.authorKey || '').toLowerCase();
@@ -10112,9 +10370,33 @@ function _doRenderPosts() {
     return true;
   });
   if (activeFilter === 'all') {
-    // "For You" — Kris's broadcast posts (predictions/updates/app updates) + every public profile post
-    filtered = filtered.concat(window._forYouProfilePosts || []);
-    filtered.sort((a, b) => new Date(b.time||0) - new Date(a.time||0));
+    // "For You" — Kris's broadcast posts (predictions/updates/app updates) + every public profile post,
+    // blended by the smart-feed algorithm (following, interaction affinity,
+    // recent popularity, unseen-nudge, small old-post resurfacing quota)
+    // instead of pure recency. Main posts carry _feedRank from
+    // _fetchRankedPostsPage (lower = higher priority, pinned posts first);
+    // profile posts carry _score from _refreshForYouProfilePosts. To merge
+    // them fairly, convert _feedRank into a comparable score band that sits
+    // above ordinary profile-post scores (pinned/top-ranked main posts
+    // should still generally lead) while still letting a very high-scoring
+    // profile post (e.g. from someone you follow) surface near the top.
+    const mainWithScore = filtered.map(p => ({
+      p,
+      _mergeScore: typeof p._feedRank === 'number' ? Math.max(0, 60 - p._feedRank * 2) : 30,
+      _pinned: p.type === 'feature_announcement' && p._feedRank === 0
+    }));
+    const profileWithScore = (window._forYouProfilePosts || []).map(p => ({
+      p,
+      _mergeScore: typeof p._score === 'number' ? p._score : 20,
+      _pinned: false
+    }));
+    filtered = [...mainWithScore, ...profileWithScore]
+      .sort((a, b) => {
+        if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        if (b._mergeScore !== a._mergeScore) return b._mergeScore - a._mergeScore;
+        return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
+      })
+      .map(x => x.p);
   } else if (activeFilter === 'prediction') filtered = filtered.filter(p => p.type === 'prediction' || !p.type || p.type === 'app_update' || p.type === 'feature_announcement');
   else if (activeFilter === 'general') filtered = filtered.filter(p => p.type === 'general' || p.type === 'app_update' || p.type === 'feature_announcement');
   else if (['won','lost','pending'].includes(activeFilter)) {
@@ -12962,8 +13244,13 @@ async function toggleFollowViewed() {
   // race Supabase's replication and revert the follow state right after
   // the user set it. Local state is already correct and already saved.
   saveFollowData(follows).then(function() {
-    _refreshFollowCounts();
-  }).catch(console.error);
+    try { if (typeof window._triggerSync === 'function') window._triggerSync(false); } catch(e) {}
+    document.getElementById('uprofileFollowers').textContent = _getFollowerCount(targetId, getFollowData());
+    try { document.getElementById('profileFollowingCount').textContent = (getFollowData()[myKey] || []).length; } catch(e) {}
+  }).catch(function(e) {
+    console.error('[toggleFollowViewed] save failed:', e);
+    showToast("Couldn't save — check your connection and try again", 'error');
+  });
 }
 
 function switchProfileTab(tab) {
@@ -15352,6 +15639,10 @@ function openProfilePostCommentOverlay(postId) {
       }
     });
   }
+  // Feed-ranking signal (see _getAffinityAuthors) — same tracking as the
+  // main openCommentOverlay handoff, covering the direct-open path (e.g.
+  // from a profile page) that doesn't go through that function.
+  if (pRow && pRow.username && typeof _trackCommentOpen === 'function') _trackCommentOpen(pRow.username);
   const overlay = document.getElementById('commentOverlay');
   const sheet = document.getElementById('commentSheet');
   const body = document.getElementById('commentSheetBody');
@@ -28399,6 +28690,12 @@ async function openChannelManage(channelId) {
         ? `💰 Monetization is <b style="color:var(--gold);">active</b> for this channel. Social Plus pays out Plus Coins daily at 12:00 AM based on your channel's performance.`
         : `Social Plus will monetize your channel once it meets requirements — you'll then earn Plus Coins daily at 12:00 AM based on performance. This is activated by the Social Plus team.`}
     </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Channel Name</div>
+    <div style="margin-bottom:6px;">
+      <input id="channelManageNameInput" value="${escHtml(c.name || '')}" placeholder="Channel name" maxlength="50" ${isOwnerForManage ? '' : 'disabled'} style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+      <div id="channelManageNameStatus" style="font-size:11px;margin-top:5px;min-height:14px;"></div>
+      ${isOwnerForManage ? `<button onclick="_saveChannelNameUI('${escHtml(c.id)}')" style="margin-top:8px;font-family:var(--font);font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;">Save Name</button>` : ''}
+    </div>
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Channel Username</div>
     <div style="margin-bottom:6px;">
       <div style="display:flex;align-items:center;gap:8px;">
@@ -28477,6 +28774,24 @@ async function _saveChannelBioUI(channelId) {
   if (!ok) return;
   showToast('Description updated.', 'success');
   if (_currentChannelId === channelId && typeof openChannelDetail === 'function') openChannelDetail(channelId);
+}
+
+async function _saveChannelNameUI(channelId) {
+  const input = document.getElementById('channelManageNameInput');
+  const status = document.getElementById('channelManageNameStatus');
+  const raw = (input ? input.value : '').trim();
+  if (raw.length < 2) { showToast('Channel name must be at least 2 characters.', 'error'); return; }
+  if (raw.length > 50) { showToast('Channel name is too long (max 50 characters).', 'error'); return; }
+  try {
+    await SB.update('channels', { name: raw }, `id=eq.${encodeURIComponent(channelId)}`);
+    _invalidateChannelCache(channelId);
+    showToast('Channel name updated.', 'success');
+    if (status) { status.textContent = ''; }
+    if (_currentChannelId === channelId && typeof openChannelManage === 'function') openChannelManage(channelId);
+  } catch(e) {
+    console.error('[saveChannelName] failed:', e);
+    showToast('Could not save channel name — try again.', 'error');
+  }
 }
 
 async function _saveChannelUsernameUI(channelId) {
@@ -31471,6 +31786,7 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
     <button class="sa-tab-btn" id="sa-tab-referrals" onclick="setSuperAdminTab('referrals')" style="flex-shrink:0;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;">Referrals</button>
     <button class="sa-tab-btn" id="sa-tab-security" onclick="setSuperAdminTab('security')" style="flex-shrink:0;position:relative;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;">Security<span id="saSecurityBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff453a;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;"></span></button>
     <button class="sa-tab-btn" id="sa-tab-channels" onclick="setSuperAdminTab('channels')" style="flex-shrink:0;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;">Channels</button>
+    <button class="sa-tab-btn" id="sa-tab-growth" onclick="setSuperAdminTab('growth')" style="flex-shrink:0;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;">Growth</button>
     <button class="sa-tab-btn" id="sa-tab-more" onclick="setSuperAdminTab('more')" style="flex-shrink:0;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;">More Tools</button>
   </div>
 
@@ -31740,6 +32056,27 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
       </div>
       <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">All Channels</div>
       <div id="saChannelsList"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
+    </div>
+
+    <!-- Growth tools -->
+    <div id="sa-panel-growth" style="display:none;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Force-Follow To @${escHtml(OWNER_KEY)}</div>
+      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Makes every account that isn't already following @${escHtml(OWNER_KEY)} follow it. This writes real follow rows for every user without asking them — run it sparingly.</div>
+        <div id="saForceFollowStatus" style="font-size:12px;color:var(--text3);margin-bottom:10px;min-height:16px;"></div>
+        <button onclick="_saRunForceFollowOwner()" id="saForceFollowBtn" style="width:100%;padding:12px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;">Force-Follow Everyone Now</button>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Boost Followers (Verified Accounts Only)</div>
+      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;">
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Adds synthetic follower rows to a verified/official account. Restricted to verified accounts — the target must already have the verified badge.</div>
+        <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Target Username</label>
+        <input class="c-input" id="saBoostFollowersTarget" placeholder="e.g. plusofficial" style="margin-top:6px;margin-bottom:12px;"/>
+        <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Number of Followers to Add</label>
+        <input class="c-input" id="saBoostFollowersCount" type="number" min="1" max="5000" placeholder="e.g. 100" style="margin-top:6px;margin-bottom:12px;"/>
+        <div id="saBoostFollowersStatus" style="font-size:12px;color:var(--text3);margin-bottom:10px;min-height:16px;"></div>
+        <button onclick="_saRunBoostFollowers()" id="saBoostFollowersBtn" style="width:100%;padding:12px;border-radius:14px;background:rgba(167,139,250,0.14);border:1.5px solid rgba(167,139,250,0.3);color:#a78bfa;font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;">Add Followers</button>
+      </div>
     </div>
 
     <!-- More tools -->
@@ -35379,7 +35716,7 @@ function closeSuperAdmin() {
 
 function setSuperAdminTab(tab) {
   _saTab = tab;
-  ['overview','wallet','tasks','ads','approvals','premium','referrals','security','channels','more'].forEach(function(t) {
+  ['overview','wallet','tasks','ads','approvals','premium','referrals','security','channels','growth','more'].forEach(function(t) {
     var btn = document.getElementById('sa-tab-' + t);
     var panel = document.getElementById('sa-panel-' + t);
     if (btn) {
@@ -35473,7 +35810,113 @@ function _saUpdateSecurityBadge(count) {
   else badge.style.display = 'none';
 }
 
-// ── Super Admin → Channels moderation ──────────────────────────────────
+// ── Super Admin → Growth: force-follow everyone to owner ──────────────
+async function _saRunForceFollowOwner() {
+  if (!isOwner) return;
+  const btn = document.getElementById('saForceFollowBtn');
+  const status = document.getElementById('saForceFollowStatus');
+  if (btn) { btn.disabled = true; btn.textContent = 'Working…'; }
+  if (status) status.textContent = 'Loading accounts…';
+  try {
+    const ownerKey = normalizeFollowKey(OWNER_KEY);
+    const [allAccts, existingFollowRows] = await Promise.all([
+      SB.query('accounts', '?select=username'),
+      SB.query('follows', `?following=eq.${encodeURIComponent(ownerKey)}&select=follower`)
+    ]);
+    const already = new Set((existingFollowRows || []).map(r => normalizeFollowKey(r.follower)));
+    const targets = (allAccts || [])
+      .map(a => normalizeFollowKey(a.username))
+      .filter(k => k && k !== ownerKey && !already.has(k));
+
+    if (!targets.length) {
+      if (status) status.textContent = 'Everyone already follows @' + OWNER_KEY + '.';
+      showToast('Everyone already follows you.', 'success');
+      return;
+    }
+
+    if (status) status.textContent = 'Following ' + targets.length + ' accounts…';
+    const rows = targets.map(followerKey => ({ follower: followerKey, following: ownerKey }));
+    const batchSize = 200;
+    let done = 0;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      try {
+        await SB.upsert('follows', batch, 'follower,following');
+      } catch(e) { /* skip failed batch, keep going */ }
+      done = Math.min(i + batchSize, rows.length);
+      if (status) status.textContent = 'Following ' + done + '/' + targets.length + '…';
+    }
+    if (status) status.textContent = 'Done — ' + done + ' accounts now follow @' + OWNER_KEY + '.';
+    showToast('Force-followed ' + done + ' accounts.', 'success');
+    // Refresh local cache so counts reflect the change immediately for the owner's own session
+    if (typeof loadFollows === 'function') await loadFollows();
+    if (typeof _saRenderSecurity === 'function') { /* no-op, just keeping tab state consistent */ }
+  } catch(e) {
+    console.error('[saRunForceFollowOwner] failed:', e);
+    if (status) status.textContent = 'Failed — check connection and try again.';
+    showToast('Force-follow failed.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Force-Follow Everyone Now'; }
+  }
+}
+
+// ── Super Admin → Growth: boost followers for a verified account only ──
+async function _saRunBoostFollowers() {
+  if (!isOwner) return;
+  const targetInput = document.getElementById('saBoostFollowersTarget');
+  const countInput = document.getElementById('saBoostFollowersCount');
+  const status = document.getElementById('saBoostFollowersStatus');
+  const btn = document.getElementById('saBoostFollowersBtn');
+  const rawTarget = (targetInput ? targetInput.value : '').trim();
+  const count = parseInt(countInput ? countInput.value : '0') || 0;
+
+  if (!rawTarget) { showToast('Enter a target username.', 'error'); return; }
+  if (count <= 0 || count > 5000) { showToast('Enter a follower count between 1 and 5000.', 'error'); return; }
+
+  const targetKey = normalizeFollowKey(rawTarget);
+  if (status) status.textContent = 'Checking account…';
+  try {
+    const acct = await getAccount(targetKey);
+    const verified = acct && (acct.is_verified || isUserVerified(targetKey));
+    if (!verified) {
+      if (status) status.textContent = '';
+      showToast('@' + rawTarget + ' is not a verified account — boost is restricted to verified accounts only.', 'error');
+      return;
+    }
+  } catch(e) {
+    if (status) status.textContent = '';
+    showToast('Could not find that account.', 'error');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Working…'; }
+  if (status) status.textContent = 'Adding ' + count + ' followers…';
+  try {
+    const ts = Date.now();
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      rows.push({ follower: '_boost_follow_' + ts + '_' + i, following: targetKey });
+    }
+    // Batch upserts to avoid oversized payloads
+    const batchSize = 200;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      await SB.upsert('follows', batch, 'follower,following');
+      if (status) status.textContent = 'Adding followers… ' + Math.min(i + batchSize, rows.length) + '/' + rows.length;
+    }
+    if (status) status.textContent = 'Done — added ' + count + ' followers to @' + rawTarget + '.';
+    showToast('Added ' + count + ' followers to @' + rawTarget + '.', 'success');
+    if (typeof loadFollows === 'function') await loadFollows();
+  } catch(e) {
+    console.error('[saRunBoostFollowers] failed:', e);
+    if (status) status.textContent = 'Failed — check connection and try again.';
+    showToast('Boost failed.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Add Followers'; }
+  }
+}
+
+
 async function _saRenderChannels() {
   const statsBox = document.getElementById('saChannelsStats');
   const listBox = document.getElementById('saChannelsList');
