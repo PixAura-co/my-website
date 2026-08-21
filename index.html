@@ -7076,6 +7076,7 @@ function normalizeFollowKey(k) {
   return (k || '').toLowerCase().trim().replace(/^user_/, '').replace(/[^a-z0-9_]/g, '');
 }
 
+
 // Always returns the real username key (from ka_username_key), never the display name.
 // This is the fix for the "two accounts" bug where currentUser holds the display name
 // (e.g. "Kris Ai Assistant") but code uses currentUser.toLowerCase() as a DB key,
@@ -7158,6 +7159,45 @@ async function loadFollows() {
     fromSupabase = true;
   } catch(e) {
     try { rows = JSON.parse(localStorage.getItem('ka_db_follows') || '[]'); } catch(e2) { rows = []; }
+  }
+  // ── Server-side row cap protection ──────────────────────────────────
+  // PostgREST enforces its OWN max-rows setting server-side (Project
+  // Settings → API → Max Rows) that silently overrides whatever ?limit=
+  // the client asks for — confirmed via debug logging showing exactly
+  // 1000 rows returned no matter what the query requested, on a table
+  // with 1491 real rows. Which rows get dropped isn't guaranteed to be
+  // stable (no ?order= is specified), so a just-added follow row can
+  // vanish from this bulk fetch at any time purely because the table
+  // grew past the cap — that's what made a freshly-confirmed-in-the-
+  // database follow disappear from the app: this function overwrote the
+  // correct local state with an incomplete read that happened to leave
+  // the new row out.
+  //
+  // Real fix belongs in Supabase's dashboard (raise Max Rows). This is
+  // the defense-in-depth companion: regardless of what the bulk fetch
+  // returns, always separately fetch the CURRENT user's own follow rows
+  // with a filter scoped to just them (`?follower=eq.<key>`), which
+  // returns everything they follow in one unpaginated-by-relevance query
+  // that can never be truncated by a global row cap in any way that
+  // affects them specifically. Their own data is what the UI's follow
+  // buttons actually depend on, so this is the data that must never be
+  // silently incomplete.
+  if (currentUser) {
+    try {
+      const myKey = normalizeFollowKey(localStorage.getItem('ka_username_key') || currentUser);
+      const myRows = await SB.query('follows', `?follower=eq.${encodeURIComponent(myKey)}&limit=5000`) || [];
+      const myFollowing = [];
+      myRows.forEach(r => {
+        const f = normalizeFollowKey(r.following);
+        if (f && !myFollowing.includes(f)) myFollowing.push(f);
+      });
+      // Splice this authoritative, uncapped list over whatever the bulk
+      // fetch produced for this user, so a truncated bulk read can never
+      // hide something the targeted query actually found.
+      rows = rows.filter(r => normalizeFollowKey(r.follower) !== myKey).concat(myRows);
+    } catch(e) {
+      // Targeted self-fetch failed — bulk rows (possibly capped) remain as fallback.
+    }
   }
   if (window._followWritePending) {
     // A follow/unfollow save is mid-flight for the current user — keep the
@@ -13536,8 +13576,9 @@ function _rerenderUprofile() {
   const displayName = (stored && typeof stored === 'object' && (stored?.display_name || stored?.displayName))
     ? (stored?.display_name || stored?.displayName) : viewedUserKey;
   const follows = getFollowData();
-  const myFollows = follows[(currentUser||'').toLowerCase()] || [];
-  const amFollowing = myFollows.includes(viewedUserKey) || myFollows.includes(viewedUserKey.replace(/\s+/g,'_'));
+  const myFollows = follows[normalizeFollowKey(currentUser)] || [];
+  const normViewedKey = normalizeFollowKey(viewedUserKey);
+  const amFollowing = myFollows.includes(normViewedKey);
 
   renderUprofilePosts(viewedUserKey, displayName, amFollowing).then(() => {
     if (overlay) overlay.scrollTop = scrollTop;
