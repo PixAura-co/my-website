@@ -4403,6 +4403,11 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   <!-- PARTNER SITES CARDS (Kris-managed) — shown after pinned strip -->
   <div id="partnerSitesRow" style="display:none;margin-bottom:14px;"></div>
 
+  <!-- PULL-TO-REFRESH INDICATOR -->
+  <div id="_ptrIndicator" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:height 0.15s ease;">
+    <svg id="_ptrSpinner" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.1s linear;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+  </div>
+
   <!-- POSTS -->
   <div id="postsContainer">
   </div>
@@ -5698,6 +5703,86 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 
 })();
 
+// ── Pull-to-refresh ──────────────────────────────────────────────────────
+// postsContainer sets overscroll-behavior-y: contain specifically to stop
+// rubber-banding from leaking into parent scroll during normal use — but
+// that also happens to suppress the browser/WebView's native pull-to-
+// refresh gesture, and nothing in the app ever replaced it with a working
+// substitute. The result: there was no way to actually trigger a fresh
+// loadPosts() call from the feed itself — "pulling to refresh" did
+// nothing, which is why the feed diversity fix had no path to ever run.
+// This adds an explicit touch-tracked pull gesture (only active on the
+// "For You" tab, only when scrolled to the very top) with a visible
+// spinner, calling the real loadPosts() so the pool re-fetches and the
+// ranking reseeds exactly like a fresh app load would.
+(function() {
+  const THRESHOLD = 70;   // px of pull before release triggers a refresh
+  const MAX_PULL = 110;   // visual cap so the indicator can't be dragged forever
+  let startY = null;
+  let pulling = false;
+  let refreshing = false;
+
+  const indicator = () => document.getElementById('_ptrIndicator');
+  const spinner = () => document.getElementById('_ptrSpinner');
+
+  function atTop() {
+    return (window.scrollY || document.documentElement.scrollTop || 0) <= 2;
+  }
+
+  function eligible() {
+    // Only on the main "For You" home feed — other tabs/overlays (chat,
+    // profile, admin, etc.) have their own scroll contexts and shouldn't
+    // trigger a feed reload from a stray pull gesture.
+    if (typeof activeFilter !== 'undefined' && activeFilter !== 'all') return false;
+    const anyOverlayOpen = document.querySelector('.chat-overlay.open, #commentOverlay.open, #uprofileOverlay.open, #profileOverlay.open, #messagesPageOverlay[style*="flex"]');
+    if (anyOverlayOpen) return false;
+    return true;
+  }
+
+  document.addEventListener('touchstart', function(e) {
+    if (refreshing || !eligible() || !atTop()) { startY = null; return; }
+    startY = e.touches[0].clientY;
+    pulling = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (startY === null || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; return; } // only care about downward pulls
+    if (!atTop()) { startY = null; pulling = false; return; }
+    pulling = true;
+    const dist = Math.min(dy * 0.5, MAX_PULL); // half-rate drag, like most native implementations
+    const ind = indicator();
+    if (ind) {
+      ind.style.height = dist + 'px';
+      const sp = spinner();
+      if (sp) sp.style.transform = 'rotate(' + Math.min(dist / THRESHOLD, 1) * 360 + 'deg)';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function() {
+    if (!pulling || refreshing) { startY = null; pulling = false; return; }
+    const ind = indicator();
+    const dist = ind ? parseFloat(ind.style.height) || 0 : 0;
+    pulling = false;
+    startY = null;
+    if (dist >= THRESHOLD * 0.5) {
+      refreshing = true;
+      if (ind) ind.style.height = '46px';
+      const sp = spinner();
+      if (sp) sp.style.animation = 'spin 0.7s linear infinite';
+      Promise.resolve(typeof loadPosts === 'function' ? loadPosts() : null)
+        .catch(function(e) { console.warn('[pull-to-refresh] loadPosts failed:', e); })
+        .finally(function() {
+          refreshing = false;
+          if (sp) sp.style.animation = '';
+          if (ind) ind.style.height = '0px';
+        });
+    } else if (ind) {
+      ind.style.height = '0px';
+    }
+  }, { passive: true });
+})();
 const OWNER_USER  = 'Social Plus';
 const OWNER_PASS  = 'Socialplus@';
 
@@ -7138,6 +7223,12 @@ async function _saveFollowDataImpl(data) {
   _cache['follows'] = data;
   if (!currentUser) return;
   window._followWritePending = true;
+  // Re-entrant guard: if a second toggle happens while the first save's
+  // post-write protection window is still counting down, cancel that
+  // earlier timeout so it can't clear the flag out from under the newer
+  // save. Only the most recent save's timeout is allowed to actually
+  // lift the guard.
+  if (window._followWritePendingTimer) clearTimeout(window._followWritePendingTimer);
   try {
     const myKey = normalizeFollowKey(localStorage.getItem('ka_username_key') || currentUser);
     const myFollows = data[myKey] || [];
@@ -7161,7 +7252,21 @@ async function _saveFollowDataImpl(data) {
       }
     }
   } finally {
-    window._followWritePending = false;
+    // Keep the "don't trust a fresh DB read over local state" guard up for
+    // a few seconds after the write finishes, not just for the literal
+    // duration of the fetch. The background sync loop (_runSync) polls
+    // every 12s independently of any follow action and calls loadFollows()
+    // unconditionally; if that poll landed in the gap right after our write
+    // resolved — before Supabase's read path was guaranteed consistent, or
+    // simply by bad timing — it would overwrite _cache['follows'] with a
+    // snapshot that doesn't yet reflect what we just wrote, silently
+    // reverting the follow/unfollow the user just did. Clearing the flag
+    // only at fetch-completion (the old behavior) left exactly this gap
+    // open on every single toggle.
+    window._followWritePendingTimer = setTimeout(() => {
+      window._followWritePending = false;
+      window._followWritePendingTimer = null;
+    }, 4000);
   }
 }
 
@@ -7619,7 +7724,39 @@ function _scoreFeedCandidate(c, ctx) {
 
   const unseenBoost = ctx.seenIds && !ctx.seenIds.has(c.id) ? 20 : 0;
 
-  return popularity + recencyBoost + followingBoost + affinityBoost + unseenBoost;
+  // Spotlight boost — fresh posts with very little engagement yet get a
+  // meaningful nudge, specifically so new/small accounts aren't permanently
+  // buried under whatever's already popular. Without this, popularity
+  // compounds: high-engagement posts rank higher → get shown more → get
+  // even more engagement, while a brand-new post never accumulates enough
+  // views/comments to compete and never gets the chance to. This only
+  // applies to genuinely new posts (under the recent window) with low
+  // popularity, so it can't be used to indefinitely prop up an old dead post.
+  const spotlightBoost = (ageHrs <= RECENT_WINDOW_HRS && popularity < 4) ? 14 : 0;
+
+  // Per-candidate random jitter — reseeded fresh on every scoring pass (see
+  // ctx.now/ctx.seed below), so refreshing the feed actually reorders things
+  // instead of recomputing the exact same ranking from the exact same pool
+  // every time. Small enough that it reshuffles near-ties and gives lower
+  // posts a rotating shot at the top slots, without overriding genuine
+  // following/recency signal.
+  const jitter = ctx.seed ? (_seededRandom(c.id + ctx.seed) * 12) : 0;
+
+  return popularity + recencyBoost + followingBoost + affinityBoost + unseenBoost + spotlightBoost + jitter;
+}
+
+// Deterministic-per-call pseudo-random number in [0,1) from a string key +
+// seed — used for per-refresh feed jitter. Deterministic within a single
+// scoring pass (so pinned ordering logic elsewhere that re-scores the same
+// candidate twice in one pass stays consistent) but different across
+// passes because the seed itself changes every refresh.
+function _seededRandom(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
+  h = Math.imul(h ^ (h >>> 16), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967296;
 }
 
 // Picks a handful of old-but-strong posts to resurface even though they
@@ -7641,7 +7778,13 @@ function _pickResurfacedPosts(allCandidates, alreadyChosenIds, ctx, maxResurface
 }
 
 async function _fetchRankedPostsPage(pageSize, seenIds) {
-  const POOL_SIZE = Math.max(pageSize * 4, 40);
+  // Widened from pageSize*4 (~40) to a much larger pool so ranking has real
+  // material to work with — a 40-post pool meant every user's top-10 was
+  // drawn from basically the same handful of recent posts every time,
+  // which is why the feed looked identical across accounts and across
+  // refreshes. 300 gives the scorer + randomization below enough room to
+  // produce genuinely different feeds per user and per refresh.
+  const POOL_SIZE = Math.max(pageSize * 4, 300);
   // Fetch the recent post pool and comment counts in parallel — they don't
   // depend on each other, so no reason to wait on one before starting the other.
   // ── Track whether the posts query itself failed vs. genuinely returned 0 rows ──
@@ -7724,7 +7867,10 @@ async function _fetchRankedPostsPage(pageSize, seenIds) {
   } catch(e) {}
 
   const now = Date.now();
-  const ctx = { now, following, affinityAuthors, seenIds };
+  // Fresh seed every call — this is what makes a manual pull-to-refresh
+  // actually produce a reshuffled feed instead of the identical ranking
+  // every time (the old code had no source of per-refresh variation at all).
+  const ctx = { now, following, affinityAuthors, seenIds, seed: myKey + '_' + now };
 
   const toCandidate = p => ({
     id: p.id,
@@ -8055,7 +8201,11 @@ async function loadPosts() {
     _feedRenderLimit = 10; // any full loadPosts() call is a fresh top-of-feed load
     // If the session has "seen" almost everything in the ranking pool, clear
     // the seen-set so refreshing doesn't run out of "new" posts to surface.
-    if (window._feedSeenPostIds && window._feedSeenPostIds.size > 60) window._feedSeenPostIds.clear();
+    // Raised from 60 to 220 to match the widened 300-post pool — at 60 this
+    // was clearing out (and losing all "already seen" memory) long before
+    // the pool was actually exhausted, on top of the pool being too small
+    // to begin with.
+    if (window._feedSeenPostIds && window._feedSeenPostIds.size > 220) window._feedSeenPostIds.clear();
     const _seenIds = window._feedSeenPostIds || (window._feedSeenPostIds = new Set());
     let postsData = await _fetchRankedPostsPage(PAGE_SIZE, _seenIds);
     // ── Don't trust a single empty result on a cold app/slow network ──────
@@ -8557,7 +8707,7 @@ async function _refreshForYouProfilePosts() {
       _getAffinityAuthors().forEach(a => affinityAuthors.add(a));
       _getReactionAffinityAuthors(myKey).forEach(a => affinityAuthors.add(a));
       const now = Date.now();
-      const ctx = { now, following, affinityAuthors, seenIds: window._feedSeenPostIds || new Set() };
+      const ctx = { now, following, affinityAuthors, seenIds: window._feedSeenPostIds || new Set(), seed: (myKey || 'anon') + '_' + now };
       window._forYouProfilePosts.forEach(p => {
         const reactionCount = Object.values(p.reactions || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
         p._score = _scoreFeedCandidate({
@@ -9744,18 +9894,265 @@ async function toggleSavePost(postId, btn) {
   }
   await _persistSavedPosts(saved);
 }
+// Finds a post by id across both post sources — the main `posts` array
+// (Kris's broadcast content) and the merged-in profile posts living in
+// window._forYouProfilePosts (id shape 'pp_<username>_<postId>'). The old
+// sharePost only ever searched `posts`, so tapping Share on any profile
+// post silently did nothing (post was always undefined → early return).
+function _findAnyPost(postId) {
+  const inMain = posts.find(p => String(p.id) === String(postId));
+  if (inMain) return inMain;
+  const inProfile = (window._forYouProfilePosts || []).find(p => String(p.id) === String(postId))
+    || (window._followingProfilePosts || []).find(p => String(p.id) === String(postId));
+  return inProfile || null;
+}
+
 function sharePost(postId) {
-  const post = posts.find(p => String(p.id) === String(postId));
-  if (!post) return;
-  const text = post.match ? `${post.match} — ${post.pick || ''} (${post.league || ''}) | Social Plus` : 'Check out this post from Social Plus!';
+  _openShareTray(postId);
+}
+
+// ── Share tray ──────────────────────────────────────────────────────────
+// Opens on tapping Share on any post card. Shows: Ask AI (sends the post
+// into the user's Plus AI chat for a take on it), recent 1:1 chats, recent
+// group chats, Copy Link, and Share to more (hands off to the OS share
+// sheet / clipboard, same as the old sharePost behavior).
+async function _openShareTray(postId) {
+  const post = _findAnyPost(postId);
+  if (!post) { showToast('Could not find that post.', 'error'); return; }
+  _closeShareTray();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_shareTrayOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:flex-end;';
+  overlay.innerHTML = `
+    <div onclick="_closeShareTray()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);"></div>
+    <div style="position:relative;background:var(--card,#1a1a1a);border-radius:20px 20px 0 0;padding:8px 0 max(20px, env(safe-area-inset-bottom));font-family:var(--font);max-height:78vh;display:flex;flex-direction:column;">
+      <div style="width:36px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin:0 auto 14px;flex-shrink:0;"></div>
+      <div style="font-size:15px;font-weight:700;color:var(--text,#fff);text-align:center;margin-bottom:14px;flex-shrink:0;">Share</div>
+      <div style="display:flex;gap:18px;overflow-x:auto;padding:0 20px 6px;flex-shrink:0;-webkit-overflow-scrolling:touch;" id="_shareTrayQuickRow"></div>
+      <div style="overflow-y:auto;flex:1;padding:4px 20px 0;" id="_shareTrayListSection"></div>
+      <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08);margin-top:14px;padding-top:4px;flex-shrink:0;">
+        <button onclick="_shareTrayCopyLink('${escJsAttr(String(postId))}')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;background:none;border:none;color:var(--text,#fff);font-family:var(--font);cursor:pointer;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <span style="font-size:11.5px;font-weight:600;">Copy Link</span>
+        </button>
+        <button onclick="_shareTrayMore('${escJsAttr(String(postId))}')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;background:none;border:none;color:var(--text,#fff);font-family:var(--font);cursor:pointer;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </div>
+          <span style="font-size:11.5px;font-weight:600;">Share to more</span>
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  _renderShareTrayContent(postId);
+}
+
+function _closeShareTray() {
+  const el = document.getElementById('_shareTrayOverlay');
+  if (el) el.remove();
+}
+
+function _shareTrayAviHtml(pic, name, size) {
+  return pic
+    ? `<img src="${pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`
+    : `<span style="font-size:${Math.round(size*0.4)}px;font-weight:700;color:var(--gold);">${escHtml((name||'?').charAt(0).toUpperCase())}</span>`;
+}
+
+async function _renderShareTrayContent(postId) {
+  const quickRow = document.getElementById('_shareTrayQuickRow');
+  const listSection = document.getElementById('_shareTrayListSection');
+  if (!quickRow || !listSection) return;
+
+  // Ask AI — always first, always available.
+  const aiPic = (typeof picFor === 'function' && picFor(AI_BOT_KEY)) || null;
+  quickRow.innerHTML = `
+    <button onclick="_shareTrayToAI('${escJsAttr(String(postId))}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;color:var(--text,#fff);font-family:var(--font);cursor:pointer;flex-shrink:0;width:60px;">
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,rgba(94,92,230,0.28),rgba(94,92,230,0.12));border:1.5px solid rgba(94,92,230,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        ${aiPic ? _shareTrayAviHtml(aiPic, 'AI', 52) : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1a7 7 0 0 1-7 7h-2a7 7 0 0 1-7-7H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>`}
+      </div>
+      <span style="font-size:11px;font-weight:600;white-space:nowrap;">Ask AI</span>
+    </button>`;
+
+  listSection.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text3,#888);font-size:12.5px;">Loading recent chats…</div>`;
+
+  try {
+    const [groups, dmRows] = await Promise.all([
+      typeof _loadGroupChats === 'function' ? _loadGroupChats().catch(() => []) : Promise.resolve([]),
+      (async () => {
+        const myKey = typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser || '').toLowerCase();
+        if (!myKey) return [];
+        const [sent, recv] = await Promise.all([
+          SB.query('messages', `?sender=eq.${encodeURIComponent(myKey)}`).catch(() => []),
+          SB.query('messages', `?receiver=eq.${encodeURIComponent(myKey)}`).catch(() => [])
+        ]);
+        const all = [...(sent||[]), ...(recv||[])];
+        const seen = new Set();
+        const rows = [];
+        all.forEach(r => { const rk = r.chat_key || r.id; if (rk && !seen.has(rk)) { seen.add(rk); rows.push(r); } });
+        return rows;
+      })()
+    ]);
+
+    const accounts = _cache['acct_by_username'] || {};
+    const myKey = typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser || '').toLowerCase();
+
+    // Recent 1:1 chats, most recently active first, capped to 6.
+    const dmConvs = dmRows.map(r => {
+      const msgs = r.messages || [];
+      const parts = (r.id || '').split('__');
+      const peer = parts.length === 2 ? (parts[0] === myKey ? parts[1] : parts[0]) : (r.sender === myKey ? r.receiver : r.sender);
+      const last = typeof _mrLastRealMsg === 'function' ? _mrLastRealMsg(msgs) : msgs[msgs.length - 1];
+      return { peer, last, key: r.id };
+    }).filter(c => c.peer && c.peer.toLowerCase() !== AI_BOT_KEY)
+      .sort((a, b) => new Date((b.last||{}).time||0) - new Date((a.last||{}).time||0))
+      .slice(0, 6);
+
+    // Recent groups the user is a member of, most recently active first, capped to 6.
+    const myGroups = (groups || []).slice().sort((a, b) => {
+      const aLast = (a.messages && a.messages.length) ? a.messages[a.messages.length-1].time : a.created_at;
+      const bLast = (b.messages && b.messages.length) ? b.messages[b.messages.length-1].time : b.created_at;
+      return new Date(bLast||0) - new Date(aLast||0);
+    }).slice(0, 6);
+
+    if (!dmConvs.length && !myGroups.length) {
+      listSection.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text3,#888);font-size:12.5px;">No recent chats yet — use Copy Link or Share to more instead.</div>`;
+      return;
+    }
+
+    let html = '';
+    if (myGroups.length) {
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3,#888);margin:8px 0 6px;">Groups</div>`;
+      html += myGroups.map(g => {
+        const pic = g.avatar || g.icon || null;
+        return `<div onclick="_shareTrayToGroup('${escJsAttr(String(postId))}','${escJsAttr(g.id)}')" style="display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${_shareTrayAviHtml(pic, g.name, 40)}</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(g.name || 'Group')}</div>
+        </div>`;
+      }).join('');
+    }
+    if (dmConvs.length) {
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3,#888);margin:14px 0 6px;">Direct Messages</div>`;
+      html += dmConvs.map(c => {
+        const stored = accounts[c.peer] || accounts[(c.peer||'').toLowerCase()];
+        const displayName = (stored && (stored.display_name || stored.displayName)) || c.peer;
+        const isOwnerPeer = (c.peer||'').replace(/[\s_]/g,'').toLowerCase() === OWNER_KEY;
+        const pic = isOwnerPeer ? ownerPic() : ((typeof picFor === 'function' && (picFor(c.peer) || picFor(displayName))) || null);
+        return `<div onclick="_shareTrayToDM('${escJsAttr(String(postId))}','${escJsAttr(c.peer)}')" style="display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${_shareTrayAviHtml(pic, displayName, 40)}</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
+        </div>`;
+      }).join('');
+    }
+    listSection.innerHTML = html;
+  } catch(e) {
+    console.error('[shareTray] failed to load recents:', e);
+    listSection.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text3,#888);font-size:12.5px;">Couldn't load recent chats — try Copy Link instead.</div>`;
+  }
+}
+
+// Builds a compact, shareable text summary of a post (works for both main
+// posts and profile posts, whose shapes differ) plus its link — used as
+// the message body when sharing into a chat, group, or Plus AI.
+function _shareTraySummaryText(post, postId) {
   const url = _postShareUrl(postId);
+  if (post.match) {
+    return `${post.match} — ${post.pick || ''} (${post.league || ''}) | Social Plus\n${url}`;
+  }
+  const body = (post.body || post.text || '').trim();
+  const author = post.author || post.user || post.postOwner || 'Social Plus';
+  const snippet = body ? (body.length > 120 ? body.slice(0, 117) + '…' : body) : 'Check out this post';
+  return `${author}: "${snippet}"\n${url}`;
+}
+
+function _shareTrayCopyLink(postId) {
+  const url = _postShareUrl(postId);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'success')).catch(() => showToast(url));
+  } else {
+    showToast(url);
+  }
+  _closeShareTray();
+}
+
+function _shareTrayMore(postId) {
+  const post = _findAnyPost(postId);
+  const text = post ? _shareTraySummaryText(post, postId) : 'Check out this post from Social Plus!';
+  const url = _postShareUrl(postId);
+  _closeShareTray();
   if (navigator.share) {
     navigator.share({ title: 'Social Plus', text, url }).catch(()=>{});
   } else {
-    navigator.clipboard.writeText(text + '\n' + url)
+    navigator.clipboard.writeText(text)
       .then(() => showToast('Link copied!', 'success'))
       .catch(() => showToast('Could not copy link.'));
   }
+}
+
+// Sends the post summary+link into the user's DM thread with a given peer,
+// reusing the exact same send path as the normal chat composer (getChats/
+// saveChats) so it shows up identically to a message they typed themselves.
+function _shareTrayToDM(postId, peerKey) {
+  const post = _findAnyPost(postId);
+  if (!post || !currentUser) { _closeShareTray(); return; }
+  const text = _shareTraySummaryText(post, postId);
+  const msgs = getChats(peerKey);
+  const senderKey = _myUsernameKey();
+  const msgObj = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), sender: senderKey, text, time: new Date().toISOString() };
+  msgs.push(msgObj);
+  saveChats(peerKey, msgs).catch(e => console.error('[shareTray] DM send failed:', e));
+  if (peerKey.toLowerCase() !== AI_BOT_KEY) {
+    addNotifForUser(peerKey.toLowerCase(), `💬 ${currentUser} shared a post with you`, currentUser, null).catch(()=>{});
+  }
+  _closeShareTray();
+  showToast('Shared!', 'success');
+}
+
+// Sends the post summary+link into a group chat, reusing the same
+// optimistic-render + background-save pattern as sendGroupMessage.
+async function _shareTrayToGroup(postId, groupId) {
+  const post = _findAnyPost(postId);
+  if (!post || !currentUser) { _closeShareTray(); return; }
+  const text = _shareTraySummaryText(post, postId);
+  const myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (currentUser || '').toLowerCase());
+  try {
+    let group = _groupCache[groupId];
+    if (!group) {
+      const groups = await _loadGroupChats();
+      group = (groups || []).find(g => g.id === groupId);
+    }
+    if (!group) { showToast('Could not find that group.', 'error'); _closeShareTray(); return; }
+    const msg = { id: Date.now().toString(), sender: myKey, text, time: new Date().toISOString() };
+    group.messages = (group.messages || []).concat([msg]);
+    _groupCache[groupId] = group;
+    await _saveGroup(group);
+  } catch(e) { console.error('[shareTray] group send failed:', e); }
+  _closeShareTray();
+  showToast('Shared!', 'success');
+}
+
+// Sends the post into the user's actual Plus AI chat (the one-on-one
+// assistant chat, backed by getAIChatHistory/saveAIChatHistory — a
+// different, separate store from the peer-to-peer getChats/saveChats used
+// for DMs and groups). Opens the real AI chat screen via openAIChat() and
+// drives it through the exact same sendAIMessage() pipeline a typed
+// message would use, so the Groq call, history persistence, and rendering
+// all behave identically to the user asking directly.
+function _shareTrayToAI(postId) {
+  const post = _findAnyPost(postId);
+  if (!post || !currentUser) { _closeShareTray(); return; }
+  const summary = _shareTraySummaryText(post, postId);
+  const text = `What do you think of this post?\n\n${summary}`;
+  _closeShareTray();
+  if (typeof openAIChat === 'function') openAIChat();
+  setTimeout(() => {
+    const input = document.getElementById('chatInput');
+    if (!input) { showToast('Could not open Plus AI chat.', 'error'); return; }
+    input.value = text;
+    if (typeof sendAIMessage === 'function') sendAIMessage();
+  }, 150);
 }
 function buildSocialRow(postId) {
   const key = currentUser ? currentUser.toLowerCase() : null;
@@ -10388,11 +10785,17 @@ function _doRenderPosts() {
     const profileWithScore = (window._forYouProfilePosts || []).map(p => ({
       p,
       _mergeScore: typeof p._score === 'number' ? p._score : 20,
-      _pinned: false
+      // A post the current session just published locally (see
+      // submitProfilePost's optimistic injection) always wins the top slot
+      // — the poster needs immediate confirmation it's live, ahead of even
+      // pinned announcements, without waiting for engagement-based ranking
+      // to catch up.
+      _pinned: !!p._justPosted
     }));
     filtered = [...mainWithScore, ...profileWithScore]
       .sort((a, b) => {
         if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        if (a._pinned && b._pinned) return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
         if (b._mergeScore !== a._mergeScore) return b._mergeScore - a._mergeScore;
         return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
       })
@@ -10531,6 +10934,19 @@ function _doRenderPosts() {
 
   const _pageItems = filtered.slice(0, _feedRenderLimit);
   const _hasMore = filtered.length > _feedRenderLimit;
+
+  // Mark every post actually drawn into the "For You" feed as seen. This
+  // was the missing half of the diversity fix: _scoreFeedCandidate reads
+  // window._feedSeenPostIds everywhere to boost unseen posts and the pool
+  // logic clears it once it's "full," but nothing anywhere in the app ever
+  // added an id to it — so it was permanently an empty Set, the unseen
+  // boost was a no-op applied equally to everything, and every refresh
+  // re-ran the identical ranking with the identical result. This is what
+  // actually makes "already seen" posts start losing ground on a refresh.
+  if (activeFilter === 'all') {
+    const seenIds = window._feedSeenPostIds || (window._feedSeenPostIds = new Set());
+    _pageItems.forEach(p => { if (p && p.id) seenIds.add(p.id); });
+  }
 
   container.innerHTML = _pageItems.map(post => {
     if (post._isProfilePost) {
@@ -10994,6 +11410,14 @@ function renderPost(post) {
 
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Like escHtml but also neutralizes single quotes, for values interpolated
+// inside single-quoted onclick="..." attribute strings (escHtml alone
+// leaves ' untouched, which breaks/hijacks the attribute if an id or peer
+// key ever contains one).
+function escJsAttr(str) {
+  return escHtml(str).replace(/'/g, '&#39;');
 }
 
 // ── APK / HTML UPLOAD (Supabase Storage) ──
@@ -12365,7 +12789,7 @@ function normalizeUserKey(k) {
   return k;
 }
 function cleanName(n) { return (typeof n === 'string' ? n : (n||'') + '').replace(/\.+$/, '').trim(); }
-function openUserProfile(userKey) {
+async function openUserProfile(userKey) {
   userKey = (userKey || '').replace(/^user_/, '').replace(/\.+$/, '').trim();
   if (!userKey) return; // guard against empty keys — never show "No account found for @."
   // NOTE: @plusai (AI Bot) now opens its profile page normally.
@@ -12454,6 +12878,13 @@ function openUserProfile(userKey) {
   const isKrisAccount2 = userKey === OWNER_USER || userKey === 'kris analysis ltd' || userKey === OWNER_KEY;
   const pic = picFor(userKey) || picFor(displayName) || (isKrisAccount2 ? ownerPic() : null);
   const bio = getUserBioSync(userKey) || getUserBioSync(displayName.toLowerCase()) || '';
+  // Refresh follow state from Supabase before rendering the Follow button —
+  // the in-memory cache can be stale (e.g. after a prior session or a
+  // background sync gap), which was causing the button to show the wrong
+  // state and instantly "unfollow" on first tap.
+  if (!window._followWritePending && typeof loadFollows === 'function') {
+    try { await loadFollows(); } catch(e) {}
+  }
   const follows = getFollowData();
   const userKeyLow = userKey.toLowerCase().replace(/^user_/, '');
   const isKrisAcct = userKey.toLowerCase() === OWNER_USER.toLowerCase();
@@ -15441,6 +15872,40 @@ async function submitProfilePost() {
   showToast('Posted! ✓', 'success');
   _bustPPCache(usernameKey);
   renderProfilePostsFeed();
+  // ── Show it on Home immediately, don't wait for the ranking pass ──────
+  // A brand-new post has 0 views/comments/reactions, so on a pure
+  // engagement-ranked feed it can easily lose to everything else and never
+  // render in the visible window — the poster gets no confirmation it's
+  // actually live. This injects a locally-built card straight into the
+  // "For You" pool with a _justPosted flag that the merge/sort in
+  // _doRenderPosts treats as top priority, so the poster sees their post
+  // sitting at the top of their own feed right away. It still carries a
+  // real _score so that once the background refresh below completes (or
+  // the next natural reload happens), it settles into its real ranked
+  // position like any other post — this is only about the immediate
+  // "yes, it posted" confirmation, not a permanent ranking override.
+  try {
+    const stored = (_cache['acct_by_username'] || {})[usernameKey];
+    const displayName = (stored && stored.display_name) || usernameKey;
+    const localCard = {
+      _isProfilePost: true,
+      _justPosted: true,
+      id: 'pp_' + usernameKey + '_' + newPost.id,
+      author: displayName,
+      authorKey: usernameKey,
+      text: newPost.text,
+      media: newPost.media || [],
+      time: newPost.time,
+      postId: newPost.id,
+      postOwner: displayName,
+      comments: [],
+      likes: [],
+      commentsOn: true,
+      reactions: {}
+    };
+    window._forYouProfilePosts = [localCard, ...(window._forYouProfilePosts || []).filter(p => p.id !== localCard.id)];
+    if (typeof renderPosts === 'function') renderPosts();
+  } catch(e) {}
   if (typeof _refreshForYouProfilePosts === 'function') _refreshForYouProfilePosts();
   // AI reply — if @plusai is tagged in the post itself
   if (/@plusai\b/i.test(text)) {
@@ -18257,6 +18722,16 @@ async function _openChannelByRefFromLink(ref, postId) {
 // only make sense for channels, so a broadcastId present is a strong hint,
 // but a plain /<username> could still be either.
 async function _resolveUsernamePathOnLoad(username, broadcastId) {
+  // Reset the visible URL back to root as soon as we act on a path-based
+  // deep link, whether or not it resolves to anything. Without this, the
+  // path (e.g. /somechannel) stays in the address bar / WebView history
+  // indefinitely, and an Android WebView that persists/restores its last
+  // URL across app restarts (common with WebView.saveState or the OS
+  // resuming the last-loaded page) will keep reloading that same stale
+  // path on every future cold launch — silently re-running this resolver
+  // and, before this fix, showing "That link is no longer valid" on a
+  // completely ordinary app open the user never triggered.
+  try { history.replaceState({}, '', window.location.origin + '/'); } catch(e) {}
   try {
     const chanRows = await SB.query('channels', `?username=eq.${encodeURIComponent(username)}&select=*`).catch(() => []);
     const channel = chanRows && chanRows[0];
@@ -18274,7 +18749,14 @@ async function _resolveUsernamePathOnLoad(username, broadcastId) {
       if (typeof _consumePendingDeepLink === 'function') _consumePendingDeepLink();
       return;
     }
-    showToast('That link is no longer valid.', 'error');
+    // A username-shaped path that matches neither a channel nor a group is
+    // most often just a stale WebView URL (e.g. the app's last-loaded path
+    // got persisted/restored by the OS and reloaded on a fresh launch) —
+    // not necessarily a link the user actually tapped. Showing a red error
+    // toast for that is alarming and misleading, so this fails silently;
+    // genuinely-tapped invalid links (?post=/?group=) still show a toast
+    // via their own dedicated handling elsewhere.
+    console.warn('[deep link] no channel or group found for path username:', username);
   } catch(e) { console.warn('[deep link] username path resolve failed:', e); }
 }
 
