@@ -213,7 +213,7 @@ img { content-visibility: auto; }
 .msgs-conv-actions { display: flex; gap: 6px; }
 .msgs-del-btn { font-family: var(--font); font-size: 11px; padding: 4px 8px; border-radius: 8px; background: var(--red-bg); border: 1px solid var(--red-b); color: var(--red); cursor: pointer; }
 .msgs-open-btn { font-family: var(--font); font-size: 11px; padding: 4px 8px; border-radius: 8px; background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.3); color: var(--blue); cursor: pointer; }
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 html { scroll-behavior: auto; } /* smooth on html causes jank on mobile — use per-element if needed */
 :root {
   /* ═══ CANONICAL TOKEN SET — merged from the two competing :root blocks
@@ -1222,11 +1222,11 @@ body.light-mode .score-lbl { color: rgba(0,0,0,0.45); }
   align-items: center;
   justify-content: center;
   gap: 0;
-  background: rgba(18,18,18,0.94);
+  background: rgba(255,255,255,0.12);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.13);
-  border-top-color: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-top-color: rgba(255,255,255,0.30);
   border-radius: 100px;
   padding: 0 20px 0 18px;
   width: 152px;
@@ -1268,8 +1268,8 @@ body.light-mode #postPageOverlay .c-input { background: rgba(0,0,0,0.05); border
 body.light-mode #postPageOverlay .c-input::placeholder { color: rgba(0,0,0,0.35); }
 body.light-mode .tab-btn { color: rgba(0,0,0,0.4); }
 body.light-mode .tab-btn:not(.active):hover .tab-icon-wrap { background: rgba(0,0,0,0.06); }
-body.light-mode .tab-btn.active { background: var(--gold); color: #000; }
-body.light-mode .tab-btn.active svg { color: #000; }
+body.light-mode .tab-btn.active { background: none; color: rgba(0,0,0,0.85); }
+body.light-mode .tab-btn.active svg { color: rgba(0,0,0,0.85); }
 body.light-mode .tab-badge-dot { border-color: rgba(242,242,247,0.96); }
 
 body.light-mode .tip-card { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.12); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
@@ -1554,9 +1554,7 @@ body.light-mode [style*="color:var(--text3)"] { color: rgba(0,0,0,0.40) !importa
 body.light-mode [style*="color: var(--text)"] { color: #0d0d0d !important; }
 body.light-mode [style*="color: var(--text2)"] { color: rgba(0,0,0,0.55) !important; }
 body.light-mode [style*="color: var(--text3)"] { color: rgba(0,0,0,0.40) !important; }
-/* Wallet banner card is always dark regardless of theme — exempt its text from the light-mode flips above (ID-scoped selector outranks the generic attribute selectors below) */
-body.light-mode #partnerSitesRow div[style*="text-transform:uppercase"] { color: rgba(255,255,255,0.45) !important; }
-body.light-mode #partnerSitesRow span { color: rgba(255,255,255,0.45) !important; }
+/* Wallet card now goes white/black in light mode like every other card — no exemption needed */
 body.light-mode [style*="background:var(--bg)"] { background: #f0f2f5 !important; }
 body.light-mode [style*="background: var(--bg)"] { background: #f0f2f5 !important; }
 body.light-mode [style*="background:var(--glass)"] { background: rgba(255,255,255,0.82) !important; }
@@ -1669,15 +1667,15 @@ body.light-mode [style*="background:rgba(30,28,40"] { background: rgba(248,246,2
    permanent fixed layers always worth the budget.
 ══════════════════════════════════════════════════════════════════ */
 
-/* ── Post cards: reduce from blur(32px) saturate(200%) → blur(12px) ── */
+/* ── Post cards: reduce from blur(32px) saturate(200%) → blur(9px) ── */
 body.android-fix .post-card {
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(9px) !important;
+  -webkit-backdrop-filter: blur(9px) !important;
   contain: paint layout style !important;
 }
 body.android-fix.light-mode .post-card {
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(9px) !important;
+  -webkit-backdrop-filter: blur(9px) !important;
 }
 
 /* ── Glass elements: reduce from blur(24px) saturate(180%) → blur(10px) ── */
@@ -2208,16 +2206,17 @@ body:not(.light-mode) .tab-btn { color: var(--text-ghost); }
 .tab-icon-wrap { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 100px; transition: all 0.25s cubic-bezier(0.32,0.72,0,1); flex-shrink: 0; }
 .tab-btn svg { width: 21px; height: 21px; flex-shrink: 0; transition: all 0.22s; }
 .tab-lbl { font-family: var(--font); font-size: 12.5px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; max-width: 0; overflow: hidden; opacity: 0; transition: max-width 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.18s, margin 0.28s; margin-left: 0; }
-/* Active tab — icon glows gold, no background pill, no expanding label */
-.tab-btn.active { background: none; color: var(--gold); flex: 0 0 auto; padding: 5px 14px 5px 10px; border: none; box-shadow: none; }
-body.light-mode .tab-btn.active { background: none; color: #a07800; border: none; box-shadow: none; }
-body:not(.light-mode) .tab-btn.active { background: none; color: var(--gold); border: none; }
-.tab-btn.active .tab-icon-wrap { background: rgba(245,197,24,0.14); box-shadow: 0 0 0 1px rgba(245,197,24,0.22); width: 40px; height: 40px; border-radius: 14px; }
+/* Active tab — pure white (dark mode) / pure black (light mode), small dot indicator, no boxed background */
+.tab-btn.active { background: none; color: #fff; flex: 0 0 auto; padding: 5px 14px 5px 10px; border: none; box-shadow: none; }
+body.light-mode .tab-btn.active { background: none; color: #000; border: none; box-shadow: none; }
+body:not(.light-mode) .tab-btn.active { background: none; color: #fff; border: none; }
+.tab-btn.active .tab-icon-wrap { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; width: 36px; height: 36px; border-radius: 100px; position: relative; }
+.tab-btn.active .tab-icon-wrap { z-index: 1; }
 .tab-btn.active .tab-lbl { max-width: 90px; opacity: 1; margin-left: 4px; }
-.tab-btn.active svg { color: var(--gold); }
-body:not(.light-mode) .tab-btn.active svg { color: var(--gold); }
-body.light-mode .tab-btn.active svg { color: #a07800; }
-body.light-mode .tab-btn.active .tab-icon-wrap { background: rgba(245,197,24,0.18); box-shadow: 0 0 0 1px rgba(245,197,24,0.30); }
+.tab-btn.active svg { color: #fff; }
+body:not(.light-mode) .tab-btn.active svg { color: #fff; }
+body.light-mode .tab-btn.active svg { color: #000; }
+body.light-mode .tab-btn.active .tab-icon-wrap { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 .tab-btn:not(.active):hover .tab-icon-wrap { background: rgba(0,0,0,0.06); }
 body:not(.light-mode) .tab-btn:not(.active):hover .tab-icon-wrap { background: rgba(255,255,255,0.08); }
 .tab-btn:active { transform: scale(0.93); }
@@ -2292,10 +2291,10 @@ body.light-mode .nav-name .brand-sub { color: rgba(0,0,0,0.55) !important; text-
    IMPROVED REPLY UI
    Clean indented thread look, not the cramped stack
 ═══════════════════════════════════════════ */
-.reply-input-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(245,197,24,0.05); border: 1px solid rgba(245,197,24,0.15); border-radius: 14px; animation: slideUp 0.2s ease both; }
-.reply-input-wrap .reply-to-chip { font-size: 10px; font-weight: 600; color: var(--gold); background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.25); border-radius: 100px; padding: 3px 9px; white-space: nowrap; flex-shrink: 0; }
-body.light-mode .reply-input-wrap { background: rgba(245,197,24,0.06); border-color: rgba(245,197,24,0.25); }
-.comment-replies-thread { margin-top: 10px; padding-left: 14px; border-left: 2px solid rgba(245,197,24,0.22); display: flex; flex-direction: column; gap: 10px; }
+.reply-input-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; animation: slideUp 0.2s ease both; }
+.reply-input-wrap .reply-to-chip { font-size: 10px; font-weight: 600; color: var(--text2); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); border-radius: 100px; padding: 3px 9px; white-space: nowrap; flex-shrink: 0; }
+body.light-mode .reply-input-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10); }
+.comment-replies-thread { margin-top: 10px; padding-left: 14px; border-left: 2px solid rgba(255,255,255,0.14); display: flex; flex-direction: column; gap: 10px; }
 /* ═══════════════════════════════════════════
    NO-GLASS MODE: Solid clean backgrounds
    (previously looked broken / messy)
@@ -2440,7 +2439,7 @@ body {
 .pred-card.won::before { background: linear-gradient(180deg, var(--green), rgba(48,209,88,0)); }
 .pred-card.lost::before { background: linear-gradient(180deg, var(--red), rgba(255,69,58,0)); }
 .pred-card.pending::before { background: linear-gradient(180deg, var(--gold), rgba(245,197,24,0)); }
-.odds-pill { background: var(--gold); color: #000; font-weight: 800; font-size: 11px; border-radius: 8px; padding: 3px 10px; }
+.odds-pill { background: rgba(255,255,255,0.10); color: var(--text); font-weight: 800; font-size: 11px; border-radius: 8px; padding: 3px 10px; }
 .react { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 5px 10px; }
 .react:hover { background: rgba(245,197,24,0.08); border-color: rgba(245,197,24,0.22); }
 /* .react.reacted canonical above */
@@ -2484,7 +2483,7 @@ body.light-mode .f-btn.active { background: var(--gold) !important; color: #000 
 body.light-mode .app-tabbar { background: rgba(240,240,250,0.55) !important; border-color: rgba(255,255,255,0.70) !important; backdrop-filter: blur(24px) saturate(200%) brightness(1.06) !important; -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.06) !important; box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.95) inset, 0 -1px 0 rgba(0,0,0,0.04) inset !important; }
 body.light-mode .tab-btn { color: rgba(0,0,0,0.38); }
 body.light-mode .tab-btn:not(.active) svg { color: rgba(0,0,0,0.38) !important; }
-body.light-mode .tab-btn.active .tab-lbl { color: #a07800 !important; }
+body.light-mode .tab-btn.active .tab-lbl { color: #000 !important; }
 body.light-mode .nav-name .brand-sub { color: rgba(0,0,0,0.45); }
 body.light-mode .pred-card { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); }
 body.light-mode .react { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
@@ -2631,7 +2630,7 @@ body:not(.light-mode) {
   width: calc(100% - 32px) !important;
   max-width: 420px !important;
   border-radius: 22px !important;
-  top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+  top: calc(6px + env(safe-area-inset-top, 0px)) !important;
   height: 62px !important;
   min-height: 62px !important;
   padding: 0 8px !important;
@@ -2658,7 +2657,7 @@ body.light-mode .nav {
 }
 /* Pill default: push app content below the floating pill */
 .app {
-  padding-top: 104px;
+  padding-top: 96px;
 }
 
 /* Classic nav: opt-in via body.nav-classic-style — full-width edge-to-edge */
@@ -2703,6 +2702,7 @@ body.nav-classic-style .app {
   width: calc(100% - 24px) !important;
   border-radius: 22px !important;
   border: 1px solid rgba(255,255,255,0.11) !important;
+  background: rgba(255,255,255,0.13) !important;
   box-shadow: 0 4px 28px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset !important;
 }
 body.light-mode .subpage-topbar,
@@ -2826,19 +2826,39 @@ body.light-mode .app-tabbar {
     0 3px 8px rgba(0,0,0,0.07) !important;
 }
 
-/* ── Active tab: clean gold pill ── */
+/* ── Active tab: Apple-style liquid-glass capsule wraps icon + label ── */
 body:not(.light-mode) .tab-btn.active {
-  background: var(--gold) !important;
-  box-shadow: 0 2px 12px rgba(245,197,24,0.35) !important;
-  animation: none !important;
+  background: rgba(255,255,255,0.14) !important;
+  backdrop-filter: blur(14px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  border-radius: 100px !important;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.22),
+    0 1px 0 rgba(255,255,255,0.35) inset,
+    0 -1px 3px rgba(0,0,0,0.10) inset !important;
+  animation: navGlassPop 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 body.light-mode .tab-btn.active {
-  background: var(--gold) !important;
-  box-shadow: 0 2px 12px rgba(245,197,24,0.35) !important;
-  animation: none !important;
+  background: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(14px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.80) !important;
+  border-radius: 100px !important;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.10),
+    0 1px 0 rgba(255,255,255,0.90) inset,
+    0 -1px 3px rgba(0,0,0,0.04) inset !important;
+  animation: navGlassPop 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
-.tab-btn.active svg { color: #000 !important; }
-.tab-btn.active .tab-lbl { color: #000 !important; }
+@keyframes navGlassPop {
+  0% { transform: scale(0.85); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+body:not(.light-mode) .tab-btn.active svg { color: #fff !important; }
+body:not(.light-mode) .tab-btn.active .tab-lbl { color: #fff !important; }
+body.light-mode .tab-btn.active svg { color: #000 !important; }
+body.light-mode .tab-btn.active .tab-lbl { color: #000 !important; }
 
 /* ── Inactive tab icons ── */
 body:not(.light-mode) .tab-btn:not(.active) {
@@ -3235,21 +3255,21 @@ body.light-mode #chatIconTray button {
    FAB POST BUTTON
 ══════════════════════ */
 body:not(.light-mode) #fabPostBtn {
-  background: rgba(18,18,24,0.88) !important;
+  background: rgba(255,255,255,0.12) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.20) !important;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.20) inset,
-    0 -1px 0 rgba(0,0,0,0.32) inset,
-    0 10px 28px rgba(0,0,0,0.5),
-    0 2px 8px rgba(0,0,0,0.4) !important;
+    0 1px 0 rgba(255,255,255,0.30) inset,
+    0 -1px 0 rgba(0,0,0,0.10) inset,
+    0 10px 28px rgba(0,0,0,0.35),
+    0 2px 8px rgba(0,0,0,0.25) !important;
 }
 body.light-mode #fabPostBtn {
-  background: rgba(255,255,255,0.92) !important;
+  background: rgba(255,255,255,0.55) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.80) !important;
   box-shadow:
     0 1px 0 rgba(255,255,255,0.97) inset,
     0 -1px 0 rgba(0,0,0,0.06) inset,
@@ -4454,7 +4474,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     <div class="profile-handle" id="profileHandleDisplay"></div>
     <div id="profileRoleBadge" style="display:none;"></div>
     <div id="profileBioDisplay" style="font-size:13px;color:var(--text2);margin:6px 0 10px;text-align:center;max-width:280px;line-height:1.5;"></div>
-    <a id="profileLinkDisplay" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:12px;text-align:center;margin:-4px 0 12px;word-break:break-all;text-decoration:none;"></a>
+    <a id="profileLinkDisplay" href="#" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();if(typeof _routeInAppOrConfirm==='function'&&this.href&&_routeInAppOrConfirm(this.href)){event.preventDefault();}" style="display:none;font-size:12px;text-align:center;margin:-4px 0 12px;word-break:break-all;text-decoration:none;"></a>
     <div style="display:flex;gap:28px;align-items:center;margin-bottom:14px;">
       <div onclick="openFollowList('followers')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">
         <strong id="profileFollowersCount" style="font-size:18px;font-weight:700;color:var(--text);line-height:1;">0</strong>
@@ -5156,7 +5176,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     <div class="uprofile-name" id="uprofileName"></div>
     <div class="uprofile-handle" id="uprofileHandle"></div>
     <div class="uprofile-bio-text" id="uprofileBio"></div>
-    <a id="uprofileLinkDisplay" href="#" target="_blank" rel="noopener noreferrer" style="display:none;font-size:12px;color:var(--blue);margin:0 0 12px;word-break:break-all;text-decoration:none;"></a>
+    <a id="uprofileLinkDisplay" href="#" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();if(typeof _routeInAppOrConfirm==='function'&&this.href&&_routeInAppOrConfirm(this.href)){event.preventDefault();}" style="display:none;font-size:12px;color:var(--blue);margin:0 0 12px;word-break:break-all;text-decoration:none;"></a>
     <div style="display:flex;gap:28px;align-items:center;margin-bottom:14px;">
       <div onclick="openUserFollowList('followers')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">
         <strong id="uprofileFollowers" style="font-size:18px;font-weight:700;color:var(--text);line-height:1;">0</strong>
@@ -5794,7 +5814,7 @@ const OWNER_PASS  = 'Socialplus@';
 
 // ── GLOBAL VERIFIED BADGE ── use this everywhere instead of plain ✓ or inline SVGs
 const VERIFIED_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
-const PREMIUM_BADGE_HTML = '<span title="Premium Member" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:linear-gradient(135deg,#b8860b,#F5C518);border-radius:4px;font-size:10px;line-height:1;vertical-align:middle;margin-left:1px;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z" fill="#000"/></svg></span>';
+const PREMIUM_BADGE_HTML = '<span title="Premium Member" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:linear-gradient(135deg,#0864c9,#0a84ff);border-radius:4px;font-size:10px;line-height:1;vertical-align:middle;margin-left:1px;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z" fill="#000"/></svg></span>';
 // Small reusable SVG icons for premium/wallet UI — replaces keyboard emoji so
 // these render as consistent, crisp vector icons instead of platform glyphs.
 const ICON_CROWN  = function(c){ c=c||'currentColor'; return `<svg width="16" height="13" viewBox="0 0 32 24" fill="none"><path d="M2 22L0 8l7 5 9-11 9 11 7-5-2 14z" fill="${c}"/></svg>`; };
@@ -9040,6 +9060,7 @@ async function submitComment(postId) {
   post.comments.push(newComment);
 
   input.value = '';
+  if (input.tagName === 'TEXTAREA') { input.style.height = ''; input.classList.remove('c-input-multiline'); }
   commentMediaStaging[postId] = [];
   const previewEl = document.getElementById(`c-media-preview-${postId}`);
   if (previewEl) previewEl.innerHTML = '';
@@ -10703,7 +10724,44 @@ function _doRenderPosts() {
       }
     }
     {
-      container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></div><div class="empty-title">Nothing here right now</div><div class="empty-sub" style="opacity:0.75;">Check back in a bit, or pull to refresh.</div><div style="margin-top:14px;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload</button></div></div>`;
+      // ── Default: keep showing the skeleton instead of a dead-end message ──
+      // Reaching this point means every other explanation was ruled out —
+      // no fetch error, no failed request, the filter is genuinely empty —
+      // which on a normal connection almost always means the fetch just
+      // hasn't finished settling yet (e.g. right after a fresh reload/pull-
+      // to-refresh, before the next tick relabels _hasCompletedFeedLoad).
+      // A generic "Nothing here right now" in that split second reads as a
+      // dead end even though the app is still actively working. Only show
+      // an actual message when there's real evidence something is
+      // genuinely slow: the connection is known-bad (_sbOnline is false)
+      // or the feed has already auto-retried its full budget without
+      // resolving. Otherwise, keep the skeleton up and let the in-flight
+      // request (or the next poll) fill it in on its own.
+      const _connectionLooksBad = (typeof _sbOnline !== 'undefined' && _sbOnline === false)
+        || (window._feedAutoRetryCount || 0) >= 3;
+      if (!_connectionLooksBad) {
+        container.innerHTML = _buildFeedSkeleton(4, 'predictions');
+        // Nothing else in the app currently re-triggers loadPosts() on a
+        // timer, so without a fallback this skeleton could sit here
+        // forever if the "everything looks fine but filtered is still
+        // empty" state doesn't resolve on its own (e.g. a request that
+        // silently stalled instead of erroring). Force one retry shortly
+        // after landing here, capped by the same 3-attempt budget used
+        // elsewhere, so a genuinely stuck load still surfaces the message
+        // above instead of leaving the skeleton up indefinitely.
+        window._feedAutoRetryCount = (window._feedAutoRetryCount || 0);
+        if (!window._feedAutoRetryTimer && window._feedAutoRetryCount < 3) {
+          const _retryDelays = [2000, 5000, 10000];
+          const _delay = _retryDelays[window._feedAutoRetryCount];
+          window._feedAutoRetryCount++;
+          window._feedAutoRetryTimer = setTimeout(function() {
+            window._feedAutoRetryTimer = null;
+            if (typeof loadPosts === 'function') loadPosts();
+          }, _delay);
+        }
+        return;
+      }
+      container.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></div><div class="empty-title">This might take a while</div><div class="empty-sub" style="opacity:0.75;">Your connection looks slow — we'll keep trying in the background.</div><div style="margin-top:14px;"><button onclick="if(typeof loadPosts==='function')loadPosts();" style="font-family:var(--font);font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.16);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' style='width:14px;height:14px;'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/></svg> Reload</button></div></div>`;
     }
     return;
   }
@@ -11013,14 +11071,14 @@ function renderPost(post) {
   if (post.type === 'feature_announcement') {
     if (_isFeatureAnnouncementDismissed(post.id)) return '';
     const ownerDelFa = (isOwner) ? `<button class="post-social-btn" onclick="event.stopPropagation();deletePost('${post.id}')" style="color:rgba(255,69,58,0.7);margin-left:auto;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg> Delete</button>` : '';
-    return `<div class="post-card update" id="post-${post.id}" onclick="openFeatureAnnouncementOverlay('${post.id}')" style="cursor:pointer;position:relative;border:1.5px solid rgba(245,197,24,0.35);background:linear-gradient(160deg,rgba(245,197,24,0.06) 0%,rgba(0,0,0,0) 60%);">
+    return `<div class="post-card update" id="post-${post.id}" onclick="openFeatureAnnouncementOverlay('${post.id}')" style="cursor:pointer;position:relative;border:1.5px solid rgba(255,255,255,0.16);background:linear-gradient(160deg,rgba(255,255,255,0.05) 0%,rgba(0,0,0,0) 60%);">
       <button onclick="event.stopPropagation();dismissFeatureAnnouncement('${post.id}')" title="Dismiss" style="position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <div class="post-head">
         <div class="post-identity">
-          <div class="post-avi" style="background:rgba(245,197,24,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);border:1.5px solid rgba(245,197,24,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <div class="post-avi" style="background:rgba(255,255,255,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:var(--text);border:1.5px solid rgba(255,255,255,0.16);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           </div>
           <div>
             <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
@@ -11031,7 +11089,7 @@ function renderPost(post) {
       </div>
       <div style="font-size:15px;font-weight:800;color:var(--text);margin-top:12px;letter-spacing:-0.2px;padding-right:26px;">${escHtml(post.title || '')}</div>
       <div style="font-size:13.5px;color:var(--text2);line-height:1.55;margin-top:6px;">${escHtml(post.body || '')}</div>
-      <div style="margin-top:14px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--gold);">See what changed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text2);">See what changed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>`;
   }
   if (post.type === 'app_update') {
@@ -11062,7 +11120,7 @@ function renderPost(post) {
           </button>
         </div>`
       : '<div style="margin-top:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;font-size:12px;color:var(--text3);">No APK attached to this update.</div>';
-    return `<div class="post-card update" id="post-${post.id}" style="border:1.5px solid rgba(245,197,24,0.35);background:linear-gradient(160deg,rgba(245,197,24,0.06) 0%,rgba(0,0,0,0) 60%);">
+    return `<div class="post-card update" id="post-${post.id}" style="border:1.5px solid rgba(255,255,255,0.16);background:linear-gradient(160deg,rgba(255,255,255,0.05) 0%,rgba(0,0,0,0) 60%);">
       <div class="post-head">
         <div class="post-identity">
           <div class="post-avi" style="background:rgba(245,197,24,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);border:1.5px solid rgba(245,197,24,0.3);">P</div>
@@ -11118,8 +11176,8 @@ function renderPost(post) {
   }
 
   const ownerDelete = ''; // Delete moved to social row
-  const pinBtn = isOwner ? `<button class="pin-btn" onclick="togglePinPost('${post.id}')" title="${isPinnedPost(post.id)?'Unpin':'Pin'} post" style="background:${isPinnedPost(post.id)?'rgba(245,197,24,0.18)':'rgba(255,255,255,0.06)'};border:1px solid ${isPinnedPost(post.id)?'rgba(245,197,24,0.4)':'rgba(255,255,255,0.12)'};border-radius:10px;padding:5px 10px;cursor:pointer;font-family:var(--font);font-size:11px;font-weight:700;color:${isPinnedPost(post.id)?'var(--gold)':'rgba(255,255,255,0.45)'};display:inline-flex;align-items:center;gap:4px;transition:all 0.18s;margin-right:4px;"><svg viewBox="0 0 24 24" fill="${isPinnedPost(post.id)?'var(--gold)':'none'}" stroke="${isPinnedPost(post.id)?'var(--gold)':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${isPinnedPost(post.id)?'Pinned':'Pin'}</button>` : '';
-  const pinnedLabel = isPinnedPost(post.id) ? `<div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--gold);padding:6px 14px 2px;opacity:0.85;"><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 3a1 1 0 0 0-1 1v1H9V4a1 1 0 0 0-2 0v1a3 3 0 0 0-2 2.83V9l-2 2v1h7v6l1 2 1-2v-6h7v-1l-2-2V7.83A3 3 0 0 0 17 5V4a1 1 0 0 0-1-1z"/></svg>Pinned</div>` : '';
+  const pinBtn = isOwner ? `<button class="pin-btn" onclick="togglePinPost('${post.id}')" title="${isPinnedPost(post.id)?'Unpin':'Pin'} post" style="background:${isPinnedPost(post.id)?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.06)'};backdrop-filter:${isPinnedPost(post.id)?'blur(12px) saturate(180%)':'none'};-webkit-backdrop-filter:${isPinnedPost(post.id)?'blur(12px) saturate(180%)':'none'};border:1px solid ${isPinnedPost(post.id)?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.12)'};border-radius:10px;padding:5px 10px;cursor:pointer;font-family:var(--font);font-size:11px;font-weight:700;color:${isPinnedPost(post.id)?'var(--text)':'rgba(255,255,255,0.45)'};display:inline-flex;align-items:center;gap:4px;transition:all 0.18s;margin-right:4px;"><svg viewBox="0 0 24 24" fill="${isPinnedPost(post.id)?'var(--text)':'none'}" stroke="${isPinnedPost(post.id)?'var(--text)':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${isPinnedPost(post.id)?'Pinned':'Pin'}</button>` : '';
+  const pinnedLabel = isPinnedPost(post.id) ? `<div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text2);padding:6px 14px 2px;opacity:0.85;"><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--text2)" stroke="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 3a1 1 0 0 0-1 1v1H9V4a1 1 0 0 0-2 0v1a3 3 0 0 0-2 2.83V9l-2 2v1h7v6l1 2 1-2v-6h7v-1l-2-2V7.83A3 3 0 0 0 17 5V4a1 1 0 0 0-1-1z"/></svg>Pinned</div>` : '';
 
   if (isGeneral) {
     return `
@@ -11127,7 +11185,7 @@ function renderPost(post) {
         ${pinnedLabel}
         <div class="post-head">
           <div class="post-identity">
-            <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--gold-dim);color:var(--gold);font-weight:800;font-size:16px;">S</div>'}</div>
+            <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);color:var(--text);font-weight:800;font-size:16px;">S</div>'}</div>
             <div>
               <div class="post-author" style="flex-direction:column;align-items:flex-start;gap:3px;"><div style="display:flex;align-items:center;gap:2px;"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span><span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div></div>
               <div class="post-time">${timeAgo}</div>
@@ -11184,7 +11242,7 @@ function renderPost(post) {
       ${pinnedLabel}
       <div class="post-head">
         <div class="post-identity">
-          <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--gold-dim);color:var(--gold);font-weight:800;font-size:16px;">S</div>'}</div>
+          <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);color:var(--text);font-weight:800;font-size:16px;">S</div>'}</div>
           <div>
             <div class="post-author"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span> <span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
             <div class="post-time">${timeAgo}</div>
@@ -13908,23 +13966,18 @@ function closeProfilePage() {
   if (homeTab) homeTab.classList.add('active');
 }
 
-// ── Built-in avatar options: 2 emoji, 3 gradients ──
+// ── Built-in avatar options: 10 default profile pictures ──
 const BUILTIN_AVATARS = [
-  { type:'emoji', val:'🦁', label:'Lion' },
-  { type:'emoji', val:'🔥', label:'Fire' },
-  { type:'emoji', val:'⚡', label:'Lightning' },
-  { type:'emoji', val:'🐯', label:'Tiger' },
-  { type:'emoji', val:'🦅', label:'Eagle' },
-  { type:'emoji', val:'🐉', label:'Dragon' },
-  { type:'emoji', val:'💀', label:'Skull' },
-  { type:'emoji', val:'🌙', label:'Moon' },
-  { type:'emoji', val:'💎', label:'Diamond' },
-  { type:'gradient', val:'linear-gradient(135deg,#F5C518,#ff9500)', label:'Gold', css:'linear-gradient(135deg,#F5C518,#ff9500)' },
-  { type:'gradient', val:'linear-gradient(135deg,#5e5ce6,#c4b5fd)', label:'Indigo', css:'linear-gradient(135deg,#5e5ce6,#c4b5fd)' },
-  { type:'gradient', val:'linear-gradient(135deg,#30d158,#0a84ff)', label:'Teal', css:'linear-gradient(135deg,#30d158,#0a84ff)' },
-  { type:'gradient', val:'linear-gradient(135deg,#ff453a,#ff9f0a)', label:'Lava', css:'linear-gradient(135deg,#ff453a,#ff9f0a)' },
-  { type:'gradient', val:'linear-gradient(135deg,#bf5af2,#ff375f)', label:'Neon', css:'linear-gradient(135deg,#bf5af2,#ff375f)' },
-  { type:'gradient', val:'linear-gradient(135deg,#0a84ff,#30d158)', label:'Ocean', css:'linear-gradient(135deg,#0a84ff,#30d158)' }
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Classic' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Star' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Alien' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Alien Pro' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Spy' },
+  { type:'image', val:'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAcFBQYFBAcGBgYIBwcICxILCwoKCxYPEA0SGhYbGhkWGRgcICgiHB4mHhgZIzAkJiorLS4tGyIyNTEsNSgsLSz/2wBDAQcICAsJCxULCxUsHRkdLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCz/wAARCACgAKADASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAYHAwQFAQII/8QARRAAAQMDAgMEBQUPAgcAAAAAAQACAwQFEQYSITFBBxRRcRMiYYGRFTKhssEIFhgjNTZCUlZzdIKUsdJD0RckMzRicsL/xAAbAQEAAgMBAQAAAAAAAAAAAAAABAUBAgMGB//EACgRAAICAgIBAwQCAwAAAAAAAAABAgMEERIxIRNBQiIjMoEF0RSRof/aAAwDAQACEQMRAD8A4KIi6nzwIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCLuWbR96vrRJS0uyA/60x2MPl1PuClVP2SSloNTd2Nd4RQk/SSFylbCPbO0Meya3FFcorGqOySUNzTXdjneEsJH0glRW86PvViaZKql3wD/WhO9g8+o94SNsJdMTx7ILckcNERdTiF9xQyTv2RML3BpdgeABJPwBXwrG7JtMm411VdaqI90ZE+njJ5Pc8Ydjybke9YZ3x6XfYq17lcouhfLNUWC9VFtqWkPgdhpI4Pb+i4ewhc9DjKLi3F9oIiLJgIiIAiIgCIiAKzNEaBjEMd0vMIe92HQ0zxwaOjnDqfZ8VHez+wtvWohJOzdS0YErweTnZ9Vvx4+5XSod9rX0ossPHUvuS/R4AAAAMAcAvURQS2C8IBBBGQeBXqICuNbaBjMMl0s0IY9uXTUzBwcOrmjofZ8FWa/SapbtAsLbLqIyQM20tYDKwDk12fWb8ePvU7Htb+llTmY6j9yP7PjTFTo+CaP5eoa+Z3VwkDovexuHY95V92eot1VaoJLS+F1FtxF6EANA8AOnkvy6p92V6l+R7rWUVRIe6TQPnxnk9jdxI82g/AKU0d/43MVc1XJLT9/cn2vq7SMNMyHUUTaifGYo4hmYDxBGNo8zhUhc32ySqJtUFVDB+rUyNe76APtXzdLlUXi61FwqnF01Q8vOengPIDA9y1ES0RMzL/yJtqKS/wC/7CIi2IIREQBbVHb566GslhbltHCZ5PY3cB/9fQvKGnhqqpsVRWxUUZ5yyMc5o9zQSrz0PpKyW7T03daqO6tuDds84xte3BGwAchxPDmtW9E3DxJZMtexQa1blXC226WrdGZBGAdoOM8QPtUy1hpq0WGvlit99hqi12O7FpdJH7C4Dbw9uCojV0kNdSPppwXRScHAHB555rJxdfpWqNvSfnR0tC9rbrPbq2Kk0jcLm/d6aaSnfkRsAwN2GnA4O4lSD8IR3yb8o/eVcu47tnefTD0W7ljfsxn2ZVcWytvXZw59ZDPBDZL5OaOoYMSyvhYQXN48WnZIcEHPFTjfY2aR716Kf/hK2THdfW753rdzzndt3/8Al7lHdcZPbPYU0UOtOteDL+EtR/svU/1bP8U/CWo/2Xqf6tn+KqrXGia7SFVSz1DYWUN1D6ihDZC5whyC3fkcDtc3x6qa9lPZANRwx3m/wRzWWrp3Op/Q1JZJ6QPxxA6YDuvgtJV1xW2jadVUFtok1L90UyuqmU1Ho+vqZ5PmRQ1Ae93DPABuTwWxF291M81TDFoS7SS0n/cMZJl0P/uAz1eR5+C4Wtuz+u7NbxFrHRjYaOitcAc91RMZXiRxLCQ1w4ja8DmtjTV1fqKjqrno9xjuk8TZ9XSVTcNnjIJf6EHIB/6mNuOYSNdcltIQqqmtpGf8Jaj/AGYqf6tn+Kj+ru26i1RQQQN0/PTyQSb2vdUtdwIwR83y+Cj+sdG2+axP1npCB0Ok9zKZjamV3pxLna71TnhnHVR3T+maq9UstwZ6F1FSVEcM4Mm1/rgkYHXg0reNcYvaNbqKFW3YvBNrbWi426KrbGYxKCdpOccSPsW417mOyxxacEZHgRg/QtekpIqGkZTQAtijGGgnJ555rMpB4ubjybh17BF16rT1XSaVor4+N4gq5XxgkcABjaf5vWx5LkIYlBw8SQREWTUIiIApJpfVdTp23Xinilc3vlORFj9GXIAcPA7SfgFG0WDeuyVcuUX5CIiyaE00D3O6RXLT1a2Mithc6F7mBxY4tLXFueuCD/KsI+51t4pBTffTdu75z6LYzZnx28sqL0lXNQ1kNVTPMc0Lg9jh0IV56Y1LS6ktgniIZUMAE0OeLHf7HoVDuUoPlEusDKaj6eyB2rsJoLdfbfcptQ3Gv7hK2RkNSxj2EA/N45wPJWlDDHTxNihjZFG3k1jQ0DyAWRFElJy7LCU5T/IxzQxVETopo2Sxu5te0OB8wVVl07CKC4Xy4XKHUNyoO/yukfDTMYxgBOdvDGQParXRIycejMZyh+JTR+51t/dDS/fTdu7k59FtZsz47eWVm1+aS2R23T1EyMCiha6ZzWBpe7aGtLsdcAn+ZWLqfUtLpu2GeUh9Q8EQw54vd/sOpVGVdXPXVk1VUvMk0zi97j1JUulSm+Uiuz8puPp7MK2rfXOt1YyoZBTTlv6FREJGH3FaqKYUybT2i2rr2nRS6DpZIrfSvrKpzoJKeVu+KPZjJ29RxbgHx9iqmeYzzvlLI4y452xsDGjyA5L4ycYzwXiwlokZGTZkNOb6CIiyRgiIgCIiAIiIDdtNpq73co6Gjj3yydT81o6uJ6AK4bNoyksVslZRykXGSPb3wj1g7mMDkG5xw69Vqdm9ljt+mmVzmDvNd65ceYZn1R9vvUvVfda2+K6LnFx1GPOXbIFbe0uKGd9Ff6R9LVQuMb5IRuZkHBy3mPpUmp9WWCqZuiu9J5OkDD8DhQTtO0++K6Q3Wmic5tX+LlDG5/GAcDw8R/ZROHTN8qWh0VnrXtPX0JH91uqq5rkvByeRdXJwa2XPUassFK3dLd6TybIHn4DKjF07ToXyNpLDSPqqiRwYySVu1uScDDeZ+hV/Npm+U7S6Wz1rGjr6En+yk/Znp99TeZLnUxObHReqwPbjMhHt8B/cJ6VcFyb2YWRdZJQS1smdz0ZS3u0QxXGQvuLGYNY0etu5nhyLc9PDkqgvNmq7Fc5KKsZiRvFrh817ejh7F+hFE+0Syx3PTE1UGf8AM0IMrHDnt/Sb5Y4+YWlNrT0+jtlY6lHlHtFMIiKwKYIiIAiIgCIiAIiIAt20W194vFLb4ztdUSBm79UdT7hlaSlfZ7aa+r1NT11MwCnpH5lkf83BBG0eJIK0m+MWzeqPOaiXHTU8dJSRU0LdsULAxg8ABgLKvF6qk9IF4sdVKYKOaVoBdHG5wB5ZAJWtZq59zsdFXSMax9RCyVzW8gSM4Ca8bMbW9G8ixVMpgpJpWgExsc8A9cAla1krZLlYqGtla1slRAyVwbyBIzwTXjY350byxzQsqKeSGVu6ORpY4eIIwVkRDJ+fL5anWS+VVucd3oH4a79ZvNp+BC56l3aNbK+m1RPXVMY7vVEehkZywGgbT4O4KIq2g+UUzzlseE3EIiLc5hERAEREAREQHV07YajUV4jooPVb86WTGRGzqfPoParztttpbTb4qKjiEcMQwB1PiSepPiuLofTwsOn2elZisqQJZieY8G+4fSSpKq26zm9LovMWj047fbCIijkw1rh+TKr9y/6pWjpT8z7R/CR/VW9cPyZVfuX/AFStHSn5n2j+Ej+qt/ic/n+v6N+4fkyq/cv+qVoaU/M+0fwkf1Qt+4fkyq/cv+qVoaU/M+0fwkf1QnxHz/X9HXREWh0NS5W2lu1vloqyISQyjBHUeBHgR4qjNRWGo07eJKKf1m/OikxgSM6Hz6H2q/lG9caeF+0+/wBEzNZTAywnqfFvvH0gKRTZwen0Q8qj1I7XaKQREVkUYREQBERAFINE2oXfVtJDI3dDCTPIOhDeIHvOFH1ZHZLSAvudYRxAZC0/Fx+xcrZcYNnfHhzsSZZaIiqj0IREQGGsjdLQzxsGXPjc0D2kELUsFJNQact1JUNDZoKdkb2g5w4DB4roos78aNdedmGrjdLRTxsGXPjc0D2kELUsFJNQact9JUNDZoKdkb2g5wQMHiuiib8aGvOwiIsGwREQFGa2tQtGrKuGNu2GYieMeAdxI9xyo+rI7W6QB9srAOJD4Sfg4faq3VrVLlBM89kQ4WtIIiLqcD//2Q==', label:'Cool' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Nerd' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Dots' },
+  { type:'image', val:'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAcFBQYFBAcGBgYIBwcICxILCwoKCxYPEA0SGhYbGhkWGRgcICgiHB4mHhgZIzAkJiorLS4tGyIyNTEsNSgsLSz/2wBDAQcICAsJCxULCxUsHRkdLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCz/wAARCACgAKADASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAEDBAUCBv/EADkQAAEDAwMCBAQDBwMFAAAAAAEAAgMEESEFEjFBURMiYXEUMoGRBhVCI2KhscHR8CRS4RaCkqLx/8QAGwEBAQEAAwEBAAAAAAAAAAAAAAECAwUGBAf/xAArEQEBAAIBAgQEBgMAAAAAAAAAAQIDEQQhBRIxQRMiMlEjM0KBofCRsdH/2gAMAwEAAhEDEQA/ANklJO6R4XK/UoV0J9EkU7oBQhA0IKEQdUJFF0DSPKaR5QOyCjhJAcJpIuoBCE0C4Ryi6YQIpLo5SVISE0YUUihPqiyBdEBCYVAhCEQIun0SQLKeUJIpoSTuoBCEIBMcpIVQ0iU1yUU8oukmFAX7oQhAdEFCBlwCqAIIS6rprXPHla4+wuopI6rp0b2i7mOA9QVyBfhE5l9AcBJSyt2P29gFGhO8JO6DwkLqqaEXQgEBCfVAkFCCgEIQoBFrmwRypGNyiW8BsLncDK0NN0eeskc4AsiYLueR/LuVa0XTHalVCEXaBkvA+UL1Vc78mpfhgRGxzbNBcBb1JJF+59AVm10vXeIXT+Hh9VebbSUNG1ojjZNJgXc4FzvYcDkfdSmqY6icTKd7ngBrRYbbEk+mGnHqqtTqkQZuke1jfmd+0YLAAuP6u23734JVCWphjbJG2RpETZPNuZnZT2znFi4f8hZdBszz2XnO81fZWzRxte4Egi/OCAAT19evdXYIdOqZmirpbG/mc1wBAucn7LEhmhc6WJ0sI3lzXOMjbtAgab++PstWpmhpptrHxubcvBE7CR5Wu43DoSfpdGJnlhecbxVTXNNigndUwPc6nkJsbA7fQ9ljOaBw669NT1LS148krHDbIwuBHYk+Y4uP4hZOq6WdPqhsJdBIN8bj27H1C1K9H4d1vxJ8LZe8/lm2Qmiy27okIIwkgaL5QhAyLJJlJCBCEKBLtrlygHKFnL1uhyih00TODQ+d/lLnMFgPVx736KCu14Sbw6ra0lpax5qYrZFh0PJcFFE9zdHpdm8AssQwwAuO7jzZWXVTVF7b53HBIE9M0Abmdvf+I6lcfLxnUTzbssr90GoV7PCntVRuHnsG1bRzI1g4ZxggfZVdR1Al9QBVR7i2sJtWYAG0DhvTt06LqateQ+xq2vLRtvXQENHj5ubZ9e/AVLUNXkDpC19RYCq3b62IkncOw6f+vBVjgsaTq4/ERsdUtu+baAaxzcup+bbc3/5UsVcJZ2j42JweIhcVzrHfC5vVndo9yFWdrtVV6gy7bmOSNvkqY23Z4VuLXJ9OTyMKOk1Oof8ACmOapttpdpGpQuG67hzbNxi/B45RnhusnjApzNXxF0gDnj4xj8FrXXyzOQ/+K0poTWaBM50YEkFn3BiO3u27bfy6BYtBLV/BNmFRMI9jbPdqELg4hj8AkdgPoO4XsKSZ0uiVUbo2Snw3EeaIngjJb64U5a15XVnjlPvHgChTyNAPmhLVAbXxdcj3EvIJSQjoq0E0roQBSunZCB9EuqEKBpIQg2qJzanSQxz2tfE4tuWROs05/XnusyvheQ/bGTEB5WimpwHkZ5Bx8pyP3j0Cm02rFLUESX8KQbX26eqs1sD3uDiGuawDa0sYW2vfq3j/AJ7rjy7PL9douvdb7Xu87UQNjbKx5Lfm8MNhgaLhweOuMH/tGfmKoTAuMjrgE+M29oRa9iBnj0v7v5WnPTNIdu2Dd5bnwieovkZOAexOThqqup4/AMrpmZdbYGtu+7Sd17el8nPJuLBTl8FxQRDw5mPcbNEniEXjJAEfXrY/+X+3yq3TNsIy64tsc5vhQENAYXG4GM3yBgjzNyCoiYXRWc/c8nc6+3zHbx7evI6YwtCloWT00rvFjjIG4bjG3sAAduOSR2IuMXCtZS0jCxsbX7ngAAh8dN5TtA7/AL3PU2P6ivQmpNNoU5EoJkbsBAiG6/owY6rN06Br5w4OG7bfLW83PZh7j+PYJ6pViQtpo3F0ceSb3u77BJ3r7Oj03dtk9p3qhvd3KV9ySOFyPWcHZIovhI5VUWTFkgmgRSTKSgYwhFkIC2EBHourKhK/R1waGxTucIx8r25cz+4VFJSzlw7dWO3Hy5xbrITcuBD4ySd7bu5/tYYt0WcY3+C6MEgPPykm+L5P3+6sMe+M7mOLT3BQ6Vz8OAP0XHcHUZ+GZfpqmYC5ocDc3IwLbuOPqr9HTPila+N5aDlzw7ockXP0OVzuLTezbkX4Sc9zz5nEp5Kzh4Znb81nC7PWBjdkDrm1jJax+iopC66sVuTh3GnThpx8uBFcnJXVkrZVcxBM8ISRSHKaEdUAUkzyl1VDTvhJHVA012GElTUtDJVziOMcnJPDfUqOPLPHGc5XsrZKuxaVUShpcBE1wJG/k/TlaMVPT0IYLNdOb7XlwaScW5OAcj3uom1EE0DvEqTsDHmN+5t3BvNxn1B7gdVm5Ok6jxW+mmfvULaCmYXeI+R+21yPKM8D3VkUNLE0B1Puc/Dck37kemefdKmnpqeobM9glABnc0EkOAAs0ENtcAcenCy5qyu8STwXTMbtMkZuWua2+LHjp759Vm2uqz6zfne+V/026iLTmuljlpmxP22adxAG3m/qe2FSko6FwJbviAtkuuLHh1z/ACVeKeSZ7WyyjML5DcSBzrkdTgHPX+qIKiSOopxK9rmzQ7mhzpGmMYtzwb25zlOazh1W7H0zv+UztGlbCZIpY5m5uAbEW/qqrqWSM2e0j3FitWkqWu3yiSFzmBhsXPsWnkk2sM/p+63NOZR1Uj21YY5vUucLtPa+M2ytcvv1+K7MfzJy8b4DiTYYGST0UTgALDhej/EdDFR1X+nH+ncfKQbi/qe687JzhWO76fdN2MznpUJ5QmRlCr6yujqiyAig8pFB5QqGF22y4C7acolaml0Tq+qZSstd5wT09V6ep02HTqRtNSua+Z9tzgxzgXWJBxzkf5dZmm+FQ6ftE58WYB0myEuewZwLiy5nrn1MZjczUneIWtaQA3Bzew44t63wuO15Lruoy27PLjfln8qNQ8eZ7IZ3gtMoa2nb5hkNaCf1NNz/ADPRcvZVNpawGSqdJFA0Xa6Nge536m9ncX7qFtHUahJE0aZWsEs+5xfONzCzDL2NrElvt9FbOhTy6E2d1CHCorPFdH8RfYRfzC/JGM+ijr7YzaxlQ8ahubVNYWxxtPjNAfxx/sdkXHXK06ho+E1ascyRrqambHGxziPEwbB7eAcWvleelp55aH9vojJGT14MkXxI87dx845u7BBGeidc3fF+IJZdMBOI4ZfGvdobcbsYPHbg+6iWLglqBXwtdFIJ/gDZhqLbcC1hw4ZOeikoInzy6TaKUjwXtBFUHC/qeHnHCqR0ro9dETNIpWH4Ah0jpfPEQBcM8vGcfX2Xel6eY6XSXx6ZSMEMj2C82Gc+YY+br9vpWpG/E3wdOhYz4p0j3PAlLwTe5N3Zxa1gDlSMqKhrC8srWFrBKQ5rHHaDZ1/VwPPCpadpz6mCFjdJi8aKr3bfHsHE/rP72f8AMLTdo8lA6MHT3u2zuDW/EZdvwXH+2AU9mblJeK5EzXMkiqY5HQi7H76cgDF73HBAIz3B+uBqdA+gnDdxkicLsk2kB39itJsMjGNdJS6gwZa1rJtwcWG4Jzxb7cG6vytbW0D6WpkqmXzG6eG+0jIsR9B91ZXYdH1d6fPv9N9f+vIFCHXDiCLEcgpLkeuK+V0OVygHKKZSTISugavaTCyWua6SUQsiHibnMLgSOBb1VAZW3pE/w2nTP/MKemDnebxI9xFhyPKe6zb2fH1uy69OVnqdbqUUsha7UtQe24DmwQbBYn2GAAST2PdY9VX0k3h1UzNXdtjc9xBLSdxsLAdSPoAO6vVmpRtvf8Ullnv2+HT/AKmsAB+XNicdzcrH1HVIWwyt/wCo6kPEcTHBkJJAJyBjk9T68FYjyHH9/sdSNgZJMRpWqiOnpDE2TcbPvy1tjcWxc54Vqn3R/l1M7TK90UVI6SO8tgem3J9xyfVZ9bUUbqDVqiT8Rai+J744TtjcNmPlaBw3m5H24vVlrqOHXdRP55XvbFRASEMdZnOGi3PBvj+ynHKSB0b9L0BjtCqwzxSX3lF4eSDyL9DY9R3woJYY20P4kldosrwZt1nSAiU2GfmxY/z7qzQGiZpugPj1bUNhcXRB8TjuIafK51u5J9jz1Ukmp6aPwv8AigVM0j3NlY02Mm4DaLAWFrZsb26XSX3Sw4Ws/PaRv5LK6M0bv2niN/Z+UeUC+bf/ADqnRRCPStPY38NyFrK07WCYWtv+Ym/+D0VaCqpJde02OKbU3mSkf4bW7zuFsOOL39+2eir00ulwfh0+LX6uyFteRIC15eDuBA/r7+qXhqcx7fTKz8nfqM0ekSiRkzXt2yC7z6njvj27q1q9fLqVdWRzaXUl7oWyX8TaAAcMOcO7FeTfPpTKrXYI67VjVuga+wa8sDM+l7/53UjdV0l9XSNhrdWJqKC0cpjcTi1y63J5znp6KcMXDvz7tWqnFPXTyu0vVo9j4qnd4lyzoRtv81ib9x0U1JUNpWubHU6xBHCSzbIwyAAeZp64IOOt8FZB1PSpooDHrupMe+gdufLG4h5bYnObPBuQexthaEOo3lMkf4meARDM1kkOCCLF1rdRyOvN1V4d641kz465tUKh0vlf+zLCLCwJwOf6LJXo6idtVptTC3UqCdjQQXjaHktPHA7LzdlvG9nqvDdtz08X27C6ByjhAvdadm//2Q==', label:'Diamond' },
+  { type:'image', val:'data:image/jpeg;base64,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', label:'Egg' },
 ];
 
 function handleAvatarClick() {
@@ -13947,6 +14000,11 @@ function _showAvatarPickerSheet() {
     if (a.type === 'emoji') {
       return `<div onclick="_applyBuiltinAvatar(${i})" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;">
         <div style="width:58px;height:58px;border-radius:50%;background:rgba(245,197,24,0.12);border:2px solid rgba(245,197,24,0.35);display:flex;align-items:center;justify-content:center;font-size:28px;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''">${a.val}</div>
+        <span style="font-size:10px;color:var(--text3);">${a.label}</span>
+      </div>`;
+    } else if (a.type === 'image') {
+      return `<div onclick="_applyBuiltinAvatar(${i})" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+        <div style="width:58px;height:58px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,0.2);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''"><img src="${a.val}" alt="${escHtml(a.label)}" style="width:100%;height:100%;object-fit:cover;" /></div>
         <span style="font-size:10px;color:var(--text3);">${a.label}</span>
       </div>`;
     } else {
@@ -14016,6 +14074,11 @@ function _applyBuiltinAvatar(idx) {
   const key = (localStorage.getItem('ka_username_key') || (currentUser||'')).toLowerCase();
   if (a.type === 'emoji') {
     saveProfilePic(key, '__emoji__' + a.val);
+  } else if (a.type === 'image') {
+    // Image built-ins are already plain data URLs — picFor()/_aviHtml()
+    // already render anything without the __emoji__/__gradient__ prefix
+    // as a normal <img>, so no new sentinel scheme is needed here.
+    saveProfilePic(key, a.val);
   } else {
     saveProfilePic(key, '__gradient__' + a.css);
   }
@@ -15977,8 +16040,9 @@ function openProfilePostCommentOverlay(postId) {
   if (commentsOn && currentUser) {
     inputArea.innerHTML = `<div class="comment-input-wrap" id="cinput-wrap-ov-pp-${postId}">
       <div class="comment-input-row">
-        <input class="comment-input" id="ppov-input-${postId}" placeholder="Add a comment… (use @ to tag)" maxlength="300"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_ppOvSubmitComment('${String(postId)}')}"/>
+        <textarea class="comment-input c-input-expand" id="ppov-input-${postId}" rows="1" placeholder="Add a comment… (use @ to tag)" maxlength="300"
+          oninput="_commentAutoResize(this)"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_ppOvSubmitComment('${String(postId)}')}"></textarea>
         <button class="comment-send" onclick="_ppOvSubmitComment('${String(postId)}')">Send</button>
       </div>
       <label class="c-media-btn">
@@ -16021,6 +16085,7 @@ async function _ppOvSubmitComment(postId) {
   if (_replyBanner) _replyBanner.remove();
   const newComment = { id: Date.now().toString(), user: currentUser, text, time: new Date().toISOString(), likes: [] };
   input.value = '';
+  if (input.tagName === 'TEXTAREA') { input.style.height = ''; input.classList.remove('c-input-multiline'); }
   // Find and update in ppCache
   const usernameKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   if (window._ppCache) {
@@ -17151,13 +17216,29 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   // ── (this island, the Plus AI bubble, etc) never collide with in-page chrome. ──
   function _computeChromeClearedTop(el, baseTop) {
     try {
-      var candidates = document.querySelectorAll('.profile-topbar, .uprofile-topbar, .subpage-topbar, .nav-brand, header, [class*="topbar"], #_voiceIslandEl, #kaiIsland.kai-visible');
+      // NOTE: was `[class*="topbar"]`, a wildcard that also matched
+      // .chat-topbar (and any future *-topbar class) — elements that live
+      // inside their own overlay, not the app's persistent top chrome.
+      // Even though .chat-overlay itself is display:none when closed (so
+      // it's excluded below), the wildcard made this list grow silently
+      // every time a new "-topbar" class was added anywhere in the app,
+      // for overlays that have nothing to do with clearing the persistent
+      // header. Listing the actual persistent-chrome selectors explicitly
+      // instead — this only counts elements meant to always be visible at
+      // the top of the current screen, not per-overlay headers.
+      var candidates = document.querySelectorAll('.profile-topbar, .uprofile-topbar, .subpage-topbar, .nav-brand, header, #_voiceIslandEl, #kaiIsland.kai-visible');
       var maxBottom = 0;
       for (var i = 0; i < candidates.length; i++) {
         var node = candidates[i];
         if (el && (node.id === el.id || el.contains(node))) continue;
         var style = getComputedStyle(node);
-        if (style.display === 'none' || style.visibility === 'hidden') continue;
+        if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) continue;
+        // A node can compute display:flex/block on itself while a hidden
+        // ancestor overlay (display:none) makes it not actually render —
+        // offsetParent is null in exactly that case (and for
+        // position:fixed elements it's always null, so allow those
+        // through explicitly rather than skipping every fixed element).
+        if (node.offsetParent === null && getComputedStyle(node).position !== 'fixed') continue;
         var rect = node.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) continue;
         // Only count elements pinned to (or near) the very top of the viewport
@@ -22454,7 +22535,7 @@ closeChat = function() {
 <!-- ═══ EXPLORE PAGE ═══ -->
 <div id="explorePageOverlay" style="position:fixed;inset:0;z-index:9500;background:var(--bg);display:none;flex-direction:column;overflow:hidden;">
   <!-- Topbar — matches Messages page style -->
-  <div style="flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 10px;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 10px;">
     <div style="display:flex;align-items:center;padding:0 0 10px;position:relative;">
       <!-- Left: back button -->
       <div style="flex:1;">
@@ -22564,7 +22645,7 @@ closeChat = function() {
 <!-- ═══ MESSAGES PAGE ═══ -->
 <div id="messagesPageOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;">
   <!-- Topbar - clean dark with properly centred title -->
-  <div style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
     <div style="display:flex;align-items:center;padding:16px 18px 10px;position:relative;">
       <!-- Left: back button -->
       <div style="display:flex;align-items:center;gap:8px;flex:1;">
@@ -22622,7 +22703,7 @@ closeChat = function() {
       <div id="msgsFilterTrayOptions" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
   </div>
-  <div style="flex:1;overflow-y:auto;max-width:620px;width:100%;margin:0 auto;padding:14px 16px 100px;" id="messagesPageContent"></div>
+  <div style="flex:1;overflow-y:auto;max-width:620px;width:100%;margin:0 auto;padding:22px 16px 100px;" id="messagesPageContent"></div>
 </div>
 
 <!-- ═══ ALERTS PAGE ═══ -->
@@ -22665,7 +22746,7 @@ closeChat = function() {
 </div>
 
 <!-- ═══ GROUP DETAIL PAGE ═══ -->
-<div id="communityDetailOverlay" style="position:fixed;inset:0;z-index:3000;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;">
+<div id="communityDetailOverlay" style="position:fixed;inset:0;z-index:20500;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeCommunityDetail()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
     <div id="communityDetailTitle" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;"></div>
@@ -22685,7 +22766,7 @@ closeChat = function() {
 </div>
 
 <!-- ═══ CHANNELS LIST PAGE — own full page (Telegram-style), no tab bar / post FAB ═══ -->
-<div id="channelsListOverlay" style="position:fixed;inset:0;z-index:3040;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;">
+<div id="channelsListOverlay" style="position:fixed;inset:0;z-index:20540;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeChannelsListPage()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);flex-shrink:0;">‹ Back</button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Channels</div>
@@ -22703,7 +22784,7 @@ closeChat = function() {
 </div>
 
 <!-- ═══ CHANNEL DETAIL PAGE ═══ -->
-<div id="channelDetailOverlay" style="position:fixed;inset:0;z-index:3050;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;">
+<div id="channelDetailOverlay" style="position:fixed;inset:0;z-index:20550;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeChannelDetail()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
     <div id="channelDetailTitle" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;"></div>
@@ -22715,7 +22796,7 @@ closeChat = function() {
 </div>
 
 <!-- Create Channel Sheet -->
-<div id="createChannelSheet" style="display:none;position:fixed;inset:0;z-index:10650;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+<div id="createChannelSheet" style="display:none;position:fixed;inset:0;z-index:20610;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
   <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
     <div class="_u-drawer-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Create Channel</div>
@@ -22748,7 +22829,7 @@ closeChat = function() {
 </div>
 
 <!-- ═══ CHANNEL MANAGE — full page, liquid-glass pill topbar (matches chat-topbar) ═══ -->
-<div id="channelManageSheet" style="display:none;position:fixed;inset:0;z-index:10650;background:var(--bg);flex-direction:column;overflow-y:auto;color:var(--text);">
+<div id="channelManageSheet" style="display:none;position:fixed;inset:0;z-index:20600;background:var(--bg);flex-direction:column;overflow-y:auto;color:var(--text);">
   <div class="chat-topbar" style="position:sticky;top:max(10px, calc(8px + env(safe-area-inset-top, 0px)));margin:0 12px;">
     <button onclick="closeChannelManageSheet()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;color:var(--text);">
       <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5L1.5 7.5L7.5 13.5"/></svg>
@@ -22764,7 +22845,7 @@ closeChat = function() {
      that sat at the top of every channel page for admins/owner. Opened via
      the "New Broadcast" button; posting reuses submitChannelPost() as-is
      since the field IDs (#channelPostText etc.) are unchanged. ═══ -->
-<div id="channelBroadcastComposerSheet" style="display:none;position:fixed;inset:0;z-index:10680;background:var(--bg);flex-direction:column;overflow-y:auto;color:var(--text);">
+<div id="channelBroadcastComposerSheet" style="display:none;position:fixed;inset:0;z-index:20640;background:var(--bg);flex-direction:column;overflow-y:auto;color:var(--text);">
   <div class="chat-topbar" style="position:sticky;top:max(10px, calc(8px + env(safe-area-inset-top, 0px)));margin:0 12px;">
     <button onclick="closeChannelBroadcastComposer()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;color:var(--text);">
       <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5L1.5 7.5L7.5 13.5"/></svg>
@@ -22785,7 +22866,7 @@ closeChat = function() {
 </div>
 
 <!-- Channel Subscriber Manager Sheet -->
-<div id="channelSubsSheet" style="display:none;position:fixed;inset:0;z-index:10660;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+<div id="channelSubsSheet" style="display:none;position:fixed;inset:0;z-index:20620;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
   <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;max-height:85vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
     <div class="_u-drawer-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:2px;">Subscribers</div>
@@ -22797,7 +22878,7 @@ closeChat = function() {
 </div>
 
 <!-- Channel Member Action Sheet (per-user actions) -->
-<div id="channelMemberActionSheet" style="display:none;position:fixed;inset:0;z-index:10670;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+<div id="channelMemberActionSheet" style="display:none;position:fixed;inset:0;z-index:20630;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
   <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
     <div class="_u-drawer-handle"></div>
     <div id="channelMemberActionTitle" style="font-size:16px;font-weight:700;margin-bottom:14px;"></div>
@@ -22807,7 +22888,7 @@ closeChat = function() {
 </div>
 
 <!-- Edit Channel Post Sheet -->
-<div id="editChannelPostSheet" style="display:none;position:fixed;inset:0;z-index:10660;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+<div id="editChannelPostSheet" style="display:none;position:fixed;inset:0;z-index:20620;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
   <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;max-height:85vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
     <div class="_u-drawer-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Edit Broadcast</div>
@@ -22829,7 +22910,7 @@ closeChat = function() {
 </div>
 
 <!-- Channel Poll Composer Sheet -->
-<div id="channelPollSheet" style="display:none;position:fixed;inset:0;z-index:10660;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+<div id="channelPollSheet" style="display:none;position:fixed;inset:0;z-index:20620;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
   <div style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;max-height:85vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;">
     <div class="_u-drawer-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:14px;">New Poll</div>
@@ -23547,7 +23628,9 @@ async function openCommunityDetail(id) {
       </div>
     </div>`;
   renderCommunityPosts(c);
-  document.getElementById('communityDetailOverlay').style.transform = 'translateX(0)';
+  const _cdOv = document.getElementById('communityDetailOverlay');
+  _cdOv.style.pointerEvents = 'auto';
+  _cdOv.style.transform = 'translateX(0)';
 }
 async function _deleteGroup(id) {
   if (!confirm('Delete this group? This cannot be undone.')) return;
@@ -23561,7 +23644,9 @@ async function _deleteGroup(id) {
   saveCommunities(communities).catch(function(){});
 }
 function closeCommunityDetail() {
-  document.getElementById('communityDetailOverlay').style.transform = 'translateX(100%)';
+  const _cdOv = document.getElementById('communityDetailOverlay');
+  _cdOv.style.transform = 'translateX(100%)';
+  _cdOv.style.pointerEvents = 'none';
   _currentCommunityId = null;
 }
 async function toggleCommunityMembership(id) {
@@ -23954,8 +24039,9 @@ function openExplorePostCommentOverlay(postId) {
   if (commentsOn && currentUser) {
     inputArea.innerHTML = `<div class="comment-input-wrap" id="cinput-wrap-ov-ex-${postId}">
       <div class="comment-input-row">
-        <input class="comment-input" id="exov-input-${postId}" placeholder="Add a comment… (use @ to tag)" maxlength="300"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_exOvSubmitComment('${authorKey||''}','${String(postId)}')}"/>
+        <textarea class="comment-input c-input-expand" id="exov-input-${postId}" rows="1" placeholder="Add a comment… (use @ to tag)" maxlength="300"
+          oninput="_commentAutoResize(this)"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_exOvSubmitComment('${authorKey||''}','${String(postId)}')}"></textarea>
         <button class="comment-send" onclick="_exOvSubmitComment('${authorKey||''}','${String(postId)}')">Send</button>
       </div>
     </div>`;
@@ -23985,6 +24071,7 @@ async function _exOvSubmitComment(authorKey, postId) {
   const text = input.value.trim(); if (!text) return;
   const newComment = { id: Date.now().toString(), user: currentUser, text, time: new Date().toISOString(), likes: [] };
   input.value = '';
+  if (input.tagName === 'TEXTAREA') { input.style.height = ''; input.classList.remove('c-input-multiline'); }
   const body = document.getElementById('commentSheetBody');
   const empty = document.getElementById('commentSheetEmpty');
   if (empty) empty.remove();
@@ -24651,7 +24738,7 @@ async function _renderMessagesPageContentInner(container) {
         ? `<button onclick="event.stopPropagation();mrAcceptRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.3);color:#30d158;cursor:pointer;">Accept</button>
         <button onclick="event.stopPropagation();mrLockRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text2);cursor:pointer;">🔒</button>`
         : '';
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
@@ -24667,7 +24754,7 @@ async function _renderMessagesPageContentInner(container) {
     html += `<div data-msg-section="find-hint" style="background:linear-gradient(135deg,rgba(245,197,24,0.07),rgba(94,92,230,0.06));border:1px solid rgba(245,197,24,0.16);border-radius:16px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
       <div style="flex-shrink:0;color:var(--text3);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">Find people to message</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;">Find people to message</div>
         <div style="font-size:12px;color:var(--text3);line-height:1.4;">Follow more people to grow your inbox. Scroll down to message someone new.</div>
       </div>
     </div>`;
@@ -24692,7 +24779,7 @@ async function _renderMessagesPageContentInner(container) {
       const preview = conv.last ? escHtml(conv.last.text.substring(0,36) + (conv.last.text.length>36?'…':'')) : '';
       const peerKey = isOwnerConv ? OWNER_KEY : (stored ? stored.username : conv.peer);
       const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
           <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
@@ -24702,8 +24789,8 @@ async function _renderMessagesPageContentInner(container) {
       </div>`;
     }).join('');
   }
-  html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:${regularConvs.length?'20px':0} 0 10px;" data-msg-section="find-someone">Message Someone</div>`;
-  html += `<div data-msg-row data-msg-bucket="personal" data-name="plus ai assistant" style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+  html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:${regularConvs.length?'24px':0} 0 14px;" data-msg-section="find-someone">Message Someone</div>`;
+  html += `<div data-msg-row data-msg-bucket="personal" data-name="plus ai assistant" style="display:flex;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
     <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
       <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="aiMsgBg" cx="38%" cy="28%" r="72%"><stop offset="0%" stop-color="#ffe38a"/><stop offset="35%" stop-color="#ffb92e"/><stop offset="70%" stop-color="#f59300"/><stop offset="100%" stop-color="#d9760a"/></radialGradient><radialGradient id="aiMsgSh" cx="30%" cy="22%" r="48%"><stop offset="0%" stop-color="#fff" stop-opacity=".45"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><clipPath id="aiMsgCl"><rect x="0" y="0" width="44" height="44" rx="22" ry="22"/></clipPath></defs><g clip-path="url(#aiMsgCl)"><rect x="0" y="0" width="44" height="44" fill="url(#aiMsgBg)"/><rect x="0" y="0" width="44" height="44" fill="url(#aiMsgSh)"/></g><rect x="9" y="14" width="8" height="11" rx="4" ry="4" fill="white" opacity=".95"/><rect x="25" y="14" width="8" height="11" rx="4" ry="4" fill="white" opacity=".95"/></svg>
     </div>
@@ -24718,7 +24805,7 @@ async function _renderMessagesPageContentInner(container) {
   } else {
     html += people.slice(0, 8).map(p => {
       const aviHtml = _aviHtml(p.pic || null, p.displayName, 44);
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(p.displayName)}" style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(p.displayName)}" style="display:flex;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
         <div onclick="_openUserProfileFrom('messages','${escHtml(p.key)}')" style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('messages','${escHtml(p.key)}')">
           <div style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(p.displayName)}${(p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : ''}</div>
@@ -25737,7 +25824,7 @@ function renderTopBanner() {
 function _buildPinnedCard(post) {
   const isGeneral = post.type === 'general';
   const pinUnbtn = isOwner
-    ? `<button onclick="togglePinPost('${post.id}')" style="position:absolute;top:10px;right:10px;background:rgba(245,197,24,0.14);border:1px solid rgba(245,197,24,0.35);border-radius:50%;width:24px;height:24px;color:var(--gold);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="Unpin">✕</button>`
+    ? `<button onclick="togglePinPost('${post.id}')" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:50%;width:24px;height:24px;color:var(--text2);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;" title="Unpin">✕</button>`
     : '';
   const preview = isGeneral
     ? (escHtml((post.title||'') + (post.body ? ' — ' + post.body : '')).substring(0,100))
@@ -25832,18 +25919,18 @@ document.addEventListener('DOMContentLoaded', function() {
       background:var(--green-bg); border:1px solid var(--green-b); color:var(--green);
     }
     .wallet-card-v2-delta.neutral { background:rgba(255,255,255,0.05); border-color:var(--glass-border); color:var(--text3); }
-    body.light-mode .wallet-card-v2-delta { background:rgba(30,160,90,0.14); border-color:rgba(30,160,90,0.35); color:#1a8f52; }
-    body.light-mode .wallet-card-v2-delta.neutral { background:rgba(0,0,0,0.045); border-color:rgba(0,0,0,0.10); color:rgba(0,0,0,0.45); }
+    body.light-mode .wallet-card-v2-delta { background:rgba(30,160,90,0.14); border-color:rgba(30,160,90,0.35); color:#000; }
+    body.light-mode .wallet-card-v2-delta.neutral { background:rgba(0,0,0,0.045); border-color:rgba(0,0,0,0.10); color:#000; }
     .wallet-card-v2-arrow {
       width:30px; height:30px; border-radius:50%; flex-shrink:0;
       display:flex; align-items:center; justify-content:center;
       background:rgba(245,197,24,0.1); border:1px solid rgba(245,197,24,0.2);
     }
     .wallet-card-v2-arrow svg { stroke:var(--gold); }
-    body.light-mode .wallet-card-v2 { box-shadow:0 4px 18px rgba(184,134,11,0.10); }
+    body.light-mode .wallet-card-v2 { background:#ffffff; box-shadow:0 4px 18px rgba(184,134,11,0.10); }
     body.light-mode .wallet-card-v2-label,
-    body.light-mode .wallet-card-v2-balance .unit { color:rgba(0,0,0,0.5); }
-    body.light-mode .wallet-card-v2-balance { color:#1a1408; }
+    body.light-mode .wallet-card-v2-balance .unit { color:#000; }
+    body.light-mode .wallet-card-v2-balance { color:#000; }
     /* Pinned banner card — theme-aware */
     .pinned-banner-card {
       background: rgba(255,255,255,0.05);
@@ -26248,12 +26335,89 @@ window.handlePumApkSelect = async function(input) {
 
 
 <script>
+// ── In-app link routing ────────────────────────────────────────────────
+// Every URL rendered by linkify() used to be a plain <a target="_blank">,
+// so tapping a link to your own channel/profile/post left the SPA
+// entirely and made the WebView reload the whole page from scratch just
+// to land back on a screen the app could already show instantly. This
+// intercepts clicks, and for anything matching this site's own origin
+// (or the deep-link path/query patterns _captureDeepLinkFromUrl already
+// knows how to parse) routes in-app via the same resolvers used for
+// cold-start deep links — no reload. Anything genuinely external still
+// leaves the app, but via a one-tap confirmation on the Dynamic Island
+// instead of an instant, silent handoff.
+const _LINK_RESERVED = ['api','admin','www','app','settings','profile','login','signup','explore','wallet','premium','support','help','about','terms','privacy','broadcast','post','channel','group','user','users','static','assets'];
+
+function _routeInAppOrConfirm(rawUrl) {
+  let u;
+  try { u = new URL(rawUrl, window.location.origin); } catch(e) { return false; }
+
+  const isOwnOrigin = u.origin === window.location.origin;
+  if (!isOwnOrigin) {
+    _confirmExternalLink(rawUrl);
+    return true; // handled — caller should suppress the default <a> navigation
+  }
+
+  // ── Query-param forms: ?post=, ?channel=, ?group= ──
+  const post = u.searchParams.get('post');
+  const group = u.searchParams.get('group');
+  const channel = u.searchParams.get('channel');
+  if (channel) {
+    if (typeof _openChannelByRefFromLink === 'function') _openChannelByRefFromLink(channel, post || null);
+    return true;
+  }
+  if (group) {
+    if (typeof openGroupChat === 'function') openGroupChat(group);
+    return true;
+  }
+  if (post) {
+    if (typeof _openPostByIdFromLink === 'function') _openPostByIdFromLink(post);
+    return true;
+  }
+
+  // ── Path form: /<username> or /<username>/broadcast/<postId> ──
+  const segs = u.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  if (segs.length >= 1 && !_LINK_RESERVED.includes(segs[0].toLowerCase())) {
+    const uname = segs[0].toLowerCase();
+    const isBroadcast = segs[1] === 'broadcast' && segs[2];
+    if (typeof _resolveUsernamePathOnLoad === 'function') {
+      _resolveUsernamePathOnLoad(uname, isBroadcast ? segs[2] : null);
+      return true;
+    }
+  }
+
+  // Same-origin but didn't match any known in-app route (e.g. a link to
+  // a static asset, or a route this build doesn't recognize) — fall back
+  // to a normal navigation rather than silently doing nothing.
+  return false;
+}
+
+function _confirmExternalLink(url) {
+  let host = url;
+  try { host = new URL(url).hostname; } catch(e) {}
+  if (typeof window._showIsland === 'function') {
+    window._showIsland({
+      title: 'Open external link?',
+      sub: host,
+      type: 'notif',
+      buttons: [
+        { label: 'Open', style: 'primary', onClick: function() { window.open(url, '_blank'); } },
+        { label: 'Cancel', style: 'secondary', onClick: function() {} }
+      ]
+    });
+  } else {
+    // No island available (shouldn't happen in-app) — fail open rather than
+    // silently eating the tap.
+    window.open(url, '_blank');
+  }
+}
+
 function linkify(text) {
   if (!text) return text;
   var urlRegex = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
   return String(text).replace(urlRegex, function(url) {
     var href = url.startsWith('www.') ? 'https://' + url : url;
-    return '<a href="' + escHtml(href) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" style="color:#4da3ff;text-decoration:underline;word-break:break-all;">' + escHtml(url) + '</a>';
+    return '<a href="' + escHtml(href) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();if(typeof _routeInAppOrConfirm===\'function\'&&_routeInAppOrConfirm('+"'"+escHtml(href).replace(/'/g,"\\'")+"'"+')){event.preventDefault();}" style="color:#4da3ff;text-decoration:underline;word-break:break-all;">' + escHtml(url) + '</a>';
   });
 }
 
@@ -26756,7 +26920,7 @@ function _showGenericInfoSheet(innerHtml) {
   if (!sheet) {
     sheet = document.createElement('div');
     sheet.id = 'genericInfoSheet';
-    sheet.style.cssText = 'display:flex;position:fixed;inset:0;z-index:9999;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
+    sheet.style.cssText = 'display:flex;position:fixed;inset:0;z-index:29950;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
     sheet.onclick = function(e) { if (e.target === sheet) closeGenericInfoSheet(); };
     sheet.innerHTML = `<div style="width:100%;max-width:440px;background:var(--card-bg,#161616);border-radius:22px 22px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px));border:1px solid var(--glass-border);border-bottom:none;" id="genericInfoSheetInner"></div>`;
     document.body.appendChild(sheet);
@@ -28154,6 +28318,7 @@ async function openChannelsListPage() {
   if (!ov) return;
   const searchEl = document.getElementById('channelsListSearch');
   if (searchEl) searchEl.value = '';
+  ov.style.pointerEvents = 'auto';
   ov.style.transform = 'translateX(0)';
   if (typeof window._forceRepaint === 'function') window._forceRepaint();
   if (window._kaPushBack) window._kaPushBack();
@@ -28165,7 +28330,7 @@ async function openChannelsListPage() {
 
 function closeChannelsListPage() {
   const ov = document.getElementById('channelsListOverlay');
-  if (ov) ov.style.transform = 'translateX(100%)';
+  if (ov) { ov.style.transform = 'translateX(100%)'; ov.style.pointerEvents = 'none'; }
   const tb = document.getElementById('appTabbar');
   if (tb) tb.classList.remove('tabbar-hidden');
   if (typeof window._syncFab === 'function') window._syncFab();
@@ -28533,7 +28698,7 @@ async function openChannelDetail(channelId) {
   // stare at the previous screen while several network calls resolve.
   _currentChannelId = channelId;
   const ovEarly = document.getElementById('channelDetailOverlay');
-  if (ovEarly) ovEarly.style.display = 'flex';
+  if (ovEarly) { ovEarly.style.display = 'flex'; ovEarly.style.pointerEvents = 'auto'; }
   const tbEarly = document.getElementById('appTabbar');
   if (tbEarly) tbEarly.classList.add('tabbar-hidden');
   if (typeof window._syncFab === 'function') window._syncFab();
@@ -28636,7 +28801,7 @@ async function openChannelDetail(channelId) {
 
 function closeChannelDetail() {
   const ov = document.getElementById('channelDetailOverlay');
-  if (ov) ov.style.transform = 'translateX(100%)';
+  if (ov) { ov.style.transform = 'translateX(100%)'; ov.style.pointerEvents = 'none'; }
   _currentChannelId = null;
   const tb = document.getElementById('appTabbar');
   if (tb) tb.classList.remove('tabbar-hidden');
@@ -30223,7 +30388,7 @@ window.renderMessagesPageContent = async function() {
     return bT - aT;
   });
 
-  var groupsHtml = '<div data-msg-section="groups" style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:20px 0 10px;">Group Chats</div>'
+  var groupsHtml = '<div data-msg-section="groups" style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:24px 0 14px;">Group Chats</div>'
     + groups.map(function(g) {
       var lastMsg = (g.messages||[]).slice(-1)[0];
       var preview = lastMsg
@@ -30233,7 +30398,7 @@ window.renderMessagesPageContent = async function() {
       var iconHtml = icon.startsWith('data:') ? '<img src="'+icon+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>' : (icon || '👥');
       var unreadCount = _groupUnreadCount(g);
       var unreadBadge = unreadCount ? '<span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">' + (unreadCount > 99 ? '99+' : unreadCount) + '</span>' : '';
-      return '<div data-msg-row data-msg-bucket="groups" data-unread="' + unreadCount + '" data-name="' + escHtml(g.name) + '" onclick="openGroupChat(\''+escHtml(g.id)+'\')" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">'
+      return '<div data-msg-row data-msg-bucket="groups" data-unread="' + unreadCount + '" data-name="' + escHtml(g.name) + '" onclick="openGroupChat(\''+escHtml(g.id)+'\')" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">'
         + '<div style="width:46px;height:46px;border-radius:50%;background:rgba(94,92,230,0.2);border:1.5px solid rgba(94,92,230,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">' + iconHtml + '</div>'
         + '<div style="flex:1 1 0%;min-width:0;overflow:hidden;">'
         + '<div style="font-size:14px;font-weight:' + (unreadCount ? 700 : 600) + ';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(g.name) + '</div>'
@@ -30242,7 +30407,7 @@ window.renderMessagesPageContent = async function() {
         + unreadBadge
         + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>'
         + '</div>';
-    }).join('');
+    }).join('') + '<div style="height:10px;"></div>';
 
   var html = container.innerHTML;
   var insertMarker = 'Message Someone';
@@ -31772,15 +31937,15 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
 
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 100px;">
     <!-- Balance card -->
-    <div class="wallet-anim-card" style="position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(184,134,11,0.22),rgba(245,197,24,0.06) 60%,rgba(184,134,11,0.1));border:1px solid rgba(245,197,24,0.3);border-radius:22px;padding:22px 20px;margin-bottom:18px;box-shadow:0 10px 30px rgba(245,197,24,0.08);">
-      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(245,197,24,0.18),transparent 70%);pointer-events:none;"></div>
+    <div class="wallet-anim-card" style="position:relative;overflow:hidden;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid var(--glass-border);border-radius:22px;padding:22px 20px;margin-bottom:18px;box-shadow:var(--glass-shadow);">
+      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.06),transparent 70%);pointer-events:none;"></div>
       <div style="display:flex;align-items:center;gap:14px;position:relative;">
         <div class="wallet-coin-icon" id="walletCoinIcon" onclick="_toggleWalletBalanceHidden()" title="Tap to hide/show balance">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="none" stroke="#b8860b" stroke-width="1.4" opacity="0.55"/><path d="M12 6.5l1.4 3.3 3.6.3-2.7 2.4.8 3.5-3.1-1.9-3.1 1.9.8-3.5-2.7-2.4 3.6-.3z" fill="#7a5c07"/></svg>
         </div>
         <div style="flex:1;text-align:left;">
           <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">Plus Coins Balance</div>
-          <div id="walletCoinBalance" class="wallet-balance-num" style="font-size:32px;font-weight:800;color:var(--gold);letter-spacing:-1px;line-height:1;">—</div>
+          <div id="walletCoinBalance" class="wallet-balance-num" style="font-size:32px;font-weight:800;color:var(--text);letter-spacing:-1px;line-height:1;">—</div>
           <div id="walletCashEstimate" style="font-size:13px;color:var(--text3);margin-top:5px;">≈ ₦0</div>
         </div>
       </div>
@@ -37449,20 +37614,22 @@ async function _loadPartnerSitesFromSupabase() {
   } catch(e) {}
 }
 
-function _walletCoinSvg() {
-  return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 7.5C3 6.12 4.12 5 5.5 5H17a2 2 0 0 1 2 2v1h-2.5A2.5 2.5 0 0 0 14 10.5v3A2.5 2.5 0 0 0 16.5 16H19v1a2 2 0 0 1-2 2H5.5A2.5 2.5 0 0 1 3 16.5v-9z" fill="none" stroke="#f5c518" stroke-width="1.6" stroke-linejoin="round"/><path d="M16.5 10.5H20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-3.5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z" fill="#f5c518" opacity="0.9"/><circle cx="16.6" cy="12" r="0.9" fill="#1a1408"/></svg>';
+function _walletCoinSvg(isLight) {
+  var c = isLight ? '#000000' : '#f5c518';
+  var dot = isLight ? '#ffffff' : '#1a1408';
+  return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 7.5C3 6.12 4.12 5 5.5 5H17a2 2 0 0 1 2 2v1h-2.5A2.5 2.5 0 0 0 14 10.5v3A2.5 2.5 0 0 0 16.5 16H19v1a2 2 0 0 1-2 2H5.5A2.5 2.5 0 0 1 3 16.5v-9z" fill="none" stroke="' + c + '" stroke-width="1.6" stroke-linejoin="round"/><path d="M16.5 10.5H20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-3.5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z" fill="' + c + '" opacity="0.9"/><circle cx="16.6" cy="12" r="0.9" fill="' + dot + '"/></svg>';
 }
 function _walletDeltaHTML(delta) {
   var isLight = document.body.classList.contains('light-mode');
   if (!delta || delta <= 0) {
-    var neutralBg = isLight ? 'rgba(0,0,0,0.045)' : 'rgba(255,255,255,0.06)';
-    var neutralBorder = isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)';
-    var neutralText = isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+    var neutralBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+    var neutralBorder = isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.10)';
+    var neutralText = isLight ? '#000000' : 'rgba(255,255,255,0.45)';
     return '<span style="display:inline-flex;align-items:center;gap:3px;margin-top:5px;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:-0.1px;background:' + neutralBg + ';border:1px solid ' + neutralBorder + ';color:' + neutralText + ';">No coins earned today</span>';
   }
-  var posBg = isLight ? 'rgba(30,160,90,0.14)' : 'rgba(48,209,88,0.14)';
-  var posBorder = isLight ? 'rgba(30,160,90,0.35)' : 'rgba(48,209,88,0.30)';
-  var posText = isLight ? '#1a8f52' : '#30d158';
+  var posBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(48,209,88,0.14)';
+  var posBorder = isLight ? 'rgba(0,0,0,0.14)' : 'rgba(48,209,88,0.30)';
+  var posText = isLight ? '#000000' : '#30d158';
   return '<span style="display:inline-flex;align-items:center;gap:3px;margin-top:5px;padding:2px 9px 2px 7px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:-0.1px;background:' + posBg + ';border:1px solid ' + posBorder + ';color:' + posText + ';">'
     + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>'
     + '+' + delta.toLocaleString() + ' today</span>';
@@ -37473,11 +37640,16 @@ async function renderPartnerSitesRow() {
   if (!currentUser) { row.style.display = 'none'; return; }
   row.style.display = '';
   var isLight = document.body.classList.contains('light-mode');
-  var cardBg = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.055)';
+  var cardBg = isLight ? '#ffffff' : 'rgba(255,255,255,0.055)';
   var cardBorder = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.12)';
-  var labelColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
-  var balanceColor = isLight ? '#1a1408' : '#ffffff';
-  var unitColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.55)';
+  var labelColor = isLight ? '#000000' : 'rgba(255,255,255,0.5)';
+  var balanceColor = isLight ? '#000000' : '#ffffff';
+  var unitColor = isLight ? '#000000' : 'rgba(255,255,255,0.55)';
+  var iconWrapBg = isLight ? 'rgba(0,0,0,0.06)' : 'linear-gradient(135deg, rgba(245,197,24,0.25), rgba(124,92,252,0.14))';
+  var iconWrapBorder = isLight ? 'rgba(0,0,0,0.14)' : 'rgba(245,197,24,0.4)';
+  var arrowBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(245,197,24,0.1)';
+  var arrowBorder = isLight ? 'rgba(0,0,0,0.14)' : 'rgba(245,197,24,0.2)';
+  var arrowStroke = isLight ? '#000000' : '#f5c518';
   var shadow = isLight ? '0 4px 18px rgba(184,134,11,0.10)' : '0 4px 20px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.06) inset';
   // Show a quick live balance if we have one cached; kick off a fresh fetch either way.
   // BUGFIX: this used to treat _walletBalance > 0 as "we have a real cached
@@ -37490,15 +37662,15 @@ async function renderPartnerSitesRow() {
   // from the number itself.
   var balText = window._walletBalanceLoaded ? _walletBalance.toLocaleString() : '···';
   row.innerHTML = ''
-    + '<div onclick="openWalletPage()" style="position:relative;overflow:hidden;border-radius:20px;padding:16px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;background:' + cardBg + ';backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid ' + cardBorder + ';box-shadow:' + shadow + ';display:flex;align-items:center;gap:14px;">'
-      + '<div style="position:relative;width:48px;height:48px;border-radius:14px;flex-shrink:0;background:linear-gradient(135deg, rgba(245,197,24,0.25), rgba(124,92,252,0.14));border:1px solid rgba(245,197,24,0.4);display:flex;align-items:center;justify-content:center;">' + _walletCoinSvg() + '</div>'
+    + '<div onclick="openWalletPage()" style="position:relative;overflow:hidden;border-radius:20px;padding:16px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;background:' + cardBg + ';backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid ' + cardBorder + ';box-shadow:' + shadow + ';display:flex;align-items:center;gap:14px;contain:layout style;">'
+      + '<div style="position:relative;width:48px;height:48px;border-radius:14px;flex-shrink:0;background:' + iconWrapBg + ';border:1px solid ' + iconWrapBorder + ';display:flex;align-items:center;justify-content:center;">' + _walletCoinSvg(isLight) + '</div>'
       + '<div style="flex:1;min-width:0;">'
         + '<div style="font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:' + labelColor + ';margin-bottom:3px;">My Wallet</div>'
         + '<div id="partnerSitesBalance" style="font-size:21px;font-weight:800;color:' + balanceColor + ';letter-spacing:-0.5px;line-height:1.1;">' + balText + ' <span style="font-size:12px;font-weight:600;color:' + unitColor + ';margin-left:2px;">coins</span></div>'
         + '<div id="walletCardDelta">' + _walletDeltaHTML(0) + '</div>'
       + '</div>'
-      + '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.2);">'
-        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+      + '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + arrowBg + ';border:1px solid ' + arrowBorder + ';">'
+        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + arrowStroke + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
       + '</div>'
     + '</div>';
   // Refresh with the real balance in the background
