@@ -7581,6 +7581,14 @@ function loadFeed() {
 }
 
 let _loadPostsInFlight = false;
+// True only after a loadPosts() call has fully finished (success or
+// failure) at least once. Distinct from _appBooting (page-load gate) and
+// _loadPostsInFlight (mid-fetch gate) — this covers the gap where
+// _loadPostsInFlight has already been reset to false but nothing has
+// re-rendered yet (background enrichment still settling). Without this, a
+// stray renderPosts() call landing in that gap treated "no flags set" as
+// "confirmed empty" and showed the dead-end message instead of waiting.
+window._hasCompletedFeedLoad = false;
 // True from script start until the very first loadPosts() call this page
 // load has finished (success or failure). Distinct from _loadPostsInFlight,
 // which is only true *during* a fetch — this covers the gap before the
@@ -7966,15 +7974,24 @@ async function loadPosts() {
       if (_validCached.length) { posts = _validCached; renderPosts(); }
     } catch(e) {}
   }
+  // Snapshot of whatever is on screen right now (cache-painted above, or
+  // left over from an earlier successful load) — used later to protect
+  // against an empty/transient fetch result wiping a feed that already has
+  // real content, instead of just quietly leaving it alone until the next
+  // retry succeeds.
+  const _beforeFetchPosts = posts;
   // Show the loading state on the shared Dynamic Island (persists until posts finish loading)
   // Now a REAL progress bar: each stage below reports how far through the
   // boot sequence we are, instead of an indefinite spinner with no signal
   // of whether anything is actually happening.
+  // When cache already painted something, this is a quiet background
+  // refresh, not a blocking load — label it as such so the island doesn't
+  // read as "still waiting" while the feed is already fully visible.
   function _feedProgress(frac, sub) {
-    window._appLoadTracker.update('feed', { progress: frac, label: sub || 'Getting the latest updates…' });
+    window._appLoadTracker.update('feed', { progress: frac, label: sub || (_beforeFetchPosts.length ? 'Refreshing…' : 'Getting the latest updates…') });
   }
-  window._appLoadTracker.start('feed', 'Getting the latest updates…');
-  _feedProgress(0.05, 'Getting the latest updates…');
+  window._appLoadTracker.start('feed', _beforeFetchPosts.length ? 'Refreshing…' : 'Getting the latest updates…');
+  _feedProgress(0.05);
 
   _autoMigrate();   // fire-and-forget: ensures all columns exist
   if (!window._heartbeatStarted) { window._heartbeatStarted = true; _startHeartbeat(); }
@@ -8108,13 +8125,28 @@ async function loadPosts() {
     // Snapshot current posts BEFORE overwriting, used for the local-comment merge above
     window._prevPosts = null; // cleared after use
 
-    // ── If Supabase returned no real posts, fall back to localStorage cache rather than showing "nothing here" ──
-    const _realPosts = posts.filter(p => p.id !== '__probe__' && !p.id.endsWith('_compat') && (p.match || p.body || p.title || p.analysis || p.pick || (p.media && p.media.length)));
-    if (!_realPosts.length && posts.length === 0) {
-      try {
-        const _fallback = JSON.parse(localStorage.getItem('ka_posts_cache') || '[]');
-        if (_fallback.length) { posts = _fallback; console.warn('[loadPosts] Supabase returned no posts — using localStorage cache'); }
-      } catch(e) {}
+    // ── Never let a genuinely empty fetch wipe posts already on screen ──
+    // The block above unconditionally reassigns `posts` from whatever this
+    // page fetch returned — including an empty array on a transient blip
+    // that doesn't trip _lastRankedPoolFailed (rate limit, a query hiccup,
+    // etc.). If the feed already had real content showing (from the
+    // cache-first paint at the top of this function, or a previous
+    // successful load still in memory), an empty result here should never
+    // replace it with nothing — it should just leave the screen as-is and
+    // let the next poll/retry try again. Only fall through to the
+    // localStorage-cache fallback below when there is truly nothing on
+    // screen already for this to clobber.
+    if (!postsData || !postsData.length) {
+      if (_beforeFetchPosts.length) {
+        posts = _beforeFetchPosts;
+      } else {
+        // ── If Supabase returned no real posts and nothing was already showing,
+        // fall back to localStorage cache rather than showing "nothing here" ──
+        try {
+          const _fallback = JSON.parse(localStorage.getItem('ka_posts_cache') || '[]');
+          if (_fallback.length) { posts = _fallback; console.warn('[loadPosts] Supabase returned no posts — using localStorage cache'); }
+        } catch(e) {}
+      }
     }
 
     // ── Re-inject optimistic posts that are in the pending retry queue but not yet in Supabase ──
@@ -8189,6 +8221,13 @@ async function loadPosts() {
     // waits on the background enrichment — 5s total load budget per Dave's
     // requirement. The feed itself is already visible by now regardless.
     await Promise.race([_bg, new Promise(res => setTimeout(res, 4200))]);
+    // The race above can resolve via the 4200ms timeout rather than _bg
+    // actually settling — in that case none of _bg's own .then(renderPosts)
+    // callbacks have necessarily fired yet for a still-pending piece, and
+    // nothing else forces a repaint after this point. Force one more render
+    // so the feed reflects whatever state actually landed instead of being
+    // stuck on the last skeleton/empty paint from before the race ended.
+    if (_isCurrentLoad() && typeof renderPosts === 'function') renderPosts();
 
   } catch(e) {
     console.error('loadPosts error', e);
@@ -8204,6 +8243,7 @@ async function loadPosts() {
   } finally {
     if (_isCurrentLoad()) _loadPostsInFlight = false;
     window._appBooting = false; // first-ever load attempt is done — safe to show a real empty state now
+    if (_isCurrentLoad()) window._hasCompletedFeedLoad = true; // a real load has now genuinely finished — empty state is trustworthy from here on
     window._postsLastLoaded = Date.now(); // stamp for AI context freshness check
   }
 
@@ -10564,7 +10604,7 @@ function _doRenderPosts() {
     return;
   }
   if (!filtered.length) {
-    const isLoading = (typeof _loadPostsInFlight !== 'undefined' && _loadPostsInFlight) || window._appBooting;
+    const isLoading = (typeof _loadPostsInFlight !== 'undefined' && _loadPostsInFlight) || window._appBooting || !window._hasCompletedFeedLoad;
     if (isLoading) {
       // Show skeleton cards while fetching — no blank screen
       container.innerHTML = _buildFeedSkeleton(4, 'predictions');
@@ -31777,8 +31817,16 @@ body.light-mode .sa-tab-btn:not(.sa-tab-active) { background:rgba(0,0,0,0.04) !i
 
     <!-- Earn tab -->
     <div id="wallet-panel-earn">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Tasks</div>
-      <div id="walletTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading tasks…</div></div>
+      <div class="wallet-tabbar" style="display:flex;gap:0;border-radius:100px;padding:3px;margin-bottom:14px;">
+        <button id="etab-tasks" onclick="setEarnSubTab('tasks')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Tasks</button>
+        <button id="etab-completed" onclick="setEarnSubTab('completed')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Completed</button>
+      </div>
+      <div id="earn-panel-tasks">
+        <div id="walletTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading tasks…</div></div>
+      </div>
+      <div id="earn-panel-completed" style="display:none;">
+        <div id="walletCompletedTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
+      </div>
     </div>
 
     <!-- Boost tab -->
@@ -34282,8 +34330,21 @@ function setWalletTab(tab) {
     if (btn) { btn.style.background = (t===tab) ? 'var(--gold)' : 'none'; btn.style.color = (t===tab) ? '#000' : 'rgba(255,255,255,0.52)'; }
     if (panel) panel.style.display = (t===tab) ? '' : 'none';
   });
+  if (tab === 'earn') setEarnSubTab('tasks');
   if (tab === 'boost' && typeof _renderWalletBoostTab === 'function') _renderWalletBoostTab();
 }
+
+// ── Earn tab's own Tasks / Completed sub-tabs (was a collapsible before) ──
+function setEarnSubTab(tab) {
+  _earnSubTab = tab;
+  ['tasks','completed'].forEach(function(t) {
+    const btn = document.getElementById('etab-' + t);
+    const panel = document.getElementById('earn-panel-' + t);
+    if (btn) { btn.style.background = (t===tab) ? 'var(--gold)' : 'none'; btn.style.color = (t===tab) ? '#000' : 'rgba(255,255,255,0.52)'; }
+    if (panel) panel.style.display = (t===tab) ? '' : 'none';
+  });
+}
+var _earnSubTab = 'tasks';
 
 // ── Balance hide/show (tap the coin icon to flip it and mask the balance) ──
 var _walletBalanceHidden = (function(){ try { return localStorage.getItem('_walletBalHidden') === '1'; } catch(e) { return false; } })();
@@ -34757,13 +34818,19 @@ async function _renderWalletTasks() {
     </div>`;
   }).join('');
 
-  if (completedOneTime.length) {
-    html += `<div onclick="_toggleCompletedTasks()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 4px;cursor:pointer;">
-      <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Completed (${completedOneTime.length})</span>
-      <span id="walletCompletedTasksChevron" style="font-size:11px;color:var(--text3);transition:transform 0.2s;">▼</span>
-    </div>
-    <div id="walletCompletedTasksList" style="display:none;">`
-      + completedOneTime.map(function(t) {
+  if (!active.length) {
+    html = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">No tasks available right now — check back tomorrow!</div>';
+  }
+  list.innerHTML = html;
+
+  // Completed tasks now live on their own page/tab instead of an inline
+  // collapsible — render them there, and reflect the count on the tab label.
+  const completedTab = document.getElementById('etab-completed');
+  if (completedTab) completedTab.textContent = 'Completed' + (completedOneTime.length ? ' (' + completedOneTime.length + ')' : '');
+  const completedList = document.getElementById('walletCompletedTasksList');
+  if (completedList) {
+    completedList.innerHTML = completedOneTime.length
+      ? completedOneTime.map(function(t) {
           return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;opacity:0.55;">
             <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
             <div style="flex:1;min-width:0;">
@@ -34772,23 +34839,8 @@ async function _renderWalletTasks() {
             <span style="font-size:12px;font-weight:700;color:#30D158;flex-shrink:0;">✓ Done</span>
           </div>`;
         }).join('')
-      + `</div>`;
+      : '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Nothing completed yet.</div>';
   }
-
-  if (!active.length && !completedOneTime.length) {
-    html = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">No tasks available right now — check back tomorrow!</div>';
-  } else if (!active.length) {
-    html = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px;">All caught up! Come back tomorrow for daily tasks.</div>' + html;
-  }
-  list.innerHTML = html;
-}
-function _toggleCompletedTasks() {
-  const box = document.getElementById('walletCompletedTasksList');
-  const chevron = document.getElementById('walletCompletedTasksChevron');
-  if (!box) return;
-  const open = box.style.display !== 'none';
-  box.style.display = open ? 'none' : '';
-  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 var _walletTaskInFlight = {}; // taskId -> true while a claim/check is in progress, prevents double-taps and cross-task race renders
@@ -39556,6 +39608,41 @@ function _ppcAIPickVersion(idx) {
     { check: 'profileOverlay',        close: function() { if(typeof closeProfilePage==='function') closeProfilePage(); } },
     { check: 'channelDetailOverlay',  close: function() { if(typeof closeChannelDetail==='function') closeChannelDetail(); } },
     { check: 'channelsListOverlay',   close: function() { if(typeof closeChannelsListPage==='function') closeChannelsListPage(); } },
+    // ── Full-page overlays added since this list was last updated ──────────
+    // These all follow the same display:none/flex subpage pattern as the
+    // ones above but were never registered here, so hardware back on any of
+    // them fell straight through past the app to the WebView shell, which
+    // reads as "the whole site just closes." Registering them fixes that —
+    // ordered roughly by z-index, topmost first, so a stacked case (e.g.
+    // Receipt sheet open on top of Wallet History on top of Wallet) closes
+    // the right one first.
+    { check: 'genericPickerOverlay',      close: function() { if(typeof _closeGenericPicker==='function') _closeGenericPicker(); } },
+    { check: 'migrationToolOverlay',      close: function() { var el=document.getElementById('migrationToolOverlay'); if(el) el.style.display='none'; } },
+    { check: 'premiumPayDetailsOverlay',  close: function() { var el=document.getElementById('premiumPayDetailsOverlay'); if(el) el.style.display='none'; } },
+    { check: 'walletConfirmOverlay',      close: function() { if(typeof closeWalletConfirm==='function') closeWalletConfirm(); } },
+    { check: 'receiptSheetOverlay',       close: function() { if(typeof closeReceiptSheet==='function') closeReceiptSheet(); } },
+    { check: 'payoutSheetOverlay',        close: function() { if(typeof closePayoutSheet==='function') closePayoutSheet(); } },
+    { check: 'saTaskEditorOverlay',       close: function() { if(typeof _saCloseTaskEditor==='function') _saCloseTaskEditor(); } },
+    { check: 'saAdEditorOverlay',         close: function() { if(typeof _saCloseAdEditor==='function') _saCloseAdEditor(); } },
+    { check: 'superAdminOverlay',         close: function() { if(typeof closeSuperAdmin==='function') closeSuperAdmin(); } },
+    { check: 'premiumTransferPageOverlay',close: function() { if(typeof closePremiumTransferPage==='function') closePremiumTransferPage(); } },
+    { check: 'premiumCryptoPageOverlay',  close: function() { if(typeof closePremiumCryptoPage==='function') closePremiumCryptoPage(); } },
+    { check: 'premiumPayMethodOverlay',   close: function() { if(typeof closePremiumPayMethodPage==='function') closePremiumPayMethodPage(); } },
+    { check: 'premiumShowcaseOverlay',    close: function() { if(typeof closePremiumShowcasePage==='function') closePremiumShowcasePage(); } },
+    { check: 'artifactPreviewSheet',      close: function() { if(typeof closeArtifactPreview==='function') closeArtifactPreview(); } },
+    { check: 'manageProfileOverlay',      close: function() { if(typeof closeProfileManageSheet==='function') closeProfileManageSheet(); } },
+    { check: 'artifactsPageOverlay',      close: function() { if(typeof closeArtifactsPage==='function') closeArtifactsPage(); } },
+    { check: 'walletHistoryPageOverlay',  close: function() { if(typeof closeWalletHistoryPage==='function') closeWalletHistoryPage(); } },
+    { check: 'referPageOverlay',          close: function() { if(typeof closeReferPage==='function') closeReferPage(); } },
+    { check: 'transferPageOverlay',       close: function() { if(typeof closeTransferPage==='function') closeTransferPage(); } },
+    { check: 'withdrawPageOverlay',       close: function() { if(typeof closeWithdrawPage==='function') closeWithdrawPage(); } },
+    { check: 'walletPageOverlay',         close: function() { if(typeof closeWalletPage==='function') closeWalletPage(); } },
+    { check: 'appUpdatesPageOverlay',     close: function() { if(typeof closeAppUpdatesPage==='function') closeAppUpdatesPage(); } },
+    { check: 'postPageOverlay',           close: function() { if(typeof closePostPage==='function') closePostPage(); } },
+    { check: 'manageDevicesOverlay',      close: function() { if(typeof closeManageDevices==='function') closeManageDevices(); } },
+    { check: 'partnerSitesMgrOverlay',    close: function() { if(typeof closePartnerSitesManager==='function') closePartnerSitesManager(); } },
+    { check: 'premiumApprovalsOverlay',   close: function() { if(typeof closePremiumApprovals==='function') closePremiumApprovals(); } },
+    { check: 'verifManagerOverlay',       close: function() { if(typeof closeVerifManager==='function') closeVerifManager(); } },
   ];
 
   // Called whenever a layer opens — push a state so back button pops it.
@@ -39627,6 +39714,28 @@ function _ppcAIPickVersion(idx) {
     'openNotifPanel',
     'openBugReportToDave',
     'openUserManager',
+    // ── Full-page overlays added since this patch list was last updated ──
+    // Same issue as the _kaLayers gap above: these never pushed a back-state,
+    // so even after being recognized in _kaLayers there was nothing for the
+    // hardware back button to pop — it fell straight through to the WebView.
+    'openWalletPage',
+    'openWithdrawPage',
+    'openTransferPage',
+    'openReferPage',
+    'openWalletHistoryPage',
+    'openArtifactsPage',
+    'openProfileManageSheet',
+    'openPremiumShowcasePage',
+    'openPremiumPayMethodPage',
+    'openPremiumCryptoPage',
+    'openPremiumBankTransferPage',
+    'openPostPage',
+    'openAppUpdatesPage',
+    'openSuperAdmin',
+    'openManageDevices',
+    'openPartnerSitesManager',
+    'openPremiumApprovals',
+    'openVerifManager',
   ].forEach(_patchOpen);
 
   // Also patch savedPosts open (it's done inline, add a helper)
