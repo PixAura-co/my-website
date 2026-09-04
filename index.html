@@ -1940,8 +1940,8 @@ body.android-fix .app-tabbar {
 .uprofile-overlay { position: fixed; inset: 0; z-index: 10200; background: var(--bg); display: none; flex-direction: column; overflow-y: auto; }
 .uprofile-overlay.open { display: flex; }
 .uprofile-topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px; background: rgba(255,255,255,0.06); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.10); box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; transform: translateZ(0); -webkit-transform: translateZ(0); will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.uprofile-back { font-size: 13px; color: var(--blue); background: none; border: none; cursor: pointer; font-family: var(--font); display: flex; align-items: center; gap: 3px; }
-.uprofile-back::before { content: '‹'; font-size: 18px; line-height: 1; }
+.uprofile-back { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 0; }
+.uprofile-back::before { content: ''; width: 15px; height: 15px; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; background-color: currentColor; }
 .uprofile-title { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 .uprofile-hero { display: flex; flex-direction: column; align-items: center; padding: 0 20px 20px; border-bottom: 1px solid var(--glass-border); position: relative; z-index: 1; }
 .uprofile-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 180px; background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(160,110,0,0.28) 0%, rgba(120,80,0,0.08) 60%, transparent 100%); pointer-events: none; z-index: 0; }
@@ -4191,7 +4191,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 <!-- MANAGE DEVICES PAGE -->
 <div id="manageDevicesOverlay" style="display:none;position:fixed;inset:0;z-index:9800;background:var(--bg);flex-direction:column;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);flex-shrink:0;">
-    <button onclick="closeManageDevices()" style="font-family:var(--font);font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;">‹ Back</button>
+    <button onclick="closeManageDevices()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;color:rgba(255,255,255,0.92);display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Devices</div>
     <div style="width:60px"></div>
   </div>
@@ -4515,15 +4515,15 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
           <div class="ppc-avi" id="ppcAvi"></div>
           <textarea class="ppc-input" id="ppcText" placeholder="What's on your mind? (use @ to tag someone)" maxlength="500"></textarea>
         </div>
+        <button onclick="ppcAIEnhance()" style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font);font-size:11px;font-weight:600;padding:5px 10px;border-radius:100px;background:linear-gradient(135deg,rgba(167,139,250,0.13),rgba(94,92,230,0.13));border:1px solid rgba(167,139,250,0.3);color:#a78bfa;cursor:pointer;white-space:nowrap;transition:all 0.15s;margin-top:6px;" id="ppcAIBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z" fill="#a78bfa"/></svg> AI Smart Fill
+        </button>
         <div class="media-strip" id="ppc-media-preview"></div>
         <div class="ppc-footer">
           <div class="ppc-footer-left">
             <button type="button" class="ppc-photo-btn" onclick="openMediaPicker({multiple:true,onSelect:function(files){var fakeEvt={target:{files:files}};handleProfilePostMedia(fakeEvt);}})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               Photo
-            </button>
-            <button onclick="ppcAIEnhance()" style="display:flex;align-items:center;gap:4px;font-family:var(--font);font-size:12px;font-weight:600;padding:7px 11px;border-radius:100px;background:linear-gradient(135deg,rgba(167,139,250,0.13),rgba(94,92,230,0.13));border:1px solid rgba(167,139,250,0.3);color:#a78bfa;cursor:pointer;white-space:nowrap;transition:all 0.15s;flex-shrink:0;" id="ppcAIBtn">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z" fill="#a78bfa"/></svg> AI Smart Fill
             </button>
             <select id="ppcVisibility" style="display:none;">
               <option value="public">Everyone</option>
@@ -5165,7 +5165,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 <!-- USER PROFILE VIEWER -->
 <div class="uprofile-overlay" id="uprofileOverlay">
   <div class="uprofile-topbar">
-    <button class="uprofile-back" id="uprofileBackBtn" onclick="closeUserProfile()">‹ Back</button>
+    <button class="uprofile-back" id="uprofileBackBtn" title="Back" onclick="closeUserProfile()"></button>
     <div class="uprofile-title" id="uprofileTitle">Profile</div>
     <button id="uprofileManageBtn" onclick="openUprofileManager()" style="display:none;font-family:var(--font);font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.4);color:var(--gold);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-top:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Manage</button>
   </div>
@@ -5362,7 +5362,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 <!-- ── Appearance Page ── -->
 <div id="appearanceOverlay" style="display:none;position:fixed;inset:0;z-index:19600;background:var(--bg);flex-direction:column;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);flex-shrink:0;">
-    <button onclick="closeAppearancePage()" style="font-family:var(--font);font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;">‹ Back</button>
+    <button onclick="closeAppearancePage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;color:rgba(255,255,255,0.92);display:flex;align-items:center;gap:8px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       Appearance
@@ -5419,7 +5419,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 
 <div id="savedPostsOverlay" style="display:none;position:fixed;inset:0;z-index:9800;background:var(--bg);flex-direction:column;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);flex-shrink:0;">
-    <button onclick="closeSavedPosts()" style="font-family:var(--font);font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;">‹ Back</button>
+    <button onclick="closeSavedPosts()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;color:rgba(255,255,255,0.92);display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Posts</div>
     <div style="width:60px"></div>
   </div>
@@ -6779,7 +6779,12 @@ async function getAccount(usernameOrDisplay) {
 
 async function getAllAccounts() {
   if (_cache['all_accounts']) return _cache['all_accounts'];
-  const rows = await SB.query('accounts', '?limit=500') || [];
+  // NOTE: this used to be limit=500, but the accounts table has grown past
+  // that (740+ rows as of writing) — any account outside whatever 500 the
+  // database happened to return was silently invisible to every name/avatar
+  // lookup in the app (feed posts, comments, mentions, etc. all fell back to
+  // the raw username with a blank avatar). Bumped with real headroom.
+  const rows = await SB.query('accounts', '?limit=5000') || [];
   // Keep the local Premium cache fresh alongside the accounts fetch — don't block
   // on it, since a stale badge for a second is fine but a hung feed isn't.
   _refreshPremiumUsersCache();
@@ -7367,19 +7372,20 @@ async function getProfilePic(username) {
   return (acct && acct.profile_pic) ? acct.profile_pic : null;
 }
 
-function saveProfilePic(username, dataUrl) {
+async function saveProfilePic(username, dataUrl) {
   const key = (localStorage.getItem('ka_username_key') || username).toLowerCase();
-  SB.upsert('accounts', { username: key, profile_pic: dataUrl }, 'username');
-  const _ph = { ...SB.headers, 'Content-Type': 'application/json' };
-  fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(key)}`, {
-    method: 'PATCH', headers: _ph, body: JSON.stringify({ profile_pic: dataUrl })
-  }).catch(() => {});
+  let _picOk = true;
+  try {
+    await SB.upsert('accounts', { username: key, profile_pic: dataUrl }, 'username');
+  } catch(e) { _picOk = false; console.warn('[saveProfilePic] upsert failed:', e); }
   if (key !== username.toLowerCase()) {
     const uk = username.toLowerCase();
-    SB.upsert('accounts', { username: uk, profile_pic: dataUrl }, 'username');
-    fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(uk)}`, {
-      method: 'PATCH', headers: _ph, body: JSON.stringify({ profile_pic: dataUrl })
-    }).catch(() => {});
+    try {
+      await SB.upsert('accounts', { username: uk, profile_pic: dataUrl }, 'username');
+    } catch(e) { console.warn('[saveProfilePic] secondary upsert failed:', e); }
+  }
+  if (!_picOk) {
+    showToast('Profile picture may not have saved — check your connection.', 'error');
   }
   // IMPORTANT: picFor()/acctByKey() read from _cache['acct_by_username'] and
   // _cache['acct_by_display'] — separate maps from _cache['acct_'+key] built
@@ -8963,6 +8969,23 @@ function _getFeaturedComment(comments) {
   }
   if (topLiked && topCount > 0) return { comment: topLiked, type: 'top' };
   return null;
+}
+
+// ── Shared edit/delete icon buttons for profile-post cards (feed, own
+// profile, explore). Icon-only per design request, with title tooltips for
+// clarity. Edit is visible to everyone who owns the post — non-Premium
+// users get redirected to the upsell prompt inside openEditProfilePostModal
+// itself, so this helper doesn't need to know premium status.
+function _buildPostCardActionIcons(postId, userKey, isMyPost) {
+  if (!isOwner && !isMyPost) return '';
+  const editBtn = isMyPost ? `<button onclick="event.stopPropagation();openEditProfilePostModal('${postId}','${escHtml(userKey)}')" style="flex-shrink:0;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Edit post">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>` : '';
+  const delTitle = isMyPost ? 'Delete post' : 'Remove post (admin)';
+  const delBtn = `<button onclick="event.stopPropagation();deleteProfilePost('${postId}','${escHtml(userKey)}')" style="flex-shrink:0;width:28px;height:28px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="${delTitle}">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+  </button>`;
+  return `<div style="margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:6px;">${editBtn}${delBtn}</div>`;
 }
 
 function _buildHighlightedCommentHTML(postId, comments, openFn) {
@@ -10941,7 +10964,7 @@ function _buildFeedProfilePostCard(post) {
 
   const _ppHighlight = (post.commentsOn !== false) ? _buildHighlightedCommentHTML(pId, post.comments||[], 'openProfilePostCommentOverlay') : '';
   const _isMyProfilePost = userKey === (typeof _myUsernameKey === 'function' ? _myUsernameKey() : '');
-  const _feedAdminDelBtn = (isOwner || _isMyProfilePost) ? `<button onclick="event.stopPropagation();deleteProfilePost('${pId}','${escHtml(userKey)}')" style="margin-left:auto;flex-shrink:0;font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;" title="${_isMyProfilePost ? 'Delete post' : 'Remove post (admin)'}">${_isMyProfilePost ? 'Delete' : 'Remove'}</button>` : '';
+  const _feedAdminDelBtn = _buildPostCardActionIcons(pId, userKey, _isMyProfilePost);
 
   return `<div class="_u-post-card-bg" id="feedppcard-${pId}">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -13158,7 +13181,7 @@ async function renderUprofilePosts(userKey, displayName, isFollowing) {
       </div>`;
       const _ppHighlight = (p.commentsOn !== false) ? _buildHighlightedCommentHTML(p.id, p.comments||[], 'openProfilePostCommentOverlay') : '';
 
-      const _adminDelBtn = (isOwner && userKey !== (typeof _myUsernameKey === 'function' ? _myUsernameKey() : '')) ? `<button onclick="event.stopPropagation();deleteProfilePost('${p.id}','${escHtml(userKey)}')" style="margin-left:auto;flex-shrink:0;font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;" title="Remove post (admin)">Remove</button>` : '';
+      const _adminDelBtn = (isOwner && userKey !== (typeof _myUsernameKey === 'function' ? _myUsernameKey() : '')) ? _buildPostCardActionIcons(p.id, userKey, false) : '';
 
       return `<div class="_u-post-card-bg" id="ppcard-${p.id}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -14304,15 +14327,7 @@ async function saveBioOnly() {
   if (!currentUser) return;
   const bioVal = (document.getElementById('profileBioInput').value || '').trim();
   const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || (currentUser||'').toLowerCase());
-  const _allBioKeys = [usernameKey, (currentUser||'').toLowerCase(), OWNER_USER.toLowerCase()];
-  _allBioKeys.forEach(k => { if (_cache['acct_' + k]) _cache['acct_' + k].bio = bioVal; });
-  if (_cache['acct_by_username']) {
-    _allBioKeys.forEach(k => { if (_cache['acct_by_username'][k]) _cache['acct_by_username'][k].bio = bioVal; });
-  }
-  if (_cache['acct_by_display']) {
-    _allBioKeys.forEach(k => { if (_cache['acct_by_display'][k]) _cache['acct_by_display'][k].bio = bioVal; });
-  }
-  _cache['all_accounts'] = null;
+  let _saveOk = true;
   try {
     const existing = await SB.query('accounts', `?username=eq.${encodeURIComponent(usernameKey)}`);
     if (!existing || !existing.length) {
@@ -14328,12 +14343,29 @@ async function saveBioOnly() {
         }, 'username');
       } else {
         console.warn('[saveBioOnly] account lookup empty and no cached password — skipping to avoid wiping password');
+        showToast('Could not save bio — try again.', 'error');
         return;
       }
     } else {
       await SB.update('accounts', { bio: bioVal }, `username=eq.${encodeURIComponent(usernameKey)}`);
     }
-  } catch(e) { console.warn('saveBioOnly error:', e); }
+  } catch(e) {
+    _saveOk = false;
+    console.warn('saveBioOnly error:', e);
+  }
+  if (!_saveOk) {
+    showToast('Bio failed to save — check your connection and try again.', 'error');
+    return;
+  }
+  const _allBioKeys = [usernameKey, (currentUser||'').toLowerCase(), OWNER_USER.toLowerCase()];
+  _allBioKeys.forEach(k => { if (_cache['acct_' + k]) _cache['acct_' + k].bio = bioVal; });
+  if (_cache['acct_by_username']) {
+    _allBioKeys.forEach(k => { if (_cache['acct_by_username'][k]) _cache['acct_by_username'][k].bio = bioVal; });
+  }
+  if (_cache['acct_by_display']) {
+    _allBioKeys.forEach(k => { if (_cache['acct_by_display'][k]) _cache['acct_by_display'][k].bio = bioVal; });
+  }
+  _cache['all_accounts'] = null;
   const mentionMatches = bioVal.match(/@(\w[\w\s]*?)(?=\s|$|[^a-zA-Z0-9_\s])/g);
   if (mentionMatches) {
     mentionMatches.forEach(m => {
@@ -14355,19 +14387,21 @@ async function saveDisplayNameOnly() {
   const newName = el.value.trim();
   if (!newName || newName.length < 2) { showToast('Display name must be at least 2 characters.', 'error'); return; }
   const msgEl = document.getElementById('displayNameSaveMsg');
-  // Update local state
-  currentUser = newName;
-  if (!isOwner) { localStorage.setItem('ka_user', newName); }
-  // Sync to Supabase (display_name field only)
   const usernameKey = localStorage.getItem('ka_username_key') || (isOwner ? OWNER_KEY : (currentUser||'').toLowerCase());
   try {
     await SB.update('accounts', { display_name: newName }, `username=eq.${encodeURIComponent(usernameKey)}`);
-    if (_cache['acct_' + usernameKey]) _cache['acct_' + usernameKey].display_name = newName;
-    if (_cache['acct_by_username'] && _cache['acct_by_username'][usernameKey]) _cache['acct_by_username'][usernameKey].display_name = newName;
-  } catch(e) { console.error('saveDisplayNameOnly error', e); }
+  } catch(e) {
+    console.error('saveDisplayNameOnly error', e);
+    showToast('Display name failed to save — check your connection.', 'error');
+    return;
+  }
+  // Only update local state / cache once the write is confirmed
+  currentUser = newName;
+  if (!isOwner) { localStorage.setItem('ka_user', newName); }
+  if (_cache['acct_' + usernameKey]) _cache['acct_' + usernameKey].display_name = newName;
+  if (_cache['acct_by_username'] && _cache['acct_by_username'][usernameKey]) _cache['acct_by_username'][usernameKey].display_name = newName;
   _cache['all_accounts'] = null;
   renderAuthBtn();
-  // Update profile display
   const profileNameEl = document.getElementById('profileNameDisplay');
   if (profileNameEl) profileNameEl.firstChild.textContent = newName;
   if (msgEl) { msgEl.textContent = '✓ Display name saved!'; msgEl.style.display = 'block'; setTimeout(() => { msgEl.style.display = 'none'; }, 3000); }
@@ -14452,12 +14486,19 @@ async function saveProfile() {
 
   const bioVal = (document.getElementById('profileBioInput').value || '').trim();
   const bioKey = localStorage.getItem('ka_username_key') || newUsername.toLowerCase();
+  let _bioSaveOk = true;
   try {
     await SB.update('accounts', { bio: bioVal }, `username=eq.${encodeURIComponent(bioKey)}`);
-  } catch(e) {}
-  if (_cache['acct_' + bioKey]) _cache['acct_' + bioKey].bio = bioVal;
-  if (_cache['acct_by_username'] && _cache['acct_by_username'][bioKey]) _cache['acct_by_username'][bioKey].bio = bioVal;
-  _cache['all_accounts'] = null;
+  } catch(e) {
+    _bioSaveOk = false;
+    console.warn('[saveProfile] bio update failed, not caching optimistically:', e);
+    showToast('Bio may not have saved — check your connection.', 'error');
+  }
+  if (_bioSaveOk) {
+    if (_cache['acct_' + bioKey]) _cache['acct_' + bioKey].bio = bioVal;
+    if (_cache['acct_by_username'] && _cache['acct_by_username'][bioKey]) _cache['acct_by_username'][bioKey].bio = bioVal;
+    _cache['all_accounts'] = null;
+  }
   const bioMentions = bioVal.match(/@(\w[\w\s]*?)(?=\s|$|[^a-zA-Z0-9_\s])/g);
   if (bioMentions) {
     bioMentions.forEach(m => {
@@ -14506,6 +14547,38 @@ async function saveProfile() {
           _cache['acct_' + usernameKey].display_name = newDisplayName;
         }
       } catch(e) { console.error('saveProfile sync error', e); }
+    })();
+  } else {
+    // Owner account — same partial-update sync as regular users, just keyed
+    // to OWNER_KEY instead of the (fake/local-only) currentUser identity.
+    // This was previously skipped entirely, which is why owner display name
+    // changes never persisted to Supabase and silently reverted after the
+    // in-memory _cache expired or the page reloaded.
+    (async () => {
+      try {
+        const freshAcct = await getAccount(OWNER_KEY);
+        const bioVal2 = (document.getElementById('profileBioInput') ? document.getElementById('profileBioInput').value.trim() : '') || (freshAcct && freshAcct.bio) || '';
+        const picVal = tempProfilePic || (freshAcct && freshAcct.profile_pic) || '';
+        const updatePayload = {
+          display_name: newDisplayName,
+          bio: bioVal2,
+          profile_pic: picVal,
+          profile_link: (freshAcct && freshAcct.profile_link) || ''
+        };
+        if (newPassword) updatePayload.password = newPassword;
+        if (freshAcct) {
+          await SB.update('accounts', updatePayload, `username=eq.${encodeURIComponent(OWNER_KEY)}`);
+        } else {
+          await SB.upsert('accounts', {
+            username: OWNER_KEY,
+            password: newPassword || OWNER_PASS,
+            is_built_in: false,
+            ...updatePayload
+          }, 'username');
+        }
+        _warmOwnerCache({ ...(freshAcct||{}), username: OWNER_KEY, ...updatePayload });
+        _cache['all_accounts'] = null;
+      } catch(e) { console.error('[saveProfile] owner sync error — change may not have persisted:', e); showToast('Profile may not have saved — check your connection.', 'error'); }
     })();
   }
 
@@ -15795,13 +15868,30 @@ async function toggleProfilePostComments(postId) {
   if (!currentUser) return;
   const cardEl = document.getElementById('ppowncard-' + postId) || document.getElementById('ppcard-' + postId);
   const btn = cardEl ? cardEl.querySelector('[onclick*="toggleProfilePostComments"]') : null;
-  const isOn = btn ? (btn.textContent||'').includes('Disable') : true;
+  // Read current state from the post row itself, not the button's text —
+  // the button is icon-only now, so textContent is always empty and this
+  // used to silently misread state on every tap (and then clobber the SVG
+  // icon with the literal word "Disable"/"Enable" when writing it back).
+  let _pRow = null;
+  if (window._ppCache) {
+    Object.values(window._ppCache).forEach(function(cached) {
+      if (!_pRow && cached && cached.data) {
+        const found = cached.data.find(function(p){ return String(p.id) === String(postId); });
+        if (found) _pRow = found;
+      }
+    });
+  }
+  const isOn = _pRow ? _pRow.commentsOn !== false : true;
   const newState = !isOn; // newState=true means comments ON
+  if (_pRow) _pRow.commentsOn = newState;
   if (btn) {
-    btn.textContent = newState ? 'Disable' : 'Enable';
+    btn.title = newState ? 'Disable comments' : 'Enable comments';
     btn.style.background = newState ? 'rgba(10,132,255,0.10)' : 'rgba(48,209,88,0.10)';
     btn.style.borderColor = newState ? 'rgba(10,132,255,0.25)' : 'rgba(48,209,88,0.25)';
     btn.style.color = newState ? 'var(--blue)' : 'var(--green)';
+    btn.innerHTML = newState
+      ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>`
+      : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
   }
   // Show/hide the comment input section immediately
   const commentInputEl = cardEl ? cardEl.querySelector(`#ppcs-${postId} [id^="ppci-"]`)?.closest('div') || cardEl.querySelector('.comment-input-disabled-msg') : null;
@@ -15859,6 +15949,147 @@ async function deleteProfilePost(postId, postOwnerKey) {
 
   if (isAdminRemoval) {
     addNotifForUser(ownerOfPost, `🚫 Your post was removed by an admin. Reason: ${reason}`, ownerOfPost, postId, 'warning');
+  }
+}
+
+// ── Edit profile post — Premium subscribers only ──
+// Non-premium users still see the Edit button (so they know the feature
+// exists and can upgrade), but tapping it shows the same Dynamic-Island
+// premium prompt used elsewhere instead of opening the editor.
+function openEditProfilePostModal(postId, postOwnerKey) {
+  if (!currentUser) { openUserModal(); return; }
+  const myKey = (typeof _myUsernameKey === 'function' ? _myUsernameKey() : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase());
+  if (!isOwner && (postOwnerKey || '').toLowerCase() !== myKey) return; // not your post, no admin override for edits
+
+  if (!isPremiumUser(myKey)) {
+    if (typeof _showIsland === 'function') {
+      _showIsland({
+        type: 'premium',
+        title: '👑 Plus Premium',
+        sub: 'Editing posts is a Premium perk. Tap to upgrade.',
+        duration: 4000,
+        onClick: function() { if (typeof openWalletPage === 'function') openWalletPage('premium'); }
+      });
+    } else if (typeof openWalletPage === 'function') {
+      openWalletPage('premium');
+    }
+    return;
+  }
+
+  // Find the post row from cache
+  let pRow = null;
+  if (window._ppCache) {
+    Object.values(window._ppCache).forEach(function(cached) {
+      if (!pRow && cached && cached.data) {
+        const found = cached.data.find(function(p){ return String(p.id) === String(postId); });
+        if (found) pRow = found;
+      }
+    });
+  }
+  if (!pRow) { showToast('Could not find that post.', 'error'); return; }
+
+  window._editPPStagedMedia = Array.isArray(pRow.media) ? [...pRow.media] : [];
+  const existing = document.getElementById('_editPPModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = '_editPPModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:29960;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;';
+  modal.onclick = function(e) { if (e.target === modal) closeEditProfilePostModal(); };
+
+  modal.innerHTML = `
+    <div style="background:var(--bg2,#1a1a1e);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:24px 20px 32px;box-shadow:0 -8px 40px rgba(0,0,0,0.7),0 0 0 1px var(--glass-border,rgba(255,255,255,0.08));max-height:85vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <span style="font-size:17px;font-weight:700;color:var(--text);">Edit Post</span>
+        <button onclick="closeEditProfilePostModal()" style="background:var(--surface5,rgba(255,255,255,0.08));border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <label style="font-size:12px;font-weight:600;color:var(--text3);display:block;margin-bottom:5px;">Text</label>
+      <textarea id="_eppText" style="width:100%;box-sizing:border-box;background:var(--surface3,rgba(255,255,255,0.06));border:1px solid var(--glass-border,rgba(255,255,255,0.12));border-radius:12px;padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;resize:vertical;min-height:90px;margin-bottom:14px;" placeholder="What's on your mind?">${escHtml(pRow.text || '')}</textarea>
+      <label style="font-size:12px;font-weight:600;color:var(--text3);display:block;margin-bottom:5px;">Photo</label>
+      <div id="_eppMediaPreview" style="margin-bottom:10px;"></div>
+      <button type="button" onclick="_eppPickImage()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        ${window._editPPStagedMedia.length ? 'Change Photo' : 'Add Photo'}
+      </button>
+      <button onclick="saveEditProfilePost('${postId}')" style="width:100%;background:var(--gold);color:#000;font-family:var(--font);font-size:15px;font-weight:700;padding:13px;border-radius:14px;border:none;cursor:pointer;">Save Changes</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  _eppRenderMediaPreview();
+}
+function closeEditProfilePostModal() {
+  const m = document.getElementById('_editPPModal');
+  if (m) m.remove();
+  window._editPPStagedMedia = null;
+}
+function _eppRenderMediaPreview() {
+  const wrap = document.getElementById('_eppMediaPreview');
+  if (!wrap) return;
+  const media = window._editPPStagedMedia || [];
+  if (!media.length) { wrap.innerHTML = '<div style="font-size:12px;color:var(--text3);">No photo attached.</div>'; return; }
+  wrap.innerHTML = media.map(function(m, i) {
+    return `<div style="position:relative;display:inline-block;width:72px;height:72px;border-radius:12px;overflow:hidden;margin-right:8px;">
+      <img src="${m.dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt=""/>
+      <button type="button" onclick="_eppRemoveImage(${i})" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.65);border:none;color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>`;
+  }).join('');
+}
+function _eppRemoveImage(i) {
+  if (!window._editPPStagedMedia) return;
+  window._editPPStagedMedia.splice(i, 1);
+  _eppRenderMediaPreview();
+}
+function _eppPickImage() {
+  if (typeof openMediaPicker !== 'function') return;
+  openMediaPicker({
+    multiple: false,
+    onSelect: function(files) {
+      const file = files && files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      compressImage(file, 800, 800, 0.72).then(function(m) {
+        window._editPPStagedMedia = [m]; // single-image swap, matches existing single-photo profile post cards
+        _eppRenderMediaPreview();
+      });
+    }
+  });
+}
+async function saveEditProfilePost(postId) {
+  const textEl = document.getElementById('_eppText');
+  if (!textEl) return;
+  const newText = textEl.value.trim();
+  const newMedia = window._editPPStagedMedia || [];
+  if (!newText && !newMedia.length) { showToast('Post can\'t be empty.', 'error'); return; }
+
+  let pRow = null, ownerKeyForCache = null;
+  if (window._ppCache) {
+    Object.entries(window._ppCache).forEach(function([cacheKey, cached]) {
+      if (!pRow && cached && cached.data) {
+        const found = cached.data.find(function(p){ return String(p.id) === String(postId); });
+        if (found) { pRow = found; ownerKeyForCache = cacheKey; }
+      }
+    });
+  }
+  if (pRow) { pRow.text = newText; pRow.media = newMedia; }
+
+  closeEditProfilePostModal();
+  showToast('Post updated!', 'success');
+  if (ownerKeyForCache) _bustPPCache(ownerKeyForCache);
+  if (typeof renderProfilePostsFeed === 'function') renderProfilePostsFeed();
+  if (typeof renderPosts === 'function') renderPosts();
+  // Surgically patch the feed/explore card text+media in place too, in case
+  // this post is currently visible there and won't be re-fetched immediately.
+  ['feedppcard-' + postId, 'ppcard-' + postId, 'ppowncard-' + postId, 'excard-' + postId].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var textEl = el.querySelector('[style*="white-space:pre-wrap"]');
+    if (textEl && pRow) textEl.innerHTML = renderMentions(escHtml(pRow.text || ''));
+  });
+
+  try {
+    await SB.update('profile_posts', { text: newText, media: newMedia }, `id=eq.${encodeURIComponent(postId)}`);
+  } catch(e) {
+    console.error('saveEditProfilePost error', e);
+    showToast('Saved locally — will sync when online.', 'info');
   }
 }
 
@@ -16073,6 +16304,19 @@ async function _ppOvSubmitComment(postId) {
   if (!currentUser) { openUserModal(); return; }
   const input = document.getElementById('ppov-input-' + postId);
   if (!input) return;
+  // Defensive re-check: the input is normally hidden when comments are off
+  // (see openProfilePostCommentOverlay), but this guards against any stale
+  // DOM/cache path still exposing the box.
+  let _pRow = null;
+  if (window._ppCache) {
+    Object.values(window._ppCache).forEach(function(cached) {
+      if (!_pRow && cached && cached.data) {
+        var found = cached.data.find(function(p){ return String(p.id) === String(postId); });
+        if (found) _pRow = found;
+      }
+    });
+  }
+  if (_pRow && _pRow.commentsOn === false && !isOwner) { showToast('Comments are disabled on this post.', 'error'); return; }
   let text = input.value.trim();
   if (!text) return;
   // Prepend @mention if this is a reply
@@ -16490,9 +16734,18 @@ function _renderProfilePostsHTML(container, userPosts, usernameKey) {
           <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:3px;">${escHtml(currentUser)}${verBadge}</div>
           <div style="font-size:11px;color:var(--text3);">${formatTime(p.time)}${p.visibility==='followers'?' · <span style="opacity:0.6;font-size:9px;">&#128274;</span>':''}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
-          <button onclick="deleteProfilePost('${p.id}')" style="font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;">Delete</button>
-          <button onclick="toggleProfilePostComments('${p.id}')" style="font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:8px;background:${commentsOn?'rgba(10,132,255,0.10)':'rgba(48,209,88,0.10)'};border:1px solid ${commentsOn?'rgba(10,132,255,0.25)':'rgba(48,209,88,0.25)'};color:${commentsOn?'var(--blue)':'var(--green)'};cursor:pointer;">${commentsOn?'Disable':'Enable'}</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <button onclick="openEditProfilePostModal('${p.id}','${escHtml((typeof _myUsernameKey==='function'?_myUsernameKey():currentUser)||'')}')" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Edit post">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onclick="toggleProfilePostComments('${p.id}')" style="width:28px;height:28px;border-radius:8px;background:${commentsOn?'rgba(10,132,255,0.10)':'rgba(48,209,88,0.10)'};border:1px solid ${commentsOn?'rgba(10,132,255,0.25)':'rgba(48,209,88,0.25)'};color:${commentsOn?'var(--blue)':'var(--green)'};cursor:pointer;display:flex;align-items:center;justify-content:center;" title="${commentsOn?'Disable comments':'Enable comments'}">
+            ${commentsOn
+              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>`
+              : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`}
+          </button>
+          <button onclick="deleteProfilePost('${p.id}')" style="width:28px;height:28px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Delete post">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
         </div>
       </div>
       ${p.text ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">${renderMentions(escHtml(p.text))}</div>` : ''}
@@ -21205,7 +21458,7 @@ function showVerifiedInfo(e) {
 <!-- USER MANAGER OVERLAY (Owner Only) -->
 <div id="userManagerOverlay" style="display:none;position:fixed;inset:0;z-index:9800;background:var(--bg);overflow-y:auto;flex-direction:column;">
   <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);">
-    <button onclick="closeUserManager()" style="font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closeUserManager()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.92);display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Manage Users</div>
     <div style="width:60px"></div>
   </div>
@@ -21230,7 +21483,7 @@ function showVerifiedInfo(e) {
      or unrelated task/withdrawal approvals mixed in. ── -->
 <div id="premiumApprovalsOverlay" style="display:none;position:fixed;inset:0;z-index:9850;background:var(--bg);overflow-y:auto;flex-direction:column;">
   <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);">
-    <button onclick="closePremiumApprovals()" style="font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closePremiumApprovals()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.92);display:flex;align-items:center;gap:8px;">👑 Premium Requests</div>
     <div style="width:60px"></div>
   </div>
@@ -21242,7 +21495,7 @@ function showVerifiedInfo(e) {
 <!-- VERIFICATION MANAGER OVERLAY (Owner Only) -->
 <div id="verifManagerOverlay" style="display:none;position:fixed;inset:0;z-index:9800;background:var(--bg);overflow-y:auto;">
   <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(10,10,14,0.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.10);">
-    <button onclick="closeVerifManager()" style="font-size:13px;color:#4da3ff;background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closeVerifManager()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.92);">Verification Requests</div>
     <div style="width:60px"></div>
   </div>
@@ -22710,7 +22963,7 @@ closeChat = function() {
 <div id="alertsPageOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;">
   <!-- Topbar -->
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(28,28,36,0.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.10);box-shadow:0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeAlertsPage()" style="font-family:var(--font);font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;min-width:60px;text-align:left;">‹ Back</button>
+    <button onclick="closeAlertsPage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Alerts</div>
     <button onclick="clearNotifs();renderAlertsPage()" style="font-family:var(--font);font-size:12px;font-weight:500;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;">Clear All</button>
   </div>
@@ -22748,7 +23001,7 @@ closeChat = function() {
 <!-- ═══ GROUP DETAIL PAGE ═══ -->
 <div id="communityDetailOverlay" style="position:fixed;inset:0;z-index:20500;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeCommunityDetail()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closeCommunityDetail()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div id="communityDetailTitle" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;"></div>
     <div style="width:60px"></div>
   </div>
@@ -22768,10 +23021,11 @@ closeChat = function() {
 <!-- ═══ CHANNELS LIST PAGE — own full page (Telegram-style), no tab bar / post FAB ═══ -->
 <div id="channelsListOverlay" style="position:fixed;inset:0;z-index:20540;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeChannelsListPage()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);flex-shrink:0;">‹ Back</button>
+    <button onclick="closeChannelsListPage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Channels</div>
-    <button onclick="openCreateChannelSheet()" style="width:32px;height:32px;border-radius:50%;background:var(--gold);border:none;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" title="Create channel">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <button onclick="openCreateChannelSheet()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:100px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Create
     </button>
   </div>
   <div style="max-width:620px;width:100%;margin:0 auto;padding:14px 16px 100px;box-sizing:border-box;">
@@ -22786,7 +23040,7 @@ closeChat = function() {
 <!-- ═══ CHANNEL DETAIL PAGE ═══ -->
 <div id="channelDetailOverlay" style="position:fixed;inset:0;z-index:20550;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeChannelDetail()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closeChannelDetail()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div id="channelDetailTitle" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;"></div>
     <div style="width:60px"></div>
   </div>
@@ -24068,6 +24322,16 @@ async function _exOvSubmitComment(authorKey, postId) {
   if (!currentUser) { openUserModal(); return; }
   const input = document.getElementById('exov-input-' + postId);
   if (!input) return;
+  let _pRow = null;
+  if (window._ppCache) {
+    Object.values(window._ppCache).forEach(function(cached) {
+      if (!_pRow && cached && cached.data) {
+        var found = cached.data.find(function(p){ return String(p.id) === String(postId); });
+        if (found) _pRow = found;
+      }
+    });
+  }
+  if (_pRow && _pRow.commentsOn === false && !isOwner) { showToast('Comments are disabled on this post.', 'error'); return; }
   const text = input.value.trim(); if (!text) return;
   const newComment = { id: Date.now().toString(), user: currentUser, text, time: new Date().toISOString(), likes: [] };
   input.value = '';
@@ -25009,7 +25273,7 @@ function renderAlertsPage() {
 <div id="msgsOverlay" style="display:none!important;"></div>
 <div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow:hidden;">
   <div class="subpage-topbar" style="position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeSuggestedOverlay()" style="font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);">‹ Back</button>
+    <button onclick="closeSuggestedOverlay()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;">People</div>
     <div style="width:60px"></div>
   </div>
@@ -26223,7 +26487,7 @@ window.handlePumApkSelect = async function(input) {
 ════════════════════════════════════════════════════ -->
 <div id="groupChatOverlay" style="position:fixed;inset:0;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:19600;background:var(--bg);display:none;flex-direction:column;overflow:hidden;">
   <div class="chat-topbar" style="margin:10px 10px 0;border-radius:20px;">
-    <button onclick="closeGroupChat()" style="font-family:var(--font);font-size:13px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;min-width:50px;">‹ Back</button>
+    <button onclick="closeGroupChat()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div id="gcAvi" style="width:34px;height:34px;border-radius:50%;background:rgba(94,92,230,0.2);border:1.5px solid rgba(94,92,230,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👥</div>
     <div style="flex:1;min-width:0;cursor:pointer;" onclick="openGroupMgmt()">
       <div id="gcName" style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
@@ -29623,6 +29887,12 @@ async function openGroupChat(groupId) {
   // Hide messagesPageOverlay so it doesn't bleed through
   var msgsOv = document.getElementById('messagesPageOverlay');
   if (msgsOv) msgsOv.style.display = 'none';
+  // Same fix as messagesPageOverlay above: channelDetailOverlay sits at a
+  // higher z-index than groupChatOverlay (needed so it can stack correctly
+  // above Explore/Connect — see earlier fix), so if a group is opened via a
+  // channel post's "Comment" button while the channel page is still open,
+  // the group chat would render invisibly underneath it. Explicitly close it.
+  if (typeof closeChannelDetail === 'function') closeChannelDetail();
 
   var groups = await _loadGroupChats();
   var group = groups.find(function(g) { return g.id === groupId; });
@@ -31077,7 +31347,7 @@ window.dmStopVoice = function() { window._voiceStop(); };
 (function() {
   async function _syncVerifiedFromSupabase() {
     try {
-      var accounts = await SB.query('accounts', '?limit=500');
+      var accounts = await SB.query('accounts', '?limit=5000');
       if (!accounts || !accounts.length) return;
       var newVerified = new Set([OWNER_KEY]);
       accounts.forEach(function(a) {
@@ -34540,9 +34810,18 @@ function _toggleWalletBalanceHidden() {
 async function _refreshWalletBalance() {
   try {
     const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`);
+    if (rows && rows[0] && rows[0].plus_coins == null) {
+      // Row exists but plus_coins was never initialized — set it to 0 explicitly
+      // so future reads are unambiguous, instead of silently defaulting forever.
+      try { await SB.update('accounts', { plus_coins: 0 }, `username=eq.${encodeURIComponent(_myWalletKey())}`); } catch(e) {}
+    }
     _walletBalance = (rows && rows[0] && rows[0].plus_coins) || 0;
     window._walletBalanceLoaded = true;
-  } catch(e) { console.warn('[wallet] balance load failed:', e); }
+  } catch(e) {
+    console.warn('[wallet] balance load failed:', e);
+    window._walletBalanceLoaded = false;
+    return; // leave existing UI/state alone rather than rendering a stale or wrong number
+  }
   const balEl = document.getElementById('walletCoinBalance');
   const cashEl = document.getElementById('walletCashEstimate');
   const rateEl = document.getElementById('walletRateNote');
@@ -37676,12 +37955,15 @@ async function renderPartnerSitesRow() {
   // Refresh with the real balance in the background
   try {
     var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(_myWalletKey()) + '&select=plus_coins');
+    if (rows && rows[0] && rows[0].plus_coins == null) {
+      try { await SB.update('accounts', { plus_coins: 0 }, 'username=eq.' + encodeURIComponent(_myWalletKey())); } catch(e) {}
+    }
     var bal = (rows && rows[0] && rows[0].plus_coins) || 0;
     _walletBalance = bal;
     window._walletBalanceLoaded = true;
     var balEl = document.getElementById('partnerSitesBalance');
     if (balEl) balEl.innerHTML = bal.toLocaleString() + ' <span style="font-size:12px;font-weight:600;color:' + unitColor + ';margin-left:2px;">coins</span>';
-  } catch(e) {}
+  } catch(e) { console.warn('[wallet] home card refresh failed:', e); }
   // Sum today's task-claim earnings for the activity chip
   try {
     var todayKey = new Date().toISOString().slice(0,10);
@@ -39301,18 +39583,9 @@ function _injectComposerAI(){
     gbody.after(btn2);
     gbody.addEventListener('input',()=>{ btn2.style.display=gbody.value.trim().length>15?'inline-flex':'none'; });
   }
-  // Profile post composer
-  const ppc = document.getElementById('ppcText');
-  if(ppc && !ppc._aiInjected){
-    ppc._aiInjected = true;
-    const btn3 = document.createElement('button');
-    btn3.type='button';
-    btn3.innerHTML='✦ Fix';
-    btn3.style.cssText='display:none;font-family:var(--font);font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;background:rgba(94,92,230,0.15);border:1px solid rgba(94,92,230,0.35);color:#a78bfa;cursor:pointer;margin-top:4px;';
-    btn3.onclick=()=>_fixText(ppc);
-    ppc.after(btn3);
-    ppc.addEventListener('input',()=>{ btn3.style.display=ppc.value.trim().length>15?'inline-flex':'none'; });
-  }
+  // Profile post composer — no injected floating "Fix" button here; the
+  // composer's footer already has a proper "AI Smart Fill" button
+  // (ppcAIEnhance()) that does the same job without overlapping the textarea.
 }
 
 function _fixText(el){
