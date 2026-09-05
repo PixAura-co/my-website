@@ -4326,11 +4326,12 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   <input id="au-html-url" style="display:none;"/><div id="au-html-url-status" style="display:none;"></div>
   <button id="postBtnAppUpdate" style="display:none;"></button>
 
-  <!-- FEED FILTER: "For You" pill + separate "Channels" pill that opens its own full page -->
-  <div id="feedSegmentWrap" style="display:flex;gap:8px;margin-bottom:14px;width:100%;">
-    <button id="seg-all" onclick="setFeedSegment('all',this)" style="font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:1px solid rgba(255,255,255,0.09);cursor:pointer;background:var(--gold);color:#000;transition:all 0.2s;letter-spacing:-0.1px;-webkit-tap-highlight-color:transparent;flex:1;">For You</button>
-    <button id="seg-channels" onclick="openChannelsListPage()" style="font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:1px solid rgba(255,255,255,0.09);cursor:pointer;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.72);transition:all 0.2s;letter-spacing:-0.1px;-webkit-tap-highlight-color:transparent;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg> Channels</button>
-  </div>
+  <!-- Feed segment pill removed — feed source is now chosen in Settings >
+       Appearance (Following / Premium creators / Mixed / For You), applied
+       globally rather than toggled per-visit. Channels are reached via the
+       search page's Channels tab. -->
+  <div id="feedSegmentWrap" style="display:none;"></div>
+  <button id="seg-all" style="display:none;"></button>
 
   <!-- COMPOSER — hidden; new posts use the FAB button (+ New Post) -->
   <div class="composer-wrapper" id="composerWrapper" style="display:none;">
@@ -4813,6 +4814,19 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
 
+    <!-- Customize Home Feed — surfaces the new feed-source picker right at
+         the top, replacing the old Premium ad card in this exact spot so
+         it's the first thing people notice. -->
+    <div class="settings-icon-group" style="margin-bottom:10px;">
+      <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openAppearancePage(),200)">
+        <div class="settings-icon-circle" style="background:rgba(167,139,250,0.15);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+        </div>
+        <div class="settings-icon-info"><div class="settings-icon-label">Customize Home Feed</div><div class="settings-icon-desc">Choose what shows on your Home feed</div></div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
     <!-- Add / Switch Account -->
     <div onclick="openAddAccountSheet();" style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;margin-bottom:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,0.09)'" ontouchend="this.style.background='rgba(255,255,255,0.04)'"">
       <div style="width:34px;height:34px;border-radius:9px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -4907,20 +4921,6 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 
     <!-- Legacy Live Match Tracker (owner only, hidden) -->
     <div id="sideMenuLiveTracker" style="display:none;"></div>
-
-    <!-- Subscribe to Premium -->
-    <div class="settings-icon-group" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(184,134,11,0.1),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.2);">
-      <div class="settings-icon-row" onclick="toggleSettingsPanel();openWalletPage('premium')">
-        <div class="settings-icon-circle" style="background:linear-gradient(135deg,rgba(184,134,11,0.28),rgba(245,197,24,0.14));border:1px solid rgba(245,197,24,0.35);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
-        <div class="settings-icon-info">
-          <div class="settings-icon-label" style="background:linear-gradient(90deg,#F5C518,#ffe580);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;">Subscribe to Plus Premium</div>
-          <div class="settings-icon-desc">Unlock exclusive perks with Plus Coins</div>
-        </div>
-        <span style="font-size:10px;font-weight:700;color:#000;background:var(--gold);border-radius:20px;padding:3px 9px;white-space:nowrap;flex-shrink:0;">Wallet</span>
-      </div>
-    </div>
 
     <!-- Log Out -->
     <button onclick="logout()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.28);color:#ff453a;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -5240,7 +5240,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     <button onclick="sendAIQuick('How do I earn from daily tasks?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Daily Tasks</button>
     <button onclick="sendAIQuick('How do sponsors work?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Sponsors</button>
     <button onclick="sendAIQuick('How do I gift coins?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Gifting</button>
-    <button onclick="sendAIQuick('How do I get verified?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">✓ Verification</button>
+    <button onclick="sendAIQuick('How do I get verified?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Verification</button>
     <button onclick="sendAIQuick('How do I use Connect?')" style="display:inline-flex;align-items:center;margin-right:6px;padding:6px 13px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Connect</button>
   </div>
   <div class="chat-messages" id="chatMessages"></div>
@@ -5370,6 +5370,11 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     <div style="width:60px"></div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:20px 16px 100px;">
+    <!-- Home Feed source — moved to the top so it's easy to spot -->
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Home Feed</div>
+    <div class="settings-icon-group" style="margin-bottom:20px;">
+      <div id="feedSourcePicker"></div>
+    </div>
     <!-- Theme -->
     <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Theme</div>
     <div class="settings-icon-group" style="margin-bottom:20px;">
@@ -5812,7 +5817,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 const OWNER_USER  = 'Social Plus';
 const OWNER_PASS  = 'Socialplus@';
 
-// ── GLOBAL VERIFIED BADGE ── use this everywhere instead of plain ✓ or inline SVGs
+// ── GLOBAL VERIFIED BADGE ── use this everywhere instead of plain or inline SVGs
 const VERIFIED_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
 const PREMIUM_BADGE_HTML = '<span title="Premium Member" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:linear-gradient(135deg,#0864c9,#0a84ff);border-radius:4px;font-size:10px;line-height:1;vertical-align:middle;margin-left:1px;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z" fill="#000"/></svg></span>';
 // Small reusable SVG icons for premium/wallet UI — replaces keyboard emoji so
@@ -6249,7 +6254,7 @@ if (localStorage.getItem('ka_username_key') === 'kris_analysis_ltd' || localStor
   localStorage.setItem('ka_username_key', 'plusofficial');
 }
 let posts         = [];
-let activeFilter  = 'all';
+let activeFilter  = localStorage.getItem('ka_feed_source') || 'mixed';
 let _feedRenderLimit = 10; // posts shown per page; "View older predictions" adds 10 more
 
 function handleNavBrandClick() {
@@ -10640,6 +10645,53 @@ function _doRenderPosts() {
     // Pre-fetched by _refreshFollowingProfilePosts() — profile posts can't be awaited synchronously here
     filtered = filtered.concat(window._followingProfilePosts || []);
     filtered.sort((a, b) => new Date(b.time||0) - new Date(a.time||0));
+  } else if (activeFilter === 'premium_creators') {
+    // Only posts from accounts currently holding a premium/prestige/pro tier
+    // (getPremiumTier returns null for everyone else). Pulls from the same
+    // merged pool "For You" uses, then filters down.
+    const mainItems = filtered.map(p => ({ p, _pinned: p.type === 'feature_announcement' && p._feedRank === 0 }));
+    const profileItems = (window._forYouProfilePosts || []).map(p => ({ p, _pinned: !!p._justPosted }));
+    filtered = [...mainItems, ...profileItems]
+      .filter(x => x.p.author === OWNER_USER || x.p.user === OWNER_USER || !!getPremiumTier((x.p.authorKey || x.p.user || x.p.author || '')))
+      .sort((a, b) => {
+        if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
+      })
+      .map(x => x.p);
+  } else if (activeFilter === 'mixed') {
+    // Default feed source: interleaves Following content with the broader
+    // For You pool so people see the people they follow AND fresh discovery
+    // content, instead of picking one or the other. Roughly 2-of-3 slots
+    // favor Following when there's enough of it, filling the rest from For
+    // You so the feed never looks emptier than "For You" alone would.
+    const follows = getFollowData();
+    const myKey = (currentUser || '').toLowerCase();
+    const myFollows = follows[myKey] || [];
+    const followsKris = myFollows.includes(OWNER_KEY) || myFollows.includes(OWNER_USER.toLowerCase());
+    let followingPool = followsKris ? [...filtered] : [];
+    followingPool = followingPool.concat(window._followingProfilePosts || []);
+    followingPool.sort((a, b) => new Date(b.time||b.timestamp||0) - new Date(a.time||a.timestamp||0));
+
+    const mainItems = filtered.map(p => ({ p, _pinned: p.type === 'feature_announcement' && p._feedRank === 0 }));
+    const profileItems = (window._forYouProfilePosts || []).map(p => ({ p, _pinned: !!p._justPosted }));
+    let forYouPool = [...mainItems, ...profileItems]
+      .sort((a, b) => {
+        if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
+      })
+      .map(x => x.p);
+
+    const followingIds = new Set(followingPool.map(p => p.id));
+    forYouPool = forYouPool.filter(p => !followingIds.has(p.id)); // avoid double-showing the same post
+    // Weave: 2 from Following, 1 from For You, repeat — falls back to
+    // whichever pool still has items once the other runs dry.
+    const woven = [];
+    let fi = 0, oi = 0;
+    while (fi < followingPool.length || oi < forYouPool.length) {
+      for (let k = 0; k < 2 && fi < followingPool.length; k++) woven.push(followingPool[fi++]);
+      if (oi < forYouPool.length) woven.push(forYouPool[oi++]);
+    }
+    filtered = woven;
   } else if (activeFilter === 'channels') {
     // Rendered entirely by _renderHomeChannelFeed() (async — needs a Supabase
     // round-trip for subscribed channels + their posts), so bail out of the
@@ -11308,6 +11360,14 @@ function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Formats a raw count like 1500 -> "1.5k". Used for channel post view/like
+// display. A plain function (not const/arrow) so it's hoisted and safe to
+// call from renderers defined earlier in the file too.
+function _formatCompactCountSafe(n) {
+  n = n || 0;
+  return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : String(n);
+}
+
 // Like escHtml but also neutralizes single quotes, for values interpolated
 // inside single-quoted onclick="..." attribute strings (escHtml alone
 // leaves ' untouched, which breaks/hijacks the attribute if an id or peer
@@ -11410,8 +11470,8 @@ async function handleGenFileAttach(event) {
     const publicUrl = SB_URL + '/storage/v1/object/public/' + bucket + '/' + encodeURIComponent(fileName);
     window._genAttachedFileUrl = publicUrl;
     if (bar) bar.style.width = '100%';
-    if (progLbl) progLbl.textContent = '✓ ' + file.name + ' ready!';
-    if (label) label.textContent = '✓ ' + file.name;
+    if (progLbl) progLbl.textContent = '' + file.name + ' ready!';
+    if (label) label.textContent = '' + file.name;
     showToast('File uploaded! Ready to post.', 'success');
   } catch(err) {
     console.error('File upload error:', err);
@@ -11696,7 +11756,7 @@ function submitVerifRequest() {
   if (existing) { showToast('You already have a pending request.', 'error'); return; }
   reqs.push({ username: myKey, display: currentUser, reason: reason.trim(), time: new Date().toISOString(), status: 'pending' });
   saveVerifRequests(reqs);
-  showToast('Verification request submitted! ✓', 'success');
+  showToast('Verification request submitted!', 'success');
   renderVerifRequestSection();
 }
 
@@ -11720,8 +11780,7 @@ function renderVerifRequestSection() {
     <div class="profile-section-label" style="margin-top:4px;">Request Verification Badge</div>
     <textarea id="verifReasonInput" class="profile-bio-input" placeholder="Why should your account be verified? (optional)" maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="min-height:54px;margin-bottom:8px;"></textarea>
     <button class="profile-save-btn" style="background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.4);color:var(--gold);" onclick="submitVerifRequest()">
-      Request Verification ✓
-    </button>`;
+      Request Verification</button>`;
 }
 
 let flMode = 'followers'; // or 'following'
@@ -12351,7 +12410,7 @@ async function openSavedPosts() {
   }
   const resultBadge = r => {
     if (!r || r === 'pending') return '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:var(--text3);font-weight:600;">Pending</span>';
-    if (r === 'won') return '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(48,209,88,0.15);color:var(--green);font-weight:600;">Won ✓</span>';
+    if (r === 'won') return '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(48,209,88,0.15);color:var(--green);font-weight:600;">Won</span>';
     return '<span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,69,58,0.12);color:var(--red);font-weight:600;">Lost ✗</span>';
   };
   container.innerHTML = matches.map(p => `
@@ -12529,7 +12588,7 @@ function startEditChatMsg(idx) {
   bubble.innerHTML = `<div style="display:flex;gap:5px;align-items:center;">
     <input id="chatedit-${idx}" value="${escHtml(curr)}" style="flex:1;background:rgba(0,0,0,0.25);border:1px solid rgba(245,197,24,0.4);border-radius:8px;padding:5px 9px;font-size:13px;color:#000;font-family:var(--font);outline:none;"
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditChatMsg(${idx})}if(event.key==='Escape'){renderChatMessages()}"/>
-    <button onclick="saveEditChatMsg(${idx})" style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(0,0,0,0.25);border:none;color:#000;font-weight:700;cursor:pointer;">✓</button>
+    <button onclick="saveEditChatMsg(${idx})" style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(0,0,0,0.25);border:none;color:#000;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
   </div>`;
   setTimeout(() => document.getElementById(`chatedit-${idx}`)?.focus(), 50);
 }
@@ -13668,7 +13727,7 @@ async function saveProfileLink() {
     }
     _cache['all_accounts'] = null;
     _renderProfileLink(linkVal);
-    showToast('Link saved! ✓', 'success');
+    showToast('Link saved!', 'success');
   } catch(e) {
     console.warn('saveProfileLink error:', e);
     showToast('Failed to save link. Try again.', 'error');
@@ -13687,7 +13746,7 @@ async function handleCoverPhotoChange(event) {
       await SB.update('accounts', { cover_photo: dataUrl }, `username=eq.${encodeURIComponent(usernameKey)}`);
       const acctCache = (_cache['acct_by_username'] || {});
       if (acctCache[usernameKey]) acctCache[usernameKey].cover_photo = dataUrl;
-      showToast('Cover photo updated! ✓', 'success');
+      showToast('Cover photo updated!', 'success');
     } catch(e) {
       try { localStorage.setItem('ka_cover_' + usernameKey, dataUrl); } catch(ex) {}
       showToast('Cover photo saved locally.', '');
@@ -14105,7 +14164,7 @@ function _applyBuiltinAvatar(idx) {
   } else {
     saveProfilePic(key, '__gradient__' + a.css);
   }
-  showToast('Avatar updated! ✓', 'success');
+  showToast('Avatar updated!', 'success');
 }
 
 function openAddAccountSheet() {
@@ -14207,7 +14266,7 @@ function _switchToSavedAccount(key, display) {
     localStorage.removeItem('ka_predict_bot');
   }
   _clearCache();
-  showToast(`Switched to ${currentUser} ✓`, 'success');
+  showToast(`Switched to ${currentUser}`, 'success');
   setTimeout(() => {
     if (isOwner) { setOwnerUI(); } else { setUserUI(); }
     loadPosts();
@@ -14262,7 +14321,7 @@ function _openCropModal(src) {
       <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:16px;">Zoom</div>
       <div style="display:flex;gap:10px;">
         <button onclick="document.getElementById('_cropModal').remove();" style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;cursor:pointer;">Cancel</button>
-        <button id="_cropSaveBtn" style="flex:2;padding:13px;border-radius:14px;background:linear-gradient(135deg,#F5C518,#ffe066);border:none;color:#000;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">✓ Save Photo</button>
+        <button id="_cropSaveBtn" style="flex:2;padding:13px;border-radius:14px;background:linear-gradient(135deg,#F5C518,#ffe066);border:none;color:#000;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">Save Photo</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -14317,7 +14376,7 @@ function _openCropModal(src) {
     if (currentUser) {
       const key = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
       saveProfilePic(key, dataUrl);
-      showToast('Profile picture updated! ✓', 'success');
+      showToast('Profile picture updated!', 'success');
     }
   };
 }
@@ -14377,7 +14436,7 @@ async function saveBioOnly() {
   }
   const bioDisplay = document.getElementById('profileBioDisplay');
   if (bioDisplay) bioDisplay.innerHTML = renderMentions(escHtml(bioVal));
-  showToast('Bio saved! ✓', 'success');
+  showToast('Bio saved!', 'success');
 }
 
 async function saveDisplayNameOnly() {
@@ -14404,8 +14463,8 @@ async function saveDisplayNameOnly() {
   renderAuthBtn();
   const profileNameEl = document.getElementById('profileNameDisplay');
   if (profileNameEl) profileNameEl.firstChild.textContent = newName;
-  if (msgEl) { msgEl.textContent = '✓ Display name saved!'; msgEl.style.display = 'block'; setTimeout(() => { msgEl.style.display = 'none'; }, 3000); }
-  showToast('Display name updated! ✓', 'success');
+  if (msgEl) { msgEl.textContent = 'Display name saved!'; msgEl.style.display = 'block'; setTimeout(() => { msgEl.style.display = 'none'; }, 3000); }
+  showToast('Display name updated!', 'success');
 }
 
 async function saveProfile() {
@@ -14584,7 +14643,7 @@ async function saveProfile() {
 
   closeProfilePage();
   renderAuthBtn();
-  showToast('Profile saved! ✓', 'success');
+  showToast('Profile saved!', 'success');
 }
 
 async function renderSuggestedAccounts() {
@@ -15208,7 +15267,7 @@ async function _maybeSuggestFeedPosts() {
 function _inferNotifKind(text) {
   var t = (text || '').toLowerCase();
   if (/^you are now following/.test(t)) return 'follow';
-  if (/verified by kris|gold ✓ badge|has been verified/.test(t)) return 'verify';
+  if (/verified by kris|gold badge|has been verified/.test(t)) return 'verify';
   if (/verification badge has been/.test(t)) return 'unverify';
   if (/account.*banned|banned.*account|you.*have been banned/.test(t)) return 'ban';
   if (/account.*restrict|restrict.*account|you.*have been restricted/.test(t)) return 'restrict';
@@ -15820,7 +15879,7 @@ async function submitProfilePost() {
   profilePostMediaFiles = [];
   renderPpcPreview();
   if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
-  showToast('Posted! ✓', 'success');
+  showToast('Posted!', 'success');
   _bustPPCache(usernameKey);
   renderProfilePostsFeed();
   // ── Show it on Home immediately, don't wait for the ranking pass ──────
@@ -19646,6 +19705,7 @@ function sendAIMessageWithImage() { /* disabled */ }
 // ── Filter tabs ──
 function setFilter(filter, btn) {
   activeFilter = filter;
+  try { localStorage.setItem('ka_feed_source', filter); } catch(e) {}
   _feedRenderLimit = 10;
   document.querySelectorAll('.filter-row .f-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -19857,7 +19917,7 @@ async function submitForgotPassword() {
     }
     _cache['all_accounts'] = null;
     closeForgotPasswordModal();
-    showToast('Password reset! ✓', 'success');
+    showToast('Password reset!', 'success');
     const unameField = document.getElementById('usernameInput');
     if (unameField) unameField.value = acct.display_name || uname;
     showRecoveryCodeModal(newCode);
@@ -19882,7 +19942,7 @@ function closeRecoveryCodeModal() {
 function copyRecoveryCode() {
   if (!_pendingRecoveryCode) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(_pendingRecoveryCode).then(() => showToast('Copied! ✓', 'success')).catch(() => {});
+    navigator.clipboard.writeText(_pendingRecoveryCode).then(() => showToast('Copied!', 'success')).catch(() => {});
   }
 }
 // Generate (or regenerate) a recovery code for the logged-in account, from Settings
@@ -20811,6 +20871,7 @@ function openAppearancePage() {
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   if (window._kaPushBack) window._kaPushBack();
+  renderFeedSourcePicker();
   // Sync adapt system toggle
   const adaptTog = document.getElementById('adaptSystemToggle');
   const adaptDesc = document.getElementById('adaptSystemDesc');
@@ -20830,6 +20891,43 @@ function closeAppearancePage() {
   const overlay = document.getElementById('appearanceOverlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
+}
+
+// ── Home Feed source picker (Settings > Appearance) ──
+// Replaces the old "For You" / "Channels" segment pill that used to sit on
+// the Home screen itself — the choice is now a standing preference here
+// instead of something re-picked on every visit. "Mixed" is the default
+// for new/unset preferences (see activeFilter's init above).
+const FEED_SOURCE_OPTIONS = [
+  { id: 'following', label: 'Following', desc: 'Only people and channels you follow', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>', color: 'rgba(48,209,88,0.15)' },
+  { id: 'premium_creators', label: 'Premium creators', desc: 'Posts from Premium and Prestige subscribers', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.6-6.3 4.6 2.3-7.2-6-4.6h7.6z"/></svg>', color: 'rgba(245,197,24,0.15)' },
+  { id: 'mixed', label: 'Mixed', desc: 'A blend of Following and fresh discovery — default', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/><line x1="3" y1="3" x2="21" y2="21"/></svg>', color: 'rgba(167,139,250,0.15)' },
+  { id: 'all', label: 'For You', desc: 'Our classic recommended feed', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4da3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>', color: 'rgba(10,132,255,0.15)' },
+];
+
+function renderFeedSourcePicker() {
+  const wrap = document.getElementById('feedSourcePicker');
+  if (!wrap) return;
+  wrap.innerHTML = FEED_SOURCE_OPTIONS.map((opt, i) => {
+    const isActive = activeFilter === opt.id;
+    return `<div class="settings-icon-row" onclick="_selectFeedSource('${opt.id}')" style="cursor:pointer;">
+      <div class="settings-icon-circle" style="background:${opt.color};">${opt.icon}</div>
+      <div class="settings-icon-info">
+        <div class="settings-icon-label">${opt.label}</div>
+        <div class="settings-icon-desc">${opt.desc}</div>
+      </div>
+      ${isActive
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>`
+        : `<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--glass-border);flex-shrink:0;"></div>`}
+    </div>${i < FEED_SOURCE_OPTIONS.length - 1 ? '<div class="settings-icon-divider"></div>' : ''}`;
+  }).join('');
+}
+
+function _selectFeedSource(id) {
+  if (activeFilter === id) return;
+  setFilter(id, null);
+  renderFeedSourcePicker();
+  showToast('Home feed updated.', 'success');
 }
 
 // ── Admin: clear all posts / accounts ──
@@ -21006,7 +21104,7 @@ function openUprofileManager() {
     ...planActions,
     isVerified
       ? `<button onclick="ownerRemoveVerify('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);color:var(--gold);cursor:pointer;">Remove Verification</button>`
-      : `<button onclick="ownerVerify('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">✓ Verify Account</button>`,
+      : `<button onclick="ownerVerify('${escHtml(username)}','${escHtml(displayName)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">Verify Account</button>`,
     isBanned
       ? `<button onclick="ownerUnban('${escHtml(username)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">Unban Account</button>`
       : `<button onclick="ownerBan('${escHtml(username)}');closeUprofileManager()" style="width:100%;margin-bottom:8px;padding:11px;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Ban Account</button>`,
@@ -21745,8 +21843,8 @@ function ownerVerify(username, display) {
   _cache['acct_' + username.toLowerCase()] = null;
   // Notify the user via Social Plus DM and notification
   _sendBetAnalyticsVerifiedDM(_dbUsername, display || username);
-  addNotifForUser(_dbUsername, `✅ Congratulations! Your account @${username} has been verified by Social Plus. You now have the gold ✓ badge!`);
-  showToast((display||username) + ' verified ✓', 'success'); renderUserManager();
+  addNotifForUser(_dbUsername, `✅ Congratulations! Your account @${username} has been verified by Social Plus. You now have the gold badge!`);
+  showToast((display||username) + ' verified', 'success'); renderUserManager();
 }
 
 function ownerRemoveVerify(username, display) {
@@ -21788,7 +21886,7 @@ async function _sendBetAnalyticsDM(targetUsername, messageText) {
 }
 
 async function _sendBetAnalyticsVerifiedDM(usernameKey, displayName) {
-  const msg = `🎉 Congratulations ${displayName}! Your account has been officially verified by Social Plus.\n\nYou now have the gold ✓ badge on your profile, comments, and posts. This badge shows the community that your account is authentic and trusted.\n\nKeep being awesome! — Social Plus`;
+  const msg = `🎉 Congratulations ${displayName}! Your account has been officially verified by Social Plus.\n\nYou now have the gold badge on your profile, comments, and posts. This badge shows the community that your account is authentic and trusted.\n\nKeep being awesome! — Social Plus`;
   await _sendBetAnalyticsDM(usernameKey, msg);
   // Also show Dynamic Island pop for the owner's screen
   if (typeof _showIsland === 'function') _showIsland({ type: 'success', title: '✅ Verified!', sub: `@${usernameKey} is now verified` });
@@ -21932,7 +22030,7 @@ async function ownerMergeAccount(fromUsername, toUsername) {
     delete _cache['acct_' + fromUsername];
     if (_cache['acct_by_username']) { delete _cache['acct_by_username'][from]; delete _cache['acct_by_username'][fromUsername]; }
 
-    showToast(`@${fromUsername} merged into @${toUsername} ✓`, 'success');
+    showToast(`@${fromUsername} merged into @${toUsername}`, 'success');
     renderUserManager();
   } catch(e) {
     showToast('Merge failed — check console.', 'error');
@@ -22032,7 +22130,7 @@ async function ownerDeleteUser(username) {
       localStorage.setItem('ka_verified', JSON.stringify(verif.filter(function(x){ return ((x&&x.username)||x||'').toLowerCase() !== uLow; })));
     } catch(e) {}
 
-    showToast(username + ' deleted. ✓', 'success');
+    showToast(username + ' deleted.', 'success');
   } catch(e) {
     showToast('Error deleting user — try again.', 'error');
     console.error('ownerDeleteUser error', e);
@@ -22066,7 +22164,7 @@ function renderVerifManager() {
       ${r.reason ? `<div style="font-size:13px;color:var(--text2);margin-bottom:10px;padding:8px;background:rgba(255,255,255,0.04);border-radius:9px;">"${escHtml(r.reason)}"</div>` : ''}
       ${r.status === 'pending' ? `
         <div style="display:flex;gap:8px;">
-          <button onclick="verifApprove(${idx})" style="flex:1;font-family:var(--font);font-size:12px;font-weight:600;padding:8px;border-radius:10px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">✓ Approve</button>
+          <button onclick="verifApprove(${idx})" style="flex:1;font-family:var(--font);font-size:12px;font-weight:600;padding:8px;border-radius:10px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.3);color:var(--green);cursor:pointer;">Approve</button>
           <button onclick="verifReject(${idx})" style="flex:1;font-family:var(--font);font-size:12px;font-weight:600;padding:8px;border-radius:10px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);color:var(--red);cursor:pointer;">✕ Reject</button>
           <button onclick="verifRemove(${idx})" style="font-family:var(--font);font-size:12px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;">Remove</button>
         </div>` : `
@@ -22083,14 +22181,14 @@ function verifApprove(idx) {
     .then(() => console.info('[VERIFY] Supabase is_verified set for', r.username))
     .catch(e => console.warn('[VERIFY] Supabase update failed:', e));
   // ── Notify the user instantly ──
-  addNotifForUser(r.username, `🎉 Congrats! Your account @${r.username} has been verified ✓`, OWNER_KEY, null).catch(()=>{});
+  addNotifForUser(r.username, `🎉 Congrats! Your account @${r.username} has been verified`, OWNER_KEY, null).catch(()=>{});
   _verifiedUsers.add(r.username);
   if (_cache['acct_by_username'] && _cache['acct_by_username'][r.username]) {
     _cache['acct_by_username'][r.username].is_verified = true;
   }
   // Clear accounts cache so next load shows badge
   delete _cache['all_accounts'];
-  showToast(r.display + ' verified! ✓', 'success'); renderVerifManager();
+  showToast(r.display + ' verified!', 'success'); renderVerifManager();
 }
 function verifReject(idx) {
   const reqs = getVerifRequests(); const r = reqs[idx]; if (!r) return;
@@ -22161,7 +22259,7 @@ function _aiRenderUserCard(username) {
   return '<div onclick="_openUserFromAI(\'' + username + '\')" style="margin-top:8px;cursor:pointer;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;">'
     + '<div style="width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + imgHtml + '</div>'
     + '<div style="flex:1;min-width:0;">'
-    + '<div style="font-size:14px;font-weight:700;color:var(--text);">' + displayName + (verified ? ' ✓' : '') + '</div>'
+    + '<div style="font-size:14px;font-weight:700;color:var(--text);">' + displayName + (verified ? '' : '') + '</div>'
     + '<div style="font-size:12px;color:var(--text3);">@' + username + '</div>'
     + bioHtml
     + '</div>'
@@ -22672,7 +22770,7 @@ function clearAIChat() {
     localStorage.removeItem(_aiHistoryKey()); // was hardcoded to currentUser, missing ka_username_key — never actually cleared
     // Re-open the welcome screen
     openAIChat();
-    showToast('Chat cleared! ✓', 'success');
+    showToast('Chat cleared!', 'success');
   }, { title: 'Clear chat?', icon: '🧹', confirmLabel: 'Clear' });
 }
 
@@ -22826,7 +22924,7 @@ closeChat = function() {
     <!-- Channels -->
     <div style="margin-bottom:22px;" id="exploreChannelsSection">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📢 Channels</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Channels</div>
         <button onclick="openCreateChannelSheet()" style="font-family:var(--font);font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.25);color:var(--gold);cursor:pointer;">+ New</button>
       </div>
       <div id="exploreChannelsList"></div>
@@ -23023,12 +23121,13 @@ closeChat = function() {
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeChannelsListPage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Channels</div>
+    <div id="channelsListViewToggle" style="display:flex;gap:3px;background:rgba(255,255,255,0.04);border-radius:10px;padding:2px;flex-shrink:0;"></div>
     <button onclick="openCreateChannelSheet()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:100px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Create
     </button>
   </div>
-  <div style="max-width:620px;width:100%;margin:0 auto;padding:14px 16px 100px;box-sizing:border-box;">
+  <div style="max-width:620px;width:100%;margin:0 auto;padding:24px 16px 100px;box-sizing:border-box;">
     <div style="position:relative;margin-bottom:16px;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="channelsListSearch" oninput="_onChannelsListSearchInput()" placeholder="Search channels…" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px 12px 38px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
@@ -23171,6 +23270,15 @@ closeChat = function() {
     <input id="channelPollQuestion" placeholder="Ask a question…" maxlength="200" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:13px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;"/>
     <div id="channelPollOptions"></div>
     <button onclick="_addChannelPollOption()" style="width:100%;padding:10px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.18);color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;margin-bottom:14px;">+ Add option</button>
+    <label style="font-size:12px;font-weight:600;color:var(--text3);display:block;margin-bottom:6px;">Poll duration</label>
+    <select id="channelPollDuration" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:14px;-webkit-appearance:none;">
+      <option value="0">No end date (open until closed manually)</option>
+      <option value="1">1 hour</option>
+      <option value="6">6 hours</option>
+      <option value="24" selected>1 day</option>
+      <option value="72">3 days</option>
+      <option value="168">1 week</option>
+    </select>
     <button onclick="_submitChannelPoll()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">Send Poll</button>
     <button onclick="closeChannelPollSheet()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);font-family:var(--font);font-size:14px;cursor:pointer;">Cancel</button>
   </div>
@@ -23311,7 +23419,7 @@ async function renderExploreSuggested() {
         <div style="font-size:11px;color:var(--text3);margin-top:1px;">${escHtml(p.handle)}</div>
         ${bioShort ? `<div style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtml(bioShort)}</div>` : ''}
       </div>
-      <button id="esf-${escHtml(p.key)}" onclick="exploreToggleFollow('${escHtml(p.key)}','${escHtml(p.displayName)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;width:100%;margin-top:2px;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? '✓ Following' : 'Follow'}</button>
+      <button id="esf-${escHtml(p.key)}" onclick="exploreToggleFollow('${escHtml(p.key)}','${escHtml(p.displayName)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;width:100%;margin-top:2px;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? 'Following' : 'Follow'}</button>
     </div>`;
   });
 
@@ -23561,7 +23669,7 @@ async function renderExploreResults() {
     // Channels section
     if (channelResults.length) {
       window._searchChannels = channelResults;
-      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">📢 Channels</div>`;
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Channels</div>`;
       html += channelResults.map((c, ci) => {
         const avi = _channelAviHtml(c.avatar, c.name, 44);
         const animCls = c.avatar === '__emoji__📢' ? '_chan-avi-pulse' : c.avatar === '__emoji__⚡' ? '_chan-avi-flicker' : c.avatar === '__emoji__⚽' ? '_chan-avi-bounce' : '';
@@ -23949,7 +24057,7 @@ async function submitCommunityPost() {
   await saveCommunities(communities);
   document.getElementById('communityPostText').value = '';
   renderCommunityPosts(c);
-  showToast('Posted! ✓', 'success');
+  showToast('Posted!', 'success');
 }
 async function renderExplorePostsFeed() {
   const topContainer = document.getElementById('explorePostsFeedTop') || document.getElementById('explorePostsFeed');
@@ -25314,19 +25422,6 @@ function renderAlertsPage() {
     <span class="tab-lbl">Home</span>
   </button>
 
-  <!-- CONNECT / FRIENDS & GROUPS -->
-  <button class="tab-btn" id="tab-search" onclick="tabSwitch('search')">
-    <div class="tab-icon-wrap" style="position:relative;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="2" y1="12" x2="22" y2="12"/>
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-      </svg>
-      <span class="tab-badge-count" id="tab-search-badge"></span>
-    </div>
-    <span class="tab-lbl">Connect</span>
-  </button>
-
   <!-- MESSAGES -->
   <button class="tab-btn" id="tab-messages" onclick="tabSwitch('messages')">
     <div class="tab-icon-wrap" style="position:relative;">
@@ -25424,35 +25519,112 @@ function closeDailySummary() {
 // There's no server-side cron in this app, so the payout job runs once a
 // day from the owner's own session — the same "once per calendar day"
 // pattern used by showDailySummary(). It pays out Plus Coins to every
-// channel with monetization_enabled = true, at 12:00 AM local time (i.e.
-// the first time the owner opens the app after midnight), based on a
-// simple engagement score over the last 24h of that channel's posts
-// (views proxy via reactions + comment_count). Runs silently; owner sees
-// a toast summary, channel owners each get a wallet-credit notification
-// (handled inside _creditUserCoins).
+// eligible channel at 12:00 AM local time (i.e. the first time the owner
+// opens the app after midnight), based on a simple engagement score over
+// the last 24h of that channel's posts. Runs silently; owner sees a toast
+// summary, channel owners each get a wallet-credit notification (handled
+// inside _creditUserCoins).
+//
+// ── Automatic monetization threshold ──
+// A channel becomes eligible for automatic monetization once it reaches
+// CHANNEL_MONETIZATION_MIN_SUBS subscribers — no admin action needed.
+// Below that threshold, the payout multiplier decays LINEARLY with how far
+// short of the threshold the channel is (e.g. 400/500 subs = 80% of the
+// full reward, 100/500 = 20%, 0 subs = 0%). This applies whether the
+// channel is climbing toward the threshold for the first time, or has
+// dropped back down after once qualifying — the formula doesn't care which
+// direction it came from, it just reflects where the channel stands today.
+//
+// Engagement is also monitored as a second, independent multiplier: a
+// channel can have 500+ subscribers but if its recent likes+views have
+// collapsed, that alone drags the payout down too (both conditions must be
+// healthy for a full reward — this is a floor-raising AND, not an average).
+// When a channel's multiplier recovers back to 1.0 after having been
+// reduced, the owner gets a one-time notification explaining the reward is
+// back to full — per spec: "send a notification that it'll only restore
+// once the requirements are back on track".
 const CHANNEL_PAYOUT_RATE_PER_ENGAGEMENT = 2; // Plus Coins per engagement point; tune from Super Admin later if needed
+const CHANNEL_MONETIZATION_MIN_SUBS = 500;
+const CHANNEL_ENGAGEMENT_HEALTHY_FLOOR = 0.35; // below 35% of the channel's own trailing engagement average counts as "dropping"
+
+function _channelSubscriberMultiplier(subscriberCount) {
+  const subs = subscriberCount || 0;
+  if (subs >= CHANNEL_MONETIZATION_MIN_SUBS) return 1;
+  return Math.max(0, subs / CHANNEL_MONETIZATION_MIN_SUBS); // linear taper to 0
+}
+
+async function _channelEngagementMultiplier(channelId) {
+  // Compares last-24h engagement (reactions + views) against the channel's
+  // own trailing 7-day daily average. A channel with naturally low but
+  // STABLE engagement isn't penalized — only a real drop relative to its
+  // own recent normal counts against it. New channels with no history yet
+  // default to a full multiplier (nothing to compare against).
+  try {
+    const since24h = new Date(Date.now() - 86400000).toISOString();
+    const since7d = new Date(Date.now() - 7 * 86400000).toISOString();
+    const [postsRecent, postsWeek] = await Promise.all([
+      SB.query('channel_posts', `?channel_id=eq.${encodeURIComponent(channelId)}&timestamp=gte.${encodeURIComponent(since24h)}&select=id,view_count`).catch(()=>[]),
+      SB.query('channel_posts', `?channel_id=eq.${encodeURIComponent(channelId)}&timestamp=gte.${encodeURIComponent(since7d)}&select=id,view_count,timestamp`).catch(()=>[])
+    ]);
+    if (!postsWeek || postsWeek.length < 3) return 1; // not enough history to judge a trend fairly
+    const recentIds = (postsRecent||[]).map(p => p.id);
+    const weekIds = (postsWeek||[]).map(p => p.id);
+    const [reactionsRecent, reactionsWeek] = await Promise.all([
+      recentIds.length ? SB.query('channel_reactions', `?channel_post_id=in.(${recentIds.map(encodeURIComponent).join(',')})&select=channel_post_id`).catch(()=>[]) : [],
+      weekIds.length ? SB.query('channel_reactions', `?channel_post_id=in.(${weekIds.map(encodeURIComponent).join(',')})&select=channel_post_id`).catch(()=>[]) : []
+    ]);
+    const recentEngagement = (postsRecent||[]).reduce((s,p)=>s+(p.view_count||0),0) + (reactionsRecent||[]).length;
+    const weekEngagement = (postsWeek||[]).reduce((s,p)=>s+(p.view_count||0),0) + (reactionsWeek||[]).length;
+    const dailyAvg = weekEngagement / 7;
+    if (dailyAvg <= 0) return 1; // no baseline yet, don't penalize
+    const ratio = recentEngagement / dailyAvg;
+    if (ratio >= CHANNEL_ENGAGEMENT_HEALTHY_FLOOR) return 1;
+    // Below the floor: scale down proportionally to how far below it the
+    // channel has fallen, same linear-taper idea as the subscriber curve.
+    return Math.max(0, ratio / CHANNEL_ENGAGEMENT_HEALTHY_FLOOR);
+  } catch(e) { return 1; }
+}
+
 async function _runDailyChannelPayoutsIfDue() {
   if (!isOwner) return; // only the admin session runs the job
   const KEY = 'ka_channel_payout_last_run';
   const today = new Date().toDateString();
   if (localStorage.getItem(KEY) === today) return; // already ran today
   try {
-    const channels = await SB.query('channels', '?monetization_enabled=eq.true&select=*');
+    // Every non-banned channel is now considered — monetization eligibility
+    // is computed live from subscriber_count rather than gated behind the
+    // old manual monetization_enabled admin flag. That flag still exists
+    // and channels with it explicitly set stay eligible regardless of the
+    // subscriber threshold (an admin override, e.g. for a promotional
+    // partner channel), but it's no longer the ONLY way in.
+    const channels = await SB.query('channels', '?select=*');
     if (!channels || !channels.length) { localStorage.setItem(KEY, today); return; }
     let paidCount = 0;
     for (const c of channels) {
       if (c.status === 'banned') continue; // never pay out banned channels
+      const subMult = _channelSubscriberMultiplier(c.subscriber_count);
+      const adminOverride = c.monetization_enabled === true;
+      if (subMult <= 0 && !adminOverride) {
+        await _handleChannelMonetizationMultiplierChange(c, 0);
+        continue; // genuinely 0 subs and no admin override — nothing to pay, nothing to monitor
+      }
       const since = new Date(Date.now() - 86400000).toISOString();
       const [posts, reactions] = await Promise.all([
         SB.query('channel_posts', `?channel_id=eq.${encodeURIComponent(c.id)}&timestamp=gte.${encodeURIComponent(since)}&select=id,comment_count`).catch(()=>[]),
-        SB.query('channel_reactions', `?select=channel_post_id`).catch(()=>[])
+        SB.query('channel_posts', `?channel_id=eq.${encodeURIComponent(c.id)}&timestamp=gte.${encodeURIComponent(since)}&select=id`).then(async (ps) => {
+          const ids = (ps||[]).map(p => p.id);
+          if (!ids.length) return [];
+          return SB.query('channel_reactions', `?channel_post_id=in.(${ids.map(encodeURIComponent).join(',')})&select=channel_post_id`).catch(()=>[]);
+        }).catch(()=>[])
       ]);
+      const engMult = await _channelEngagementMultiplier(c.id);
+      const combinedMult = Math.min(subMult || (adminOverride ? 1 : 0), engMult);
+      await _handleChannelMonetizationMultiplierChange(c, combinedMult);
       if (!posts || !posts.length) continue;
-      const postIds = new Set(posts.map(p => p.id));
-      const reactionCount = (reactions||[]).filter(r => postIds.has(r.channel_post_id)).length;
+      const reactionCount = (reactions||[]).length;
       const commentTotal = posts.reduce((sum, p) => sum + (p.comment_count||0), 0);
       const engagement = reactionCount + commentTotal * 2 + (c.subscriber_count||0) * 0.05;
-      const payout = Math.round(engagement * CHANNEL_PAYOUT_RATE_PER_ENGAGEMENT);
+      const payout = Math.round(engagement * CHANNEL_PAYOUT_RATE_PER_ENGAGEMENT * combinedMult);
       if (payout > 0 && c.owner) {
         await _creditUserCoins(c.owner, payout, `Channel "${c.name}" daily earnings`, 'wallet_credit');
         paidCount++;
@@ -25463,10 +25635,40 @@ async function _runDailyChannelPayoutsIfDue() {
   } catch(e) { console.warn('[channels] daily payout job failed:', e); }
 }
 
+// Tracks each channel's payout multiplier day-to-day (stored locally on the
+// admin device that runs the job — fine since this job itself only ever
+// runs from an owner session) so we can detect the specific moment a
+// channel crosses back up to a full 1.0 multiplier after having been
+// reduced, and fire the "you're back on track" notification exactly once
+// for that recovery — not every single day it stays healthy.
+async function _handleChannelMonetizationMultiplierChange(channel, multiplier) {
+  const STORAGE_KEY = 'ka_channel_payout_mult_' + channel.id;
+  const prevRaw = localStorage.getItem(STORAGE_KEY);
+  const prev = prevRaw !== null ? parseFloat(prevRaw) : 1;
+  localStorage.setItem(STORAGE_KEY, String(multiplier));
+  if (!channel.owner) return;
+  const wasReduced = prev < 0.999;
+  const nowFull = multiplier >= 0.999;
+  const nowReduced = multiplier < 0.999;
+  if (wasReduced && nowFull) {
+    await addNotifForUser(channel.owner,
+      `🎉 Good news — "${channel.name}" is back above the monetization requirements. Your daily Plus Coins reward is fully restored.`,
+      OWNER_KEY, null, 'success').catch(()=>{});
+  } else if (!wasReduced && nowReduced && multiplier > 0) {
+    await addNotifForUser(channel.owner,
+      `⚠️ "${channel.name}" has dropped below the requirements for full monetization (${CHANNEL_MONETIZATION_MIN_SUBS}+ subscribers and healthy engagement). Your daily reward will keep shrinking the longer it stays below — it only restores once things are back on track.`,
+      OWNER_KEY, null, 'warning').catch(()=>{});
+  } else if (!wasReduced && multiplier <= 0) {
+    await addNotifForUser(channel.owner,
+      `🚫 "${channel.name}" no longer qualifies for daily monetization rewards — it needs ${CHANNEL_MONETIZATION_MIN_SUBS}+ subscribers and steady engagement to earn again.`,
+      OWNER_KEY, null, 'warning').catch(()=>{});
+  }
+}
+
 // ── SWIPEABLE TIP CARDS (inject into feed after 2nd post) ──
 // ── APP FEATURE TIPS (shown in Explore, randomised each visit) ──
 const APP_FEATURE_TIPS = [
-  { emoji: '✅', title: 'Get Verified', body: 'Apply for a gold ✓ badge to stand out and build trust with your followers.', action: function(){ var s=document.getElementById('settingsOverlay'); if(s){s.style.display='flex';} else { var navBtns=document.querySelectorAll('.nav-tab-btn'); navBtns.forEach(function(b){if(b.dataset&&b.dataset.tab==='profile'){b.click();}}); } }, actionLabel: 'Go to Profile' },
+  { emoji: '✅', title: 'Get Verified', body: 'Apply for a gold badge to stand out and build trust with your followers.', action: function(){ var s=document.getElementById('settingsOverlay'); if(s){s.style.display='flex';} else { var navBtns=document.querySelectorAll('.nav-tab-btn'); navBtns.forEach(function(b){if(b.dataset&&b.dataset.tab==='profile'){b.click();}}); } }, actionLabel: 'Go to Profile' },
   { emoji: '📝', title: 'Post on Your Profile', body: 'Share your thoughts, predictions & updates directly on your profile for everyone to see.', action: function(){ var navBtns=document.querySelectorAll('.nav-tab-btn,[data-tab]'); navBtns.forEach(function(b){if((b.dataset&&b.dataset.tab==='profile')||b.textContent.trim()==='Profile'){b.click();}}); }, actionLabel: 'Go to Profile' },
   { emoji: '💬', title: 'Comment on a Post', body: 'Join the conversation — react & comment on posts and updates.', action: function(){ var liveBtn=document.getElementById('navLive')||document.querySelector('[data-tab="live"],[onclick*="showLive"],[onclick*="Live"]'); if(liveBtn){liveBtn.click();} }, actionLabel: 'View Live Feed' },
   { emoji: '❤️', title: 'Like a Post', body: 'Show love for great predictions — tap the heart on any post to like it instantly.', action: function(){ var liveBtn=document.getElementById('navLive')||document.querySelector('[data-tab="live"],[onclick*="showLive"]'); if(liveBtn){liveBtn.click();} }, actionLabel: 'View Live Feed' },
@@ -26847,7 +27049,7 @@ function _bindUsernameAvailabilityCheck(inputId, statusId, opts) {
     _usernameCheckTimer = setTimeout(async function() {
       const taken = await _isUsernameTaken(raw, opts || {});
       if (input.value !== raw) return; // user kept typing
-      status.textContent = taken ? 'Already taken' : '✓ Available';
+      status.textContent = taken ? 'Already taken' : 'Available';
       status.style.color = taken ? '#ff453a' : '#34c759';
     }, 400);
   });
@@ -27208,7 +27410,7 @@ async function openChannelBadgePicker(channelId) {
   if (!c) { closeGenericInfoSheet(); return; }
   const current = c.badge_artifact || '__default__';
   const defaultCell = `<button onclick="_setChannelBadgeIcon('${escHtml(channelId)}','__default__')" style="position:relative;background:var(--glass);border:1px solid ${current==='__default__' ? 'rgba(245,197,24,0.6)' : 'var(--glass-border)'};border-radius:16px;padding:16px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:var(--font);">
-    ${current==='__default__' ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;">✓</div>' : ''}
+    ${current==='__default__' ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
     <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">${_channelBadgeIconHtml('__default__', 19)}</div>
     <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;">Default Check</div>
   </button>`;
@@ -27216,7 +27418,7 @@ async function openChannelBadgePicker(channelId) {
     const isMine = current === a.id;
     const swatchBg = a.ring ? a.ring.replace('linear-gradient(135deg,','radial-gradient(circle,') : 'rgba(255,255,255,0.06)';
     return `<button onclick="_setChannelBadgeIcon('${escHtml(channelId)}','${a.id}')" style="position:relative;background:var(--glass);border:1px solid ${isMine ? 'rgba(245,197,24,0.6)' : 'var(--glass-border)'};border-radius:16px;padding:16px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:var(--font);">
-      ${isMine ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;">✓</div>' : ''}
+      ${isMine ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
       <div style="width:36px;height:36px;border-radius:50%;background:${swatchBg};display:flex;align-items:center;justify-content:center;">${_channelBadgeIconHtml(a.id, 19)}</div>
       <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;">${escHtml(a.name)}</div>
     </button>`;
@@ -27362,7 +27564,7 @@ async function openFeaturedChannelPicker() {
         <div style="font-size:13px;font-weight:700;color:var(--text);">${escHtml(c.name)}</div>
         <div style="font-size:11.5px;color:var(--text3);">${(c.subscriber_count||0).toLocaleString()} subscribers</div>
       </div>
-      ${isCurrent ? '<span style="color:var(--gold);font-size:16px;">✓</span>' : ''}
+      ${isCurrent ? '<span style="color:var(--gold);font-size:16px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : ''}
     </div>`;
   }).join('');
   _showGenericInfoSheet(`
@@ -27632,17 +27834,19 @@ async function getChannelSubscriberList(channelId) {
 }
 
 // ── Polls (owner/admin only) ──
-async function createChannelPoll(channelId, question, options) {
+async function createChannelPoll(channelId, question, options, durationHrs) {
   const key = _myUsernameKey();
   if (!(await _canManageChannel(channelId, key))) { showToast('Only the channel owner or an admin can send polls.', 'error'); return null; }
   const q = (question || '').trim();
   const opts = (options || []).map(o => (o || '').trim()).filter(Boolean);
   if (!q || opts.length < 2) { showToast('A poll needs a question and at least 2 options.', 'error'); return null; }
   const pollId = 'cpoll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  const hrs = parseInt(durationHrs, 10) || 0;
   const poll = {
     id: pollId, channel_id: channelId, question: q,
     options: opts.map((text, i) => ({ id: 'opt' + i, text, vote_count: 0 })),
-    created_by: key, created_at: new Date().toISOString()
+    created_by: key, created_at: new Date().toISOString(),
+    closes_at: hrs > 0 ? new Date(Date.now() + hrs * 3600 * 1000).toISOString() : null
   };
   try {
     await SB.upsert('channel_polls', poll, 'id');
@@ -27664,6 +27868,16 @@ async function createChannelPoll(channelId, question, options) {
 async function voteChannelPoll(pollId, optionId) {
   const key = _myUsernameKey();
   if (!key) { openUserModal(); return false; }
+  // Block voting on a poll that has already closed (either its scheduled
+  // duration passed, or an admin ended it early via endChannelPoll below).
+  try {
+    const rows = await SB.query('channel_polls', `?id=eq.${encodeURIComponent(pollId)}&select=closes_at`);
+    const poll = rows && rows[0];
+    if (poll && poll.closes_at && new Date(poll.closes_at) <= new Date()) {
+      showToast('This poll has closed.', 'error');
+      return false;
+    }
+  } catch(e) { /* if this check fails, fall through and let the vote attempt proceed */ }
   try {
     await SB.upsert('channel_poll_votes', {
       id: 'cpv_' + pollId + '_' + key, poll_id: pollId, option_id: optionId,
@@ -27689,6 +27903,36 @@ async function voteChannelPoll(pollId, optionId) {
 }
 
 // ── Forward a post from one channel to another (owner/admin of target) ──
+// Owner/admin manually ends a poll early. Reuses closes_at as the single
+// source of truth for "is this poll closed" — setting it to right now makes
+// every existing closed-state check (voteChannelPoll, the widget renderer)
+// work automatically with no extra column or migration needed.
+async function endChannelPoll(pollId, channelId) {
+  const key = _myUsernameKey();
+  if (!(await _canManageChannel(channelId, key))) { showToast('Only the channel owner or an admin can end a poll.', 'error'); return false; }
+  try {
+    await SB.update('channel_polls', { closes_at: new Date().toISOString() }, `id=eq.${encodeURIComponent(pollId)}`);
+    showToast('Poll closed.', 'success');
+    const rows = await SB.query('channel_posts', `?poll_id=eq.${encodeURIComponent(pollId)}&select=*`).catch(()=>[]);
+    const post = rows && rows[0];
+    if (post) {
+      const card = document.querySelector(`[data-channel-post-id="${post.id}"]`);
+      if (card) {
+        const channel = await getChannel(post.channel_id);
+        const html = await _renderChannelPostCard(post, channel);
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        card.replaceWith(temp.firstElementChild);
+      }
+    }
+    return true;
+  } catch(e) {
+    console.error('[endChannelPoll] failed:', e);
+    showToast('Could not close the poll — try again.', 'error');
+    return false;
+  }
+}
+
 async function forwardChannelPost(sourcePostId, targetChannelId) {
   const key = _myUsernameKey();
   if (!(await _canManageChannel(targetChannelId, key))) { showToast('Only the owner or an admin can forward posts into this channel.', 'error'); return null; }
@@ -28121,7 +28365,7 @@ async function _renderHomeChannelFeed(container) {
     if (!stillCurrent()) return;
     container.innerHTML = `
       <div style="text-align:center;padding:32px 20px 16px;">
-        <div style="font-size:34px;margin-bottom:10px;">📢</div>
+        <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--text3);"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
         <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No channels yet</div>
         <div style="font-size:13px;color:var(--text3);line-height:1.5;">Subscribe to channels to see their posts here — like Telegram, but built into Social Plus.</div>
       </div>
@@ -28197,7 +28441,7 @@ async function _quickSubscribeToggle(channelId, btn) {
     btn.style.background = 'var(--gold)'; btn.style.color = '#000';
     showToast('Unsubscribed.');
   } else {
-    btn.textContent = '✓ Subscribed';
+    btn.textContent = 'Subscribed';
     btn.style.background = 'rgba(245,197,24,0.12)'; btn.style.color = 'var(--gold)';
     _showIsland({ title: 'Subscribed', sub: 'You\'ll see their posts on your Channels feed.', type: 'follow', duration: 2200 });
   }
@@ -28219,7 +28463,7 @@ async function _quickSubscribeToggle(channelId, btn) {
     } catch(e) {
       // Roll the button back — the toggle did not actually save.
       if (wasSubscribed) {
-        btn.textContent = '✓ Subscribed';
+        btn.textContent = 'Subscribed';
         btn.style.background = 'rgba(245,197,24,0.12)'; btn.style.color = 'var(--gold)';
       } else {
         btn.textContent = 'Subscribe';
@@ -28253,7 +28497,8 @@ async function _renderChannelPostCard(p, channel, preloaded) {
   reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji]||0) + 1; });
   const shareUrl = _channelPostShareUrl(channel.id, p.id, channel.invite_code, channel);
 
-  const reactionTray = CHANNEL_REACTION_EMOJIS.map(e => {
+  const _reactionEmojiList = (channel && Array.isArray(channel.reaction_emojis) && channel.reaction_emojis.length) ? channel.reaction_emojis : CHANNEL_REACTION_EMOJIS;
+  const reactionTray = _reactionEmojiList.map(e => {
     const active = myReactions.has(e);
     const cnt = counts[e] || 0;
     return `<button data-active="${active ? '1' : '0'}" onclick="_onChannelReactionTap('${escHtml(p.id)}','${e}',this)" style="font-family:var(--font);font-size:13px;padding:5px 9px;border-radius:100px;border:1px solid ${active ? 'rgba(245,197,24,0.5)' : 'var(--glass-border)'};background:${active ? 'rgba(245,197,24,0.15)' : 'var(--glass)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;">${e}${cnt ? `<span class="creact-count" style="font-size:11px;color:var(--text3);">${cnt}</span>` : ''}</button>`;
@@ -28273,12 +28518,11 @@ async function _renderChannelPostCard(p, channel, preloaded) {
   const editBtnHtml = canEditThis ? `<button onclick="event.stopPropagation();openEditChannelPostSheet('${escHtml(channel.id)}','${escHtml(p.id)}')" style="width:30px;height:30px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;" title="Edit post"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : '';
   const deleteBtnHtml = canEditThis ? `<button onclick="event.stopPropagation();_onDeleteChannelPostTap('${escHtml(channel.id)}','${escHtml(p.id)}')" style="width:30px;height:30px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;" title="Delete post"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : '';
 
-  return `<div data-channel-post-id="${escHtml(p.id)}" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:14px 16px;margin-bottom:12px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;" onclick="openChannelDetail('${escHtml(channel.id)}')">
+  return `<div data-channel-post-id="${escHtml(p.id)}" data-channel-id="${escHtml(channel.id)}" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:14px 16px;margin-bottom:12px;">    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;" onclick="openChannelDetail('${escHtml(channel.id)}')">
       <div style="width:38px;height:38px;border-radius:12px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;">${escHtml(channel.name)} <span style="font-size:10px;color:var(--text3);font-weight:600;">📢 CHANNEL</span></div>
-        <div style="font-size:11.5px;color:var(--text3);">${timeStr}${p.edited_at ? ' · edited' : ''}</div>
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;">${escHtml(channel.name)} <span style="font-size:10px;color:var(--text3);font-weight:600;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>CHANNEL</span></div>
+        <div style="font-size:11.5px;color:var(--text3);">${timeStr}${p.edited_at ? ' · edited' : ''}${(p.view_count||0) > 0 ? ' · <span data-cpost-view-count>' + _formatCompactCountSafe(p.view_count) + ' views</span>' : ''}</div>
       </div>
       ${editBtnHtml}
       ${deleteBtnHtml}
@@ -28313,21 +28557,31 @@ async function _renderChannelPollWidget(pollId, preloadedPoll, preloadedVotes) {
     const counts = {};
     (votes||[]).forEach(v => { counts[v.option_id] = (counts[v.option_id]||0) + 1; });
     const opts = poll.options || [];
+    const isClosed = !!(poll.closes_at && new Date(poll.closes_at) <= new Date());
+    const canManage = await _canManageChannel(poll.channel_id, myKey).catch(() => false);
+    const showResults = isClosed || !!myVote;
+    const closedLabel = isClosed
+      ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:2px 8px;margin-left:6px;">CLOSED</span>`
+      : (poll.closes_at ? `<span style="font-size:10px;font-weight:600;color:var(--text3);margin-left:6px;">ends ${new Date(poll.closes_at).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>` : '');
     return `<div style="margin-top:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;">
-      <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:10px;">📊 ${escHtml(poll.question)}</div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;">${escHtml(poll.question)}${closedLabel}</div>
       ${opts.map(o => {
         const cnt = counts[o.id] || 0;
         const pct = total ? Math.round((cnt/total)*100) : 0;
         const isMine = myVote && myVote.option_id === o.id;
-        return `<div onclick="_onChannelPollVoteTap('${escHtml(pollId)}','${escHtml(o.id)}')" style="position:relative;margin-bottom:7px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.05);cursor:pointer;border:1px solid ${isMine ? 'rgba(245,197,24,0.4)' : 'transparent'};">
-          ${myVote ? `<div style="position:absolute;inset:0;width:${pct}%;background:rgba(245,197,24,0.18);"></div>` : ''}
+        const clickable = !isClosed;
+        return `<div ${clickable ? `onclick="_onChannelPollVoteTap('${escHtml(pollId)}','${escHtml(o.id)}')"` : ''} style="position:relative;margin-bottom:7px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.05);cursor:${clickable ? 'pointer' : 'default'};border:1px solid ${isMine ? 'rgba(245,197,24,0.4)' : 'transparent'};${isClosed ? 'opacity:0.85;' : ''}">
+          ${showResults ? `<div style="position:absolute;inset:0;width:${pct}%;background:rgba(245,197,24,0.18);"></div>` : ''}
           <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:9px 12px;font-size:12.5px;color:var(--text2);">
-            <span>${isMine ? '✓ ' : ''}${escHtml(o.text)}</span>
-            ${myVote ? `<span style="font-weight:700;color:var(--text);">${pct}%</span>` : ''}
+            <span>${escHtml(o.text)}</span>
+            ${showResults ? `<span style="font-weight:700;color:var(--text);">${pct}%</span>` : ''}
           </div>
         </div>`;
       }).join('')}
-      <div style="font-size:11px;color:var(--text3);margin-top:4px;">${total} vote${total===1?'':'s'}${myVote ? '' : ' · tap to vote'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span>${total} vote${total===1?'':'s'}${isClosed ? '' : (myVote ? '' : ' · tap to vote')}</span>
+        ${(!isClosed && canManage) ? `<button onclick="event.stopPropagation();endChannelPoll('${escHtml(pollId)}','${escHtml(poll.channel_id)}')" style="font-family:var(--font);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:100px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;">End poll</button>` : ''}
+      </div>
     </div>`;
   } catch(e) { return ''; }
 }
@@ -28582,6 +28836,8 @@ async function openChannelsListPage() {
   if (!ov) return;
   const searchEl = document.getElementById('channelsListSearch');
   if (searchEl) searchEl.value = '';
+  const toggleEl = document.getElementById('channelsListViewToggle');
+  if (toggleEl) toggleEl.innerHTML = _channelsListViewToggleHtml();
   ov.style.pointerEvents = 'auto';
   ov.style.transform = 'translateX(0)';
   if (typeof window._forceRepaint === 'function') window._forceRepaint();
@@ -28626,10 +28882,14 @@ async function _renderChannelsListPage() {
   _channelsListSubIdsCache = subIds;
   const suggested = _channelsListAllCache.filter(c => !ownedOrSubbedIds.has(c.id));
 
+  const suggestedShuffled = await _weightedShuffleChannelsForDiscovery(suggested);
+  _channelsListSuggestedShuffledCache = suggestedShuffled;
+  _channelsListSuggestedPage = 1;
+
   if (!_channelsListAllCache.length) {
     body.innerHTML = `
       <div style="text-align:center;padding:32px 20px 16px;">
-        <div style="font-size:34px;margin-bottom:10px;">📢</div>
+        <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--text3);"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
         <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No channels yet</div>
         <div style="font-size:13px;color:var(--text3);line-height:1.5;">Be the first to create one — broadcast to subscribers, Telegram-style.</div>
       </div>
@@ -28638,21 +28898,70 @@ async function _renderChannelsListPage() {
     return;
   }
 
-  body.innerHTML = _renderChannelsListSections(mySubsForDisplay, suggested);
+  body.innerHTML = _renderChannelsListSections(mySubsForDisplay, suggestedShuffled);
+}
+
+const CHANNELS_LIST_PAGE_SIZE = 15;
+let _channelsListSuggestedShuffledCache = [];
+let _channelsListSuggestedPage = 1;
+let _channelsListViewMode = localStorage.getItem('ka_channels_view_mode') || 'list'; // 'list' | 'card'
+
+function _setChannelsListViewMode(mode) {
+  _channelsListViewMode = mode;
+  localStorage.setItem('ka_channels_view_mode', mode);
+  _channelsListSuggestedPage = 1; // restart pagination on layout switch, avoids an awkward half-page
+  const body = document.getElementById('channelsListBody');
+  if (body) _renderChannelsListFiltered((document.getElementById('channelsListSearch')||{}).value?.toLowerCase().trim() || '');
+  const toggleEl = document.getElementById('channelsListViewToggle');
+  if (toggleEl) toggleEl.innerHTML = _channelsListViewToggleHtml();
+}
+
+function _channelsListViewToggleHtml() {
+  const isCard = _channelsListViewMode === 'card';
+  return `
+    <button onclick="_setChannelsListViewMode('list')" title="List view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'transparent':'rgba(245,197,24,0.14)'};border:1px solid ${isCard?'transparent':'rgba(245,197,24,0.3)'};color:${isCard?'var(--text3)':'var(--gold)'};">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </button>
+    <button onclick="_setChannelsListViewMode('card')" title="Card view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'rgba(245,197,24,0.14)':'transparent'};border:1px solid ${isCard?'rgba(245,197,24,0.3)':'transparent'};color:${isCard?'var(--gold)':'var(--text3)'};">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </button>`;
+}
+
+function _renderSuggestedChannelsPaginated() {
+  const start = 0;
+  const end = _channelsListSuggestedPage * CHANNELS_LIST_PAGE_SIZE;
+  const slice = _channelsListSuggestedShuffledCache.slice(start, end);
+  const hasMore = _channelsListSuggestedShuffledCache.length > end;
+  let html = _channelsListViewMode === 'card'
+    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${slice.map(c => _channelsListCard(c, false)).join('')}</div>`
+    : slice.map(c => _channelsListRow(c, false)).join('');
+  if (hasMore) {
+    html += `<button onclick="_loadMoreSuggestedChannels()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more channels</button>`;
+  }
+  return html;
+}
+
+function _loadMoreSuggestedChannels() {
+  _channelsListSuggestedPage++;
+  const container = document.getElementById('channelsListSuggestedBody');
+  if (container) container.innerHTML = _renderSuggestedChannelsPaginated();
 }
 
 // Builds the "My Channels" + "Suggested Channels" section HTML. Shared by
 // both the default (unfiltered) view and the search-filtered view below.
 function _renderChannelsListSections(mySubs, suggested) {
   let html = '';
+  const isCard = _channelsListViewMode === 'card';
   if (mySubs.length) {
     html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">My Channels</div>`;
-    html += mySubs.map(c => _channelsListRow(c, true)).join('');
+    html += isCard
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${mySubs.map(c => _channelsListCard(c, true)).join('')}</div>`
+      : mySubs.map(c => _channelsListRow(c, true)).join('');
     html += '<div style="margin-bottom:14px;"></div>';
   }
   if (suggested.length) {
     html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Suggested Channels</div>`;
-    html += suggested.map(c => _channelsListRow(c, false)).join('');
+    html += `<div id="channelsListSuggestedBody">${_renderSuggestedChannelsPaginated()}</div>`;
   }
   if (!mySubs.length && !suggested.length) {
     html += `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
@@ -28683,6 +28992,32 @@ function _channelsListRow(c, isSubbed) {
   </div>`;
 }
 
+// Card version of the same row — used when the person has switched to Card
+// view (persisted per-device in localStorage). Same data, same actions,
+// laid out to match the Connect page's discovery cards for visual
+// consistency between the two surfaces.
+function _channelsListCard(c, isSubbed) {
+  const avi = _channelAviHtml(c.avatar, c.name, 48);
+  const restricted = _channelIsRestricted(c);
+  const isOwnChannel = (c.owner || '').toLowerCase().trim() === (_myUsernameKey() || '').toLowerCase().trim();
+  const tier = _channelOwnerTier(c);
+  const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;">${escHtml(tier.label)}</span>` : '';
+  const actionBtn = isOwnChannel
+    ? `<span style="font-family:var(--font);font-size:11px;font-weight:700;padding:7px 0;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);width:100%;text-align:center;display:block;">Yours</span>`
+    : isSubbed
+    ? `<button onclick="event.stopPropagation();openChannelDetail('${escHtml(c.id)}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid rgba(245,197,24,0.3);background:rgba(245,197,24,0.12);color:var(--gold);width:100%;">Open</button>`
+    : `<button id="clsc-${escHtml(c.id)}" onclick="event.stopPropagation();_channelsListSubscribeAndOpen('${escHtml(c.id)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;width:100%;">Subscribe</button>`;
+  return `<div onclick="openChannelDetail('${escHtml(c.id)}')" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+    <div style="width:48px;height:48px;border-radius:16px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
+    <div style="min-width:0;width:100%;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(c.name)}${channelVerifiedBadgeHtml(c)}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px;">${(c.subscriber_count||0).toLocaleString()} subs</div>
+      ${(tierChip || restricted) ? `<div style="margin-top:5px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">${tierChip}${restricted ? '<span style="font-size:9px;color:#ff9500;font-weight:700;">RESTRICTED</span>' : ''}</div>` : ''}
+    </div>
+    <div style="width:100%;margin-top:2px;">${actionBtn}</div>
+  </div>`;
+}
+
 // Subscribing from THIS page immediately opens the channel afterwards, per
 // the Telegram-like flow requested. Optimistic: opens the channel page
 // right away instead of blocking on the subscribe write first — the write
@@ -28693,7 +29028,7 @@ function _channelsListRow(c, isSubbed) {
 async function _channelsListSubscribeAndOpen(channelId, btn) {
   if (!currentUser) { openUserModal(); return; }
   if (btn && btn.disabled) return;
-  if (btn) { btn.disabled = true; btn.textContent = '✓ Subscribed'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Subscribed'; }
   openChannelDetail(channelId);
   try {
     const ok = await subscribeToChannel(channelId);
@@ -28725,13 +29060,38 @@ function _renderChannelsListFiltered(q) {
   if (!q) {
     const mySubs = all.filter(isMine);
     const suggested = all.filter(c => !isMine(c));
-    body.innerHTML = _renderChannelsListSections(mySubs, suggested);
+    (async () => {
+      _channelsListSuggestedShuffledCache = await _weightedShuffleChannelsForDiscovery(suggested);
+      _channelsListSuggestedPage = 1;
+      body.innerHTML = _renderChannelsListSections(mySubs, _channelsListSuggestedShuffledCache);
+    })();
     return;
   }
+  // Active search: show direct matches in full, no shuffle/pagination —
+  // someone searching wants complete, predictable results for their query,
+  // not a randomized discovery subset.
   const matches = all.filter(c => (c.name || '').toLowerCase().includes(q) || (c.bio || '').toLowerCase().includes(q));
   const mySubs = matches.filter(isMine);
   const suggested = matches.filter(c => !isMine(c));
-  body.innerHTML = _renderChannelsListSections(mySubs, suggested);
+  const isCard = _channelsListViewMode === 'card';
+  let html = '';
+  if (mySubs.length) {
+    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">My Channels</div>`;
+    html += isCard
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${mySubs.map(c => _channelsListCard(c, true)).join('')}</div>`
+      : mySubs.map(c => _channelsListRow(c, true)).join('');
+    html += '<div style="margin-bottom:14px;"></div>';
+  }
+  if (suggested.length) {
+    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Suggested Channels</div>`;
+    html += isCard
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${suggested.map(c => _channelsListCard(c, false)).join('')}</div>`
+      : suggested.map(c => _channelsListRow(c, false)).join('');
+  }
+  if (!mySubs.length && !suggested.length) {
+    html += `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
+  }
+  body.innerHTML = html;
 }
 
 
@@ -28739,7 +29099,76 @@ function _renderChannelsListFiltered(q) {
 // Rendered into the Connect (explorePageOverlay) page alongside "People to Follow".
 // Shows at most 5 rows + an "Explore More" button that hands off to the full
 // Channels page (openChannelsListPage) instead of dumping everything here.
-const EXPLORE_CHANNELS_LIMIT = 5;
+const EXPLORE_CHANNELS_LIMIT = 6;
+// ── Channel discovery weighting ──
+// Computes a score per channel from subscriber count + total engagement
+// (reactions + views across its posts), with a mild premium/prestige boost
+// that never dominates — a small free channel with real engagement can and
+// should still beat a quiet premium one. The list is then weighted-shuffled
+// (not just sorted) so the same channels don't always appear in the same
+// order — every call re-rolls it.
+const CHANNEL_TIER_DISCOVERY_BOOST = { prestige: 1.15, premium: 1.08, pro: 1.03 };
+
+async function _getChannelEngagementTotals(channelIds) {
+  // Batches reactions + views across ALL of a channel's posts in two queries
+  // total, rather than one query per channel (avoids N+1 on the discovery
+  // page, which can list dozens of channels at once).
+  const totals = {}; // channelId -> { reactions, views }
+  channelIds.forEach(function(id) { totals[id] = { reactions: 0, views: 0 }; });
+  if (!channelIds.length) return totals;
+  try {
+    const posts = await SB.query('channel_posts', `?channel_id=in.(${channelIds.map(encodeURIComponent).join(',')})&select=id,channel_id,view_count`);
+    const postToChannel = {};
+    (posts || []).forEach(function(p) {
+      postToChannel[p.id] = p.channel_id;
+      if (totals[p.channel_id]) totals[p.channel_id].views += (p.view_count || 0);
+    });
+    const postIds = Object.keys(postToChannel);
+    if (postIds.length) {
+      const reactions = await SB.query('channel_reactions', `?channel_post_id=in.(${postIds.map(encodeURIComponent).join(',')})&select=channel_post_id`);
+      (reactions || []).forEach(function(r) {
+        const cid = postToChannel[r.channel_post_id];
+        if (cid && totals[cid]) totals[cid].reactions++;
+      });
+    }
+  } catch(e) { console.warn('[_getChannelEngagementTotals] failed:', e); }
+  return totals;
+}
+
+async function _weightedShuffleChannelsForDiscovery(channels) {
+  if (!channels.length) return channels;
+  const totals = await _getChannelEngagementTotals(channels.map(function(c){ return c.id; }));
+  const scored = channels.map(function(c) {
+    const subs = c.subscriber_count || 0;
+    const eng = (totals[c.id] || { reactions: 0, views: 0 });
+    const engagementScore = eng.reactions * 3 + eng.views; // a reaction counts for more than a passive view
+    const tier = _channelOwnerTier(c);
+    const tierBoost = tier ? (CHANNEL_TIER_DISCOVERY_BOOST[tier.tier] || 1) : 1;
+    // Base score: subs matter most, engagement second, tier is a small
+    // multiplier on top — never enough alone to beat a channel with real
+    // traction, matching "premium should be there but not taken too seriously".
+    const baseScore = (subs * 2 + engagementScore + 1) * tierBoost;
+    return { c: c, weight: baseScore };
+  });
+  // Weighted random shuffle: pick without replacement, each pick's odds
+  // proportional to its remaining weight. Same idea as a raffle — higher
+  // weight = more tickets, not a guaranteed position.
+  const pool = scored.slice();
+  const result = [];
+  while (pool.length) {
+    const totalWeight = pool.reduce(function(sum, x) { return sum + x.weight; }, 0);
+    let r = Math.random() * totalWeight;
+    let idx = 0;
+    for (; idx < pool.length; idx++) {
+      r -= pool[idx].weight;
+      if (r <= 0) break;
+    }
+    if (idx >= pool.length) idx = pool.length - 1;
+    result.push(pool.splice(idx, 1)[0].c);
+  }
+  return result;
+}
+
 async function renderExploreChannels(opts) {
   opts = opts || {};
   const container = document.getElementById('exploreChannelsList');
@@ -28784,29 +29213,34 @@ async function _renderExploreChannelsInner(container) {
   }
   const myKey = _myUsernameKey();
   const mySubs = new Set((await getMySubscribedChannels().catch(()=>[])).map(c => c.id));
-  const rows = channels.slice(0, EXPLORE_CHANNELS_LIMIT).map(c => {
-    const avi = _channelAviHtml(c.avatar, c.name, 44);
+  const shuffled = await _weightedShuffleChannelsForDiscovery(channels);
+  const picked = shuffled.slice(0, EXPLORE_CHANNELS_LIMIT);
+  const cards = picked.map(c => {
+    const avi = _channelAviHtml(c.avatar, c.name, 52);
     const isOwnChannel = (c.owner || '').toLowerCase().trim() === (myKey || '').toLowerCase().trim();
     const isSub = mySubs.has(c.id);
     const restricted = _channelIsRestricted(c);
-    // Owner of the channel never sees a Subscribe/Subscribed prompt for their
-    // own channel — a "Yours" badge instead, tapping straight into Manage.
+    const tier = _channelOwnerTier(c);
+    // Small, quiet tier chip — present but visually minor, matching "there
+    // but not taken too seriously": no glow, no animation, just a muted tag.
+    const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;">${escHtml(tier.label)}</span>` : '';
     const actionBtn = isOwnChannel
-      ? `<span style="font-family:var(--font);font-size:11px;font-weight:700;padding:7px 14px;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);">Yours</span>`
-      : `<button id="ecs-${escHtml(c.id)}" onclick="event.stopPropagation();_quickSubscribeToggle('${escHtml(c.id)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};">${isSub ? '✓ Subscribed' : 'Subscribe'}</button>`;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;" onclick="openChannelDetail('${escHtml(c.id)}')">
-      <div style="width:44px;height:44px;border-radius:14px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;">${escHtml(c.name)}${channelVerifiedBadgeHtml(c)}${restricted ? '<span style="font-size:10px;color:#ff9500;font-weight:700;">RESTRICTED</span>' : ''}</div>
-        <div style="font-size:12px;color:var(--text3);">${(c.subscriber_count||0).toLocaleString()} subscribers${c.bio ? ' · ' + escHtml(c.bio.slice(0,40)) : ''}</div>
+      ? `<span style="font-family:var(--font);font-size:11px;font-weight:700;padding:7px 0;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);width:100%;text-align:center;display:block;">Yours</span>`
+      : `<button id="ecs-${escHtml(c.id)}" onclick="event.stopPropagation();_quickSubscribeToggle('${escHtml(c.id)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};width:100%;">${isSub ? 'Subscribed' : 'Subscribe'}</button>`;
+    return `<div onclick="openChannelDetail('${escHtml(c.id)}')" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+      <div style="width:52px;height:52px;border-radius:16px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
+      <div style="min-width:0;width:100%;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(c.name)}${channelVerifiedBadgeHtml(c)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${(c.subscriber_count||0).toLocaleString()} subs</div>
+        ${(tierChip || restricted) ? `<div style="margin-top:5px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">${tierChip}${restricted ? '<span style="font-size:9px;color:#ff9500;font-weight:700;">RESTRICTED</span>' : ''}</div>` : ''}
       </div>
-      ${actionBtn}
+      <div style="width:100%;margin-top:2px;">${actionBtn}</div>
     </div>`;
   }).join('');
   const moreBtn = channels.length > EXPLORE_CHANNELS_LIMIT
-    ? `<button onclick="openChannelsListPage()" style="width:100%;margin-top:10px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Explore More →</button>`
+    ? `<button onclick="openChannelsListPage()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more channels →</button>`
     : '';
-  container.innerHTML = rows + moreBtn;
+  container.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${cards}</div>${moreBtn}`;
 }
 
 // ── Create Channel sheet ──
@@ -29043,7 +29477,7 @@ async function openChannelDetail(channelId) {
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${isOwnerOfChannel
           ? `<button onclick="openChannelManage('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(245,197,24,0.3);background:rgba(245,197,24,0.12);color:var(--gold);">Manage Channel</button>`
-          : `<button onclick="_quickSubscribeToggle('${escHtml(c.id)}',this)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};">${isSub ? '✓ Subscribed' : 'Subscribe'}</button>`}
+          : `<button onclick="_quickSubscribeToggle('${escHtml(c.id)}',this)" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};">${isSub ? 'Subscribed' : 'Subscribe'}</button>`}
         ${isSub ? _channelMuteBtnHtml(c.id, isMuted) : ''}
         ${canManage ? `<button onclick="openChannelSubscriberManager('${escHtml(c.id)}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Subscribers</button>` : ''}
         <button onclick="_shareChannelPost('${escHtml(_channelPostShareUrl(c.id, null, c.invite_code, c))}')" style="padding:8px 18px;border-radius:100px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>
@@ -29412,7 +29846,8 @@ async function _submitChannelPoll() {
   if (!channelId) return;
   const question = document.getElementById('channelPollQuestion').value;
   const opts = Array.from(document.querySelectorAll('.chanPollOptInput')).map(i => i.value);
-  const result = await createChannelPoll(channelId, question, opts);
+  const durationHrs = parseInt((document.getElementById('channelPollDuration')||{}).value || '0', 10);
+  const result = await createChannelPoll(channelId, question, opts, durationHrs);
   if (!result) return;
   closeChannelPollSheet();
   showToast('Poll sent!', 'success');
@@ -29438,6 +29873,75 @@ async function _handleChannelManageAvatarUpload(event, channelId) {
   }
   event.target.value = '';
 }
+function _renderChannelReactionEmojiChips(c) {
+  const list = (Array.isArray(c.reaction_emojis) && c.reaction_emojis.length) ? c.reaction_emojis : CHANNEL_REACTION_EMOJIS;
+  return list.map(function(e) {
+    return `<button onclick="_removeChannelReactionEmoji('${escHtml(c.id)}','${e}')" style="font-size:18px;padding:6px 10px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);cursor:pointer;display:inline-flex;align-items:center;gap:5px;" title="Tap to remove">${e}<span style="font-size:11px;color:var(--text3);">✕</span></button>`;
+  }).join('');
+}
+
+async function _saveChannelReactionEmojis(channelId, list) {
+  const key = _myUsernameKey();
+  if (!(await _canManageChannel(channelId, key))) { showToast('Only the channel owner or an admin can change reactions.', 'error'); return false; }
+  try {
+    await SB.update('channels', { reaction_emojis: list }, `id=eq.${encodeURIComponent(channelId)}`);
+    if (_channelCache && _channelCache.delete) _channelCache.delete(channelId); // force fresh read on next getChannel()
+    return true;
+  } catch(e) {
+    console.error('[_saveChannelReactionEmojis] failed:', e);
+    showToast('Could not save reactions — try again.', 'error');
+    return false;
+  }
+}
+
+async function _addChannelReactionEmoji(channelId) {
+  const input = document.getElementById('channelReactionEmojiInput');
+  if (!input) return;
+  const raw = input.value.trim();
+  if (!raw) return;
+  // Take just the first emoji-ish grapheme the person typed/pasted — guards
+  // against someone pasting a whole sentence into this field.
+  const emoji = Array.from(raw)[0];
+  const c = await getChannel(channelId);
+  if (!c) return;
+  const list = (Array.isArray(c.reaction_emojis) && c.reaction_emojis.length) ? [...c.reaction_emojis] : [...CHANNEL_REACTION_EMOJIS];
+  if (list.includes(emoji)) { showToast('That reaction is already added.', 'error'); return; }
+  if (list.length >= 8) { showToast('Max 8 reactions per channel.', 'error'); return; }
+  list.push(emoji);
+  const ok = await _saveChannelReactionEmojis(channelId, list);
+  if (ok) {
+    input.value = '';
+    c.reaction_emojis = list;
+    const picker = document.getElementById('channelReactionEmojiPicker');
+    if (picker) picker.innerHTML = _renderChannelReactionEmojiChips(c);
+    showToast('Reaction added!', 'success');
+  }
+}
+
+async function _removeChannelReactionEmoji(channelId, emoji) {
+  const c = await getChannel(channelId);
+  if (!c) return;
+  const list = ((Array.isArray(c.reaction_emojis) && c.reaction_emojis.length) ? c.reaction_emojis : CHANNEL_REACTION_EMOJIS).filter(function(e) { return e !== emoji; });
+  if (!list.length) { showToast('Keep at least one reaction.', 'error'); return; }
+  const ok = await _saveChannelReactionEmojis(channelId, list);
+  if (ok) {
+    c.reaction_emojis = list;
+    const picker = document.getElementById('channelReactionEmojiPicker');
+    if (picker) picker.innerHTML = _renderChannelReactionEmojiChips(c);
+  }
+}
+
+async function _resetChannelReactionEmojis(channelId) {
+  const ok = await _saveChannelReactionEmojis(channelId, [...CHANNEL_REACTION_EMOJIS]);
+  if (ok) {
+    const c = await getChannel(channelId);
+    if (c) c.reaction_emojis = [...CHANNEL_REACTION_EMOJIS];
+    const picker = document.getElementById('channelReactionEmojiPicker');
+    if (picker && c) picker.innerHTML = _renderChannelReactionEmojiChips(c);
+    showToast('Reset to default reactions.', 'success');
+  }
+}
+
 async function openChannelManage(channelId) {
   const c = await getChannel(channelId);
   if (!c) return;
@@ -29475,6 +29979,14 @@ async function openChannelManage(channelId) {
         </div>`
       : `<div style="font-size:12.5px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Link a group chat so subscribers can comment on your posts — the Comment button will open that group, just like Telegram Discussion groups.</div>
          <div id="channelLinkGroupList" style="max-height:160px;overflow-y:auto;margin-bottom:10px;"></div>`}
+    <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Reactions</div>
+    <div style="font-size:12.5px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Choose up to 8 emoji reactions subscribers can use on your posts. Tap one to remove it.</div>
+    <div id="channelReactionEmojiPicker" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">${_renderChannelReactionEmojiChips(c)}</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input id="channelReactionEmojiInput" placeholder="Paste an emoji, e.g. 🎉" maxlength="8" style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+      <button onclick="_addChannelReactionEmoji('${escHtml(c.id)}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;background:var(--gold);border:none;color:#000;cursor:pointer;flex-shrink:0;">Add</button>
+    </div>
+    <button onclick="_resetChannelReactionEmojis('${escHtml(c.id)}')" style="width:100%;padding:9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--text3);font-family:var(--font);font-size:12px;cursor:pointer;margin-bottom:8px;">Reset to default</button>
     ${isOwnerForManage && _channelOwnerTier(c) ? `
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Verification Badge</div>
     <div style="display:flex;align-items:center;gap:12px;background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.18);border-radius:14px;padding:12px;margin-bottom:10px;">
@@ -29484,9 +29996,16 @@ async function openChannelManage(channelId) {
     <button onclick="openChannelBadgePicker('${escHtml(c.id)}')" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:18px;">Choose Badge Icon</button>` : ''}
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Monetization</div>
     <div style="font-size:12.5px;color:var(--text2);line-height:1.6;background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.18);border-radius:12px;padding:12px;">
-      ${c.monetization_enabled
-        ? `💰 Monetization is <b style="color:var(--gold);">active</b> for this channel. Social Plus pays out Plus Coins daily at 12:00 AM based on your channel's performance.`
-        : `Social Plus will monetize your channel once it meets requirements — you'll then earn Plus Coins daily at 12:00 AM based on performance. This is activated by the Social Plus team.`}
+      ${(() => {
+        const subs = c.subscriber_count || 0;
+        const qualifies = subs >= CHANNEL_MONETIZATION_MIN_SUBS || c.monetization_enabled === true;
+        if (qualifies) {
+          return `💰 Your channel <b style="color:var(--gold);">qualifies for monetization</b>. Social Plus pays out Plus Coins daily at 12:00 AM based on your channel's subscriber count and engagement (likes + views). If either drops, your daily reward scales down — and fully restores once you're back above the requirements.`;
+        }
+        const pct = Math.min(100, Math.round((subs / CHANNEL_MONETIZATION_MIN_SUBS) * 100));
+        return `Monetization unlocks automatically at <b style="color:var(--gold);">${CHANNEL_MONETIZATION_MIN_SUBS.toLocaleString()} subscribers</b> — no admin action needed. You're at ${subs.toLocaleString()} (${pct}%).
+        <div style="height:6px;border-radius:100px;background:rgba(255,255,255,0.08);margin-top:8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--gold);border-radius:100px;"></div></div>`;
+      })()}
     </div>
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Channel Name</div>
     <div style="margin-bottom:6px;">
@@ -30512,7 +31031,7 @@ function _openGroupIconCropModal(src) {
       <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:16px;">Zoom</div>
       <div style="display:flex;gap:10px;">
         <button onclick="document.getElementById('_groupIconCropModal').remove();" style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-family:var(--font);font-size:14px;cursor:pointer;">Cancel</button>
-        <button id="_gcCropSaveBtn" style="flex:2;padding:13px;border-radius:14px;background:linear-gradient(135deg,#5E5CE6,#a78bfa);border:none;color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✓ Set Icon</button>
+        <button id="_gcCropSaveBtn" style="flex:2;padding:13px;border-radius:14px;background:linear-gradient(135deg,#5E5CE6,#a78bfa);border:none;color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">Set Icon</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -31941,6 +32460,67 @@ setTimeout(function(){ _wireDMMessages(); _startObserver(); }, 600);
     }
     if (_mrOrigSend) return await _mrOrigSend.apply(this, arguments);
   };
+})();
+
+// ── CHANNEL POST VIEW TRACKING — server-backed, once per unique subscriber
+// per post (channel_post_views has a unique index on channel_post_id+username,
+// so even if this fires more than once client-side, the DB rejects the dupe
+// and view_count only ever increments once per person). ──
+(function() {
+  if (typeof IntersectionObserver === 'undefined') return;
+  var _seenThisSession = new Set(); // avoid redundant network calls in one session, not the source of truth
+
+  async function _recordChannelPostView(postId, channelId) {
+    var key = _myUsernameKey ? _myUsernameKey() : null;
+    if (!key || !postId || !channelId) return;
+    var dedupeKey = postId + ':' + key;
+    if (_seenThisSession.has(dedupeKey)) return;
+    _seenThisSession.add(dedupeKey);
+    try {
+      // Insert into channel_post_views — the unique index on
+      // (channel_post_id, username) rejects this if the person already
+      // viewed the post (in a past session, on another device, etc.), so
+      // the increment below only runs on a genuinely new view.
+      await SB.upsert('channel_post_views', {
+        id: 'cpv_' + postId + '_' + key, channel_post_id: postId, channel_id: channelId, username: key
+      }, 'channel_post_id,username');
+      // Best-effort increment of the denormalized counter for fast display.
+      // If two people view in the same instant this can race slightly, but
+      // it self-corrects since it's just a display cache — the real count
+      // of truth is always COUNT(*) on channel_post_views if ever needed.
+      var rows = await SB.query('channel_posts', '?id=eq.' + encodeURIComponent(postId) + '&select=view_count');
+      var current = (rows && rows[0] && rows[0].view_count) || 0;
+      await SB.update('channel_posts', { view_count: current + 1 }, 'id=eq.' + encodeURIComponent(postId));
+      var el = document.querySelector('[data-channel-post-id="' + CSS.escape(postId) + '"] [data-cpost-view-count]');
+      if (el) el.textContent = _formatCompactCountSafe(current + 1) + ' views';
+    } catch(e) { /* unique-constraint rejection is expected and fine — not a real error */ }
+  }
+  window._recordChannelPostView = _recordChannelPostView;
+
+  var _cpvObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      var postId = el.getAttribute('data-channel-post-id');
+      var channelId = el.getAttribute('data-channel-id');
+      if (postId && channelId) _recordChannelPostView(postId, channelId);
+      _cpvObserver.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+
+  // Watch for channel post cards being added to the DOM (they're rendered
+  // dynamically into several different containers — home feed, channel
+  // detail page, explore) and attach the observer as they appear.
+  var _cpvMo = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        if (node.hasAttribute && node.hasAttribute('data-channel-post-id')) _cpvObserver.observe(node);
+        if (node.querySelectorAll) node.querySelectorAll('[data-channel-post-id]').forEach(function(child) { _cpvObserver.observe(child); });
+      });
+    });
+  });
+  _cpvMo.observe(document.body, { childList: true, subtree: true });
 })();
 
 // ── ORGANIC VIEW TRACKING — increment real views when posts scroll into view ──
@@ -33635,7 +34215,7 @@ async function submitPostPage() {
       if (/@plusai\b/i.test(postText)) {
         setTimeout(function(){ (window._aiReplyToProfilePost||function(){})(postText, ppUsernameKey, ppId); }, 1500);
       }
-      showToast('Posted! ✓', 'success');
+      showToast('Posted!', 'success');
     } catch(err) {
       console.error('[PostPage] post submit error:', err);
       _completePostProgressIsland(false);
@@ -35276,11 +35856,11 @@ async function _renderWalletTasks() {
     completedList.innerHTML = completedOneTime.length
       ? completedOneTime.map(function(t) {
           return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;opacity:0.55;">
-            <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
+            <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:14px;font-weight:700;color:var(--text);">${escHtml(t.title)}</div>
             </div>
-            <span style="font-size:12px;font-weight:700;color:#30D158;flex-shrink:0;">✓ Done</span>
+            <span style="font-size:12px;font-weight:700;color:#30D158;flex-shrink:0;">Done</span>
           </div>`;
         }).join('')
       : '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Nothing completed yet.</div>';
@@ -36127,7 +36707,7 @@ async function openArtifactsPage() {
     const iconFn = AF_SHAPES[a.shape] || AF_SHAPES.dot;
     const swatchBg = a.ring ? a.ring.replace('linear-gradient(135deg,','radial-gradient(circle,') : 'rgba(255,255,255,0.06)';
     return `<button onclick="previewArtifact('${a.id}')" style="position:relative;background:var(--glass);border:1px solid ${isMine ? 'rgba(245,197,24,0.6)' : 'var(--glass-border)'};border-radius:16px;padding:16px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:var(--font);">
-      ${isMine ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;">✓</div>' : ''}
+      ${isMine ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
       <div style="width:36px;height:36px;border-radius:50%;background:${swatchBg};display:flex;align-items:center;justify-content:center;">${iconFn(a.color || '#F5C518', 19)}</div>
       <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;">${escHtml(a.name)}</div>
     </button>`;
@@ -38321,7 +38901,7 @@ async function psAutofill() {
   }
 
   statusEl.style.color = 'var(--gold)';
-  statusEl.textContent = '✓ Info filled from site';
+  statusEl.textContent = 'Info filled from site';
 
   btn.textContent = origText;
   btn.style.pointerEvents = '';
@@ -38341,7 +38921,7 @@ async function psHandleImageUpload(input) {
     reader.onload = function(e) {
       document.getElementById('psLogo').value = e.target.result;
       statusEl.style.color = 'var(--gold)';
-      statusEl.textContent = '✓ Image ready';
+      statusEl.textContent = 'Image ready';
     };
     reader.onerror = function() {
       statusEl.style.color = 'var(--red)';
@@ -38393,7 +38973,7 @@ function addPartnerSite() {
   ['psName','psUrl','psLogo','psDesc'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   var st = document.getElementById('psUploadStatus'); if (st) { st.style.display='none'; st.textContent=''; }
   psSyncAutofill();
-  showToast(name + ' added! ✓', 'success');
+  showToast(name + ' added!', 'success');
 }
 function removePartnerSite(idx) {
   var sites = _getPartnerSites();
@@ -38493,7 +39073,7 @@ async function psEditAutofill(idx) {
       }
     }
     statusEl.style.color = 'var(--gold)';
-    statusEl.textContent = '✓ Info updated from site';
+    statusEl.textContent = 'Info updated from site';
   } catch(e2) {
     // Fallback favicon
     if (logoEl && !logoEl.value.trim()) {
@@ -38517,7 +39097,7 @@ async function psHandleEditImageUpload(input) {
     reader.onload = function(e) {
       document.getElementById('_epLogo').value = e.target.result;
       statusEl.style.color = 'var(--gold)';
-      statusEl.textContent = '✓ Image ready';
+      statusEl.textContent = 'Image ready';
     };
     reader.onerror = function() {
       statusEl.style.color = 'var(--red)';
@@ -38545,7 +39125,7 @@ function saveEditedPartnerSite(idx) {
   renderPartnerSitesRow();
   var modal = document.getElementById('_editPartnerModal');
   if (modal) modal.remove();
-  showToast(name + ' updated! ✓', 'success');
+  showToast(name + ' updated!', 'success');
 }
 
 // Load from Supabase on boot
@@ -38962,7 +39542,7 @@ const KB = {
   'plus coin|coins|earn coins|how to earn|balance|wallet':()=>'💰 Plus Coins are how you earn on Social Plus. Complete daily tasks and engage with sponsor content to earn coins. Gift them to other users or spend them on Premium. Check your Wallet page for your balance and the current rate estimate!',
   'gift|send coins|give coins':()=>'🎁 To gift Plus Coins: open a user\'s profile or your Wallet → tap Gift → choose an amount from your balance → send! A fun way to support people you follow.',
   'daily task|tasks|complete task':()=>'🎯 New daily tasks appear regularly — complete them to earn Plus Coins. Check the Tasks section to see what\'s currently available. They refresh periodically, so check back often!',
-  'verification|verified|badge|blue tick|checkmark|premium':()=>'✅ Premium accounts get the blue ✓ badge. Get Premium by spending Plus Coins in your Wallet, or an admin can grant it to you directly. Either way you get the same badge!',
+  'verification|verified|badge|blue tick|checkmark|premium':()=>'✅ Premium accounts get the blue badge. Get Premium by spending Plus Coins in your Wallet, or an admin can grant it to you directly. Either way you get the same badge!',
   'how to sign|register|create account|join|sign up':()=>'📝 Tap "Sign In" in the top nav → tap "Create account" at the bottom → choose a username and password → done! You can then comment, follow, message, complete tasks and earn coins.',
   'how to post|make a post|create post':()=>'📢 Tap the composer at the top of the Home feed to share an update. Members can also comment, react with emojis, share posts and message other users directly.',
   'filter|all tab|following tab':()=>'🔽 Use the filter bar on the home feed:\n• All — everything\n• Following — only people you follow',
@@ -39209,7 +39789,7 @@ window._buildLiveContext = function _buildLiveContext() {
         realUsers.forEach(function(a) {
           var handle = '@' + (a.username || '').toLowerCase();
           var name = a.display_name || a.username;
-          var verified = (a.is_verified || a.verified) ? ' ✓' : '';
+          var verified = (a.is_verified || a.verified) ? '' : '';
           var bio = a.bio ? ' — ' + a.bio.substring(0, 70) : '';
           var followers = a.followers ? ' | Followers: ' + (Array.isArray(a.followers)?a.followers.length:a.followers) : '';
           ctx += handle + ' (' + name + ')' + verified + followers + bio + '\n';
@@ -39592,7 +40172,7 @@ function _fixText(el){
   const orig = el.value.trim();
   if(!orig) return;
   const fixed = _grammarFix(orig);
-  if(fixed===orig){ if(typeof showToast==='function') showToast('Looks good already! ✓','success'); return; }
+  if(fixed===orig){ if(typeof showToast==='function') showToast('Looks good already!','success'); return; }
   el.value = fixed;
   el.dispatchEvent(new Event('input'));
   if(typeof showToast==='function') showToast('✦ Text improved!','success');
@@ -39706,7 +40286,7 @@ function renderMentionsWithCodes(html) {
   // Decode [[CHIP:text]] markers → tappable copy chip (set by Kris in composer)
   var withCodes = html.replace(/\[\[CHIP:([^\]]*)\]\]/g, function(_, text) {
     var code = text;
-    return '<span class="inline-booking-code" onclick="(function(el){navigator.clipboard&&navigator.clipboard.writeText(\'' + code.replace(/'/g,"\\'") + '\').then(function(){el.style.background=\'rgba(48,209,88,0.25)\';setTimeout(function(){el.style.background=\'\';},900);}).catch(function(){});if(typeof showToast===\'function\')showToast(\'✓ Copied!\',\'success\');})(this)" style="cursor:pointer;" title="Tap to copy">' + escHtml(code) + '<span class="inline-copy-btn" style="pointer-events:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></span>';
+    return '<span class="inline-booking-code" onclick="(function(el){navigator.clipboard&&navigator.clipboard.writeText(\'' + code.replace(/'/g,"\\'") + '\').then(function(){el.style.background=\'rgba(48,209,88,0.25)\';setTimeout(function(){el.style.background=\'\';},900);}).catch(function(){});if(typeof showToast===\'function\')showToast(\'Copied!\',\'success\');})(this)" style="cursor:pointer;" title="Tap to copy">' + escHtml(code) + '<span class="inline-copy-btn" style="pointer-events:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></span>';
   });
   // Decode [[HL:text]] markers → highlighted text (set by Kris in composer)
   withCodes = withCodes.replace(/\[\[HL:([^\]]*)\]\]/g, function(_, text) {
@@ -39781,7 +40361,7 @@ function _ppApplyFormat(textareaId, type) {
   ta.setSelectionRange(newCursor, newCursor);
   ta.focus();
   if (modal) modal.remove();
-  showToast(type === 'chip' ? 'Copy chip added ✓' : 'Highlight added ✓', 'success');
+  showToast(type === 'chip' ? 'Copy chip added' : 'Highlight added', 'success');
 }
 
 async function ppAISmartFillPrediction() {
@@ -39831,7 +40411,7 @@ Your job: Extract or infer fields for a betting prediction post. Respond ONLY wi
       if (j.analysis_cleaned && j.analysis_cleaned.trim() && j.analysis_cleaned !== 'none' && analysis) {
         document.getElementById('pp-analysis').value = j.analysis_cleaned;
       }
-      status.style.color = 'var(--gold)'; status.textContent = '✓ Fields filled!';
+      status.style.color = 'var(--gold)'; status.textContent = 'Fields filled!';
       if (typeof _showIsland === 'function') _showIsland({ type: 'success', title: 'Fields filled!', sub: 'AI Smart Fill complete' });
     } else { throw new Error('empty'); }
   } catch(e) {
@@ -39873,7 +40453,7 @@ Respond ONLY with a JSON object, no markdown:
       const j = JSON.parse(ct);
       if (j.title && !existingTitle) document.getElementById('pp-gen-title').value = j.title;
       if (j.body_cleaned && j.body_cleaned.trim()) document.getElementById('pp-gen-body').value = j.body_cleaned;
-      status.style.color = 'var(--gold)'; status.textContent = '✓ Done!';
+      status.style.color = 'var(--gold)'; status.textContent = 'Done!';
       if (typeof _showIsland === 'function') _showIsland({ type: 'success', title: 'Update improved!', sub: 'AI Smart Fill complete' });
     } else { throw new Error('empty'); }
   } catch(e) {
@@ -40679,7 +41259,7 @@ window.openEventManager = function() {
   EVENT_TEMPLATES.forEach(function(tpl) {
     var isActive = activeIds.indexOf(tpl.id) >= 0;
     html += '<div onclick="publishEvent(\'' + tpl.id + '\')" style="cursor:pointer;border-radius:16px;border:2px solid ' + (isActive ? tpl.accent : 'var(--b-mid)') + ';background:' + (isActive ? tpl.accent + '18' : 'var(--surface)') + ';padding:14px 12px;position:relative;transition:all 0.15s;min-height:100px;display:flex;flex-direction:column;gap:6px;overflow:hidden;box-sizing:border-box;">'
-      + (isActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:' + tpl.accent + ';display:flex;align-items:center;justify-content:center;font-size:10px;">✓</div>' : '')
+      + (isActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:' + tpl.accent + ';display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : '')
       + '<div style="font-size:24px;line-height:1;flex-shrink:0;">' + tpl.emoji + '</div>'
       + '<div style="font-size:12px;font-weight:700;color:' + (isActive ? tpl.textAccent : 'var(--text)') + ';line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;">' + tpl.title.replace(/ [^\s]+$/, '') + '</div>'
       + '<div style="font-size:10px;color:var(--text3);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;">' + tpl.subtitle.split(' — ')[0] + '</div>'
@@ -40690,7 +41270,7 @@ window.openEventManager = function() {
   var customActiveId = localStorage.getItem('ka_custom_announce_id') || '';
   var isCustomActive = activeIds.indexOf('custom_announce') >= 0;
   html += '<div onclick="openCustomAnnounceCompose()" style="cursor:pointer;border-radius:16px;border:2px solid ' + (isCustomActive ? '#F5C518' : 'rgba(245,197,24,0.28)') + ';background:' + (isCustomActive ? 'rgba(245,197,24,0.12)' : 'rgba(245,197,24,0.04)') + ';padding:14px 12px;position:relative;transition:all 0.15s;min-height:100px;display:flex;flex-direction:column;gap:6px;overflow:hidden;box-sizing:border-box;">'
-    + (isCustomActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#F5C518;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;">✓</div>' : '')
+    + (isCustomActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#F5C518;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : '')
     + '<div style="font-size:24px;line-height:1;flex-shrink:0;">📣</div>'
     + '<div style="font-size:12px;font-weight:700;color:' + (isCustomActive ? '#F5C518' : 'var(--text)') + ';line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Custom Announcement</div>'
     + '<div style="font-size:10px;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + (isCustomActive ? (localStorage.getItem('ka_custom_announce_title') || 'Tap to edit') : 'Write your own message') + '</div>'
@@ -41762,7 +42342,7 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
 
   /* ── Long-press active tab to summon Kai ── */
   function _attachTabLongPress() {
-    var TAB_IDS = ['tab-home','tab-search','tab-messages','tab-notifs','tab-profile'];
+    var TAB_IDS = ['tab-home','tab-messages','tab-notifs','tab-profile'];
     var _t = null;
     var _longFired = false;
     var _safeShow = function() {
@@ -42122,7 +42702,7 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
     bubble.innerHTML = '<div style="display:flex;gap:5px;align-items:center;">'
       + '<input id="chatedit-' + idx + '" value="' + escHtml(curr) + '" style="flex:1;background:rgba(0,0,0,0.25);border:1px solid rgba(245,197,24,0.4);border-radius:8px;padding:5px 9px;font-size:13px;color:#000;font-family:var(--font);outline:none;" '
       + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();saveEditChatMsg(' + idx + ')}if(event.key===\'Escape\'){renderChatMessages()}"/>'
-      + '<button onclick="saveEditChatMsg(' + idx + ')" style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(0,0,0,0.25);border:none;color:#000;font-weight:700;cursor:pointer;">✓</button>'
+      + '<button onclick="saveEditChatMsg(' + idx + ')" style="font-size:11px;padding:4px 10px;border-radius:7px;background:rgba(0,0,0,0.25);border:none;color:#000;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>'
       + '</div>';
     setTimeout(function() { var el = document.getElementById('chatedit-' + idx); if (el) el.focus(); }, 50);
   };
