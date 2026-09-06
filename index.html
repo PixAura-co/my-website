@@ -108,7 +108,7 @@ img { content-visibility: auto; }
 @keyframes _livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
 
 
-.settings-icon-group { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; overflow: visible; margin-bottom: 12px; }
+.settings-icon-group { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
 .settings-icon-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; transition: background 0.12s; -webkit-tap-highlight-color: transparent; border-radius: 16px; }
 .settings-icon-row:first-child { border-radius: 16px 16px 0 0; }
 .settings-icon-row:last-child { border-radius: 0 0 16px 16px; }
@@ -307,6 +307,22 @@ body {
   background-image:
     radial-gradient(ellipse 60% 40% at 20% 0%, rgba(245,197,24,0.06) 0%, transparent 70%),
     radial-gradient(ellipse 50% 50% at 80% 100%, rgba(94,92,230,0.05) 0%, transparent 70%);
+  /* App-wide: no native text selection or long-press "copy" callout. Individual
+     custom long-press gestures (like button reactions, message reaction tray,
+     tab bar) are handled by our own JS touch timers and would otherwise fight
+     with Android's native selection/copy popup on the same gesture. Real text
+     inputs are explicitly re-enabled just below. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Composers, comment boxes, message inputs, and any other real text-entry
+   field: restore normal selection/copy/paste/long-press behavior so typing,
+   editing, and pasting still work everywhere it should. */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 ::-webkit-scrollbar { width: 2px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
@@ -2343,9 +2359,10 @@ body.light-mode .chat-action-btn { background: rgba(0,0,0,0.07); color: rgba(0,0
 body.light-mode .chat-action-btn.del { background: rgba(255,69,58,0.1); color: var(--red); }
 .comment-edit-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 11px; font-family: var(--font); font-weight: 600; padding: 2px 0; transition: color 0.15s; }
 .comment-edit-btn:hover { color: var(--gold); }
-.alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: default; transition: background 0.12s; }
+.alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; margin-bottom: 8px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; cursor: default; transition: background 0.12s, border-color 0.12s; }
 .alert-item.clickable { cursor: pointer; }
-.alert-item.clickable:hover { background: rgba(255,255,255,0.02); border-radius: 12px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+.alert-item.clickable:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.16); }
+.alert-item.unread { border-color: rgba(245,197,24,0.28); background: rgba(245,197,24,0.05); }
 .alert-icon { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
 .alert-icon.follow { background: rgba(48,209,88,0.12); color: #30D158; }
 .alert-icon.like { background: rgba(255,69,58,0.10); color: #ff453a; }
@@ -2657,7 +2674,7 @@ body.light-mode .nav {
 }
 /* Pill default: push app content below the floating pill */
 .app {
-  padding-top: 96px;
+  padding-top: 80px;
 }
 
 /* Classic nav: opt-in via body.nav-classic-style — full-width edge-to-edge */
@@ -5074,10 +5091,10 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
       <div class="settings-icon-info">
-        <div class="settings-icon-label" style="background:linear-gradient(90deg,#F5C518,#ffe580);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;">Subscribe to Plus Premium</div>
+        <div class="settings-icon-label" style="color:var(--gold);font-weight:800;">Subscribe to Plus Premium</div>
         <div class="settings-icon-desc">Unlock exclusive perks with Plus Coins</div>
       </div>
-      <span style="font-size:10px;font-weight:700;color:#000;background:var(--gold);border-radius:20px;padding:3px 9px;white-space:nowrap;flex-shrink:0;">Wallet</span>
+      <span style="font-size:10px;font-weight:700;color:#000;background:var(--gold);border-radius:20px;padding:3px 9px;white-space:nowrap;flex-shrink:0;line-height:1;">Wallet</span>
     </div>
   </div>
   <div class="settings-icon-group">
@@ -5403,20 +5420,6 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
             <span class="toggle-track"></span>
           </label>
         </div>
-      </div>
-    </div>
-    <!-- Navigation -->
-    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Navigation</div>
-    <div class="settings-icon-group" style="margin-bottom:20px;">
-      <div class="settings-icon-row" onclick="toggleNavStyle()">
-        <div class="settings-icon-circle" style="background:rgba(245,197,24,0.13);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="5"/><circle cx="7" cy="12" r="2" fill="#F5C518" stroke="none"/></svg>
-        </div>
-        <div class="settings-icon-info">
-          <div class="settings-icon-label" id="navStyleToggleLbl">Pill Nav</div>
-          <div class="settings-icon-desc" id="navStyleToggleDesc">Currently active</div>
-        </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>
   </div>
@@ -7091,22 +7094,23 @@ async function createAccount() {
   loadPosts();
 }
 
-async function confirmDeleteAccount() {
+function confirmDeleteAccount() {
   if (!currentUser || isOwner) { showToast('Owner account cannot be deleted.', 'error'); return; }
-  if (!confirm('Delete your account? This cannot be undone.')) return;
-  const key = localStorage.getItem('ka_username_key') || (currentUser||'').toLowerCase();
-  const ok = await SB.delete('accounts', `username=eq.${encodeURIComponent(key)}`);
-  if (!ok) { showToast('Failed to delete. Try again.', 'error'); return; }
-  _clearCache();
-  showToast('Account deleted. Goodbye!', 'success');
-  currentUser = null; isOwner = false;
-  localStorage.removeItem('ka_user');
-  localStorage.removeItem('ka_owner');
-  localStorage.removeItem('ka_username_key');
-  setUserUI(); renderPosts();
-  window._followingProfilePosts = [];
-  toggleSettingsPanel();
-  setTimeout(() => openUserModal(), 600);
+  _islandConfirm('Delete your account? This cannot be undone.', async function() {
+    const key = localStorage.getItem('ka_username_key') || (currentUser||'').toLowerCase();
+    const ok = await SB.delete('accounts', `username=eq.${encodeURIComponent(key)}`);
+    if (!ok) { showToast('Failed to delete. Try again.', 'error'); return; }
+    _clearCache();
+    showToast('Account deleted. Goodbye!', 'success');
+    currentUser = null; isOwner = false;
+    localStorage.removeItem('ka_user');
+    localStorage.removeItem('ka_owner');
+    localStorage.removeItem('ka_username_key');
+    setUserUI(); renderPosts();
+    window._followingProfilePosts = [];
+    toggleSettingsPanel();
+    setTimeout(() => openUserModal(), 600);
+  }, { title: 'Delete account?', confirmLabel: 'Delete' });
 }
 
 function _completeLogin() {}
@@ -7536,7 +7540,9 @@ async function _autoMigrate() {
       onClick: function() {
         console.warn('[Social Plus] Migration issues:', window._migrationIssues);
         var lines = window._migrationIssues.map(function(m) { return m.table + ': ' + m.reason; });
-        alert('Schema issues:\n\n' + lines.join('\n\n'));
+        if (typeof _islandConfirm === 'function') {
+          _islandConfirm(lines.join(' · '), function(){}, { title: 'Schema issues found', confirmLabel: 'OK', icon: 'block' });
+        }
       }
     });
   }
@@ -10284,34 +10290,35 @@ async function applyBoost() {
   }, 'id').catch(function(e) { console.warn('Boost save error:', e); });
 }
 
-async function removeBoost() {
+function removeBoost() {
   const postId = document.getElementById('boostPostId').value;
   const post = posts.find(p => String(p.id) === String(postId));
   if (!post) return;
-  if (!confirm('Remove all boost (views & boosted reactions) from this post?')) return;
-  // Clear boost_data (stored separately from real reactions)
-  post.boostData = { reactions: {} };
-  // Also clean any legacy _boost_ entries from reactions array
-  if (post.reactions) {
-    for (const key of Object.keys(post.reactions)) {
-      post.reactions[key] = (post.reactions[key] || []).filter(u => !String(u).startsWith('_boost_'));
-    }
-  }
-  post.views = 0;
-  try {
-    await SB.upsert('posts', { id: post.id, views: 0 }, 'id');
-    const allReacts = await SB.query('reactions', `?post_id=eq.${encodeURIComponent(post.id)}`);
-    if (allReacts) {
-      for (const r of allReacts) {
-        if (String(r.username).startsWith('_boost_')) {
-          try { await SB.delete('reactions', `post_id=eq.${encodeURIComponent(post.id)}&username=eq.${encodeURIComponent(r.username)}&emoji=eq.${encodeURIComponent(r.emoji)}`); } catch(e) {}
-        }
+  _islandConfirm('Remove all boost (views & boosted reactions) from this post?', async function() {
+    // Clear boost_data (stored separately from real reactions)
+    post.boostData = { reactions: {} };
+    // Also clean any legacy _boost_ entries from reactions array
+    if (post.reactions) {
+      for (const key of Object.keys(post.reactions)) {
+        post.reactions[key] = (post.reactions[key] || []).filter(u => !String(u).startsWith('_boost_'));
       }
     }
-  } catch(e) {}
-  closeBoostModal();
-  patchPost(postId);
-  showToast('Boost removed.', 'success');
+    post.views = 0;
+    try {
+      await SB.upsert('posts', { id: post.id, views: 0 }, 'id');
+      const allReacts = await SB.query('reactions', `?post_id=eq.${encodeURIComponent(post.id)}`);
+      if (allReacts) {
+        for (const r of allReacts) {
+          if (String(r.username).startsWith('_boost_')) {
+            try { await SB.delete('reactions', `post_id=eq.${encodeURIComponent(post.id)}&username=eq.${encodeURIComponent(r.username)}&emoji=eq.${encodeURIComponent(r.emoji)}`); } catch(e) {}
+          }
+        }
+      }
+    } catch(e) {}
+    closeBoostModal();
+    patchPost(postId);
+    showToast('Boost removed.', 'success');
+  }, { title: 'Remove boost?', confirmLabel: 'Remove' });
 }
 
 function openSmartBoostModal() {
@@ -13825,6 +13832,14 @@ async function openProfilePage() {
   if (!currentUser) { showToast('Please sign in first.', 'error'); return; }
   tempProfilePic = null;
 
+  // Show the page immediately — everything below this used to run first and
+  // only reveal the overlay at the very end, so tapping Profile looked like
+  // it "took forever" even though the work itself wasn't that slow. Now the
+  // page appears right away and fills in as the rest of this function runs.
+  const _profOv = document.getElementById('profileOverlay');
+  if (_profOv) { _profOv.classList.add('open'); _profOv.style.display = 'flex'; _profOv.scrollTop = 0; }
+  document.body.style.overflow = 'hidden';
+
   const _myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   const savedPic = picFor(currentUser) || picFor(_myKey) || localStorage.getItem('ka_my_pic_' + _myKey) || null;
   const avatarBtn = document.getElementById('profileAvatarBtn');
@@ -14013,11 +14028,8 @@ async function openProfilePage() {
 
   renderSuggestedAccounts().catch(console.error);
   if (!isOwner) renderVerifRequestSection();
-
-  document.getElementById('profileOverlay').classList.add('open');
-  document.getElementById('profileOverlay').style.display = 'flex';
-  document.getElementById('profileOverlay').scrollTop = 0;
-  document.body.style.overflow = 'hidden';
+  // Overlay display/scroll/body-overflow already set at the top of this
+  // function so the page appears instantly — nothing left to do here.
   switchProfileTab('feed');
   var sCard = document.getElementById('settingsProfileCard');
   if (sCard) {
@@ -17832,6 +17844,89 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
     }, 8000);
   };
 
+  // Island-based text prompt (replaces window.prompt). Resolves via onSubmit(value)
+  // when the user taps the action button (or presses Enter); onSubmit is never
+  // called if they cancel/dismiss/let it time out.
+  window._islandPrompt = function(message, onSubmit, opts) {
+    opts = opts || {};
+    _ensureIsland();
+    _islandUpdateTopOffset();
+    var el = document.getElementById('_island');
+    var iconEl = document.getElementById('_islandIcon');
+    var titleEl = document.getElementById('_islandTitle');
+    var subEl = document.getElementById('_islandSub');
+    var closeEl = document.getElementById('_islandClose');
+    var btnRow = document.getElementById('_islandBtnRow');
+
+    btnRow.innerHTML = '';
+    btnRow.classList.remove('show');
+    document.getElementById('_islandProgressTrack').classList.remove('show');
+    document.getElementById('_islandCount').classList.remove('show');
+    if (closeEl) closeEl.style.display = 'none';
+
+    iconEl.innerHTML = opts.icon && opts.icon !== '🗑️' ? opts.icon
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    iconEl.style.background = 'rgba(94,92,230,0.18)';
+    iconEl.style.boxShadow = '0 0 0 1px rgba(94,92,230,0.4)';
+    titleEl.textContent = opts.title || 'Enter a value';
+    subEl.textContent = message || '';
+    subEl.style.display = message ? 'block' : 'none';
+    el.style.whiteSpace = '';
+    el.classList.add('island-expanded');
+
+    var inputWrap = document.createElement('div');
+    inputWrap.style.cssText = 'width:100%;padding:2px 0 6px;';
+    var input = document.createElement('input');
+    input.type = opts.inputType || 'text';
+    input.value = opts.defaultValue || '';
+    input.placeholder = opts.placeholder || '';
+    if (opts.inputType === 'number') {
+      if (opts.min != null) input.min = opts.min;
+      if (opts.max != null) input.max = opts.max;
+    }
+    input.style.cssText = 'width:100%;box-sizing:border-box;font-family:var(--font);font-size:14px;color:#fff;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:9px 12px;outline:none;';
+    inputWrap.appendChild(input);
+    btnRow.parentNode.insertBefore(inputWrap, btnRow);
+
+    var submitBtn = document.createElement('button');
+    submitBtn.className = 'island-action-btn style-primary';
+    submitBtn.textContent = opts.confirmLabel || 'OK';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'island-action-btn style-secondary';
+    cancelBtn.textContent = 'Cancel';
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(submitBtn);
+    btnRow.classList.add('show');
+
+    function cleanup() {
+      inputWrap.remove();
+      btnRow.innerHTML = '';
+      btnRow.classList.remove('show');
+      if (closeEl) closeEl.style.display = '';
+      el.classList.remove('island-expanded');
+    }
+    function submit() {
+      var val = input.value;
+      cleanup();
+      _hideIsland();
+      if (onSubmit) onSubmit(val);
+    }
+    submitBtn.onclick = function(e) { e.stopPropagation(); submit(); };
+    cancelBtn.onclick = function(e) { e.stopPropagation(); cleanup(); _hideIsland(); };
+    input.addEventListener('keydown', function(e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+    });
+    input.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    el.dataset.islandKind = 'prompt';
+    el.classList.remove('island-hide');
+    el.classList.add('island-show');
+    clearTimeout(_islandTimer);
+    setTimeout(function() { input.focus(); }, 50);
+    // No auto-dismiss timer for prompts — the person is actively typing.
+  };
+
   // Admin delete-with-reason picker: shows a reason chip list in the island, resolves with the chosen reason string (or null if cancelled).
   window._islandDeleteReason = function(onPick, opts) {
     opts = opts || {};
@@ -17878,11 +17973,11 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
       b.onclick = function(e) {
         e.stopPropagation();
         if (r === 'Other') {
-          var custom = prompt('Enter reason for removal:');
           cleanup();
-          _hideIsland();
-          if (custom && custom.trim()) onPick(custom.trim());
-          else onPick(null);
+          _islandPrompt('', function(custom) {
+            if (custom && custom.trim()) onPick(custom.trim());
+            else onPick(null);
+          }, { title: 'Enter reason for removal', placeholder: 'Reason', confirmLabel: 'Submit' });
         } else {
           cleanup();
           _hideIsland();
@@ -20843,25 +20938,15 @@ function toggleGlassMorphism(enabled) {
   if (toggle) toggle.checked = !!enabled;
 }
 
-// ── Nav Style Toggle (Pill vs Classic) ──
+// ── Nav style: pill is now the only supported style (classic nav removed
+// from settings). Kept as a no-op stub — always forces pill — so any
+// leftover callers elsewhere in the codebase don't throw. ──
 function applyNavStyle(isPill) {
-  if (isPill) {
-    document.body.classList.add('nav-pill-style');
-    document.body.classList.remove('nav-classic-style');
-    localStorage.setItem('ka_nav_style', 'pill');
-  } else {
-    document.body.classList.remove('nav-pill-style');
-    document.body.classList.add('nav-classic-style');
-    localStorage.setItem('ka_nav_style', 'classic');
-  }
-  const lbl = document.getElementById('navStyleToggleLbl');
-  const desc = document.getElementById('navStyleToggleDesc');
-  if (lbl) lbl.textContent = isPill ? 'Pill Nav' : 'Classic Nav';
-  if (desc) desc.textContent = isPill ? 'Switch back to full-width top bar' : 'Switch to floating pill nav bar';
+  document.body.classList.add('nav-pill-style');
+  document.body.classList.remove('nav-classic-style');
+  localStorage.removeItem('ka_nav_style');
 }
-function toggleNavStyle() {
-  applyNavStyle(!document.body.classList.contains('nav-pill-style'));
-}
+function toggleNavStyle() { applyNavStyle(true); }
 
 
 // ── Appearance Page ──
@@ -20880,12 +20965,6 @@ function openAppearancePage() {
   if (adaptDesc) adaptDesc.textContent = isAdapting
     ? 'Matches your device — active now'
     : 'Follow your device\'s dark/light setting';
-  // Sync nav style label/description to the ACTUAL applied class (fixes stale label bug)
-  const navLbl = document.getElementById('navStyleToggleLbl');
-  const navDesc = document.getElementById('navStyleToggleDesc');
-  const isPillNow = document.body.classList.contains('nav-pill-style');
-  if (navLbl) navLbl.textContent = isPillNow ? 'Pill Nav' : 'Classic Nav';
-  if (navDesc) navDesc.textContent = isPillNow ? 'Switch back to full-width top bar' : 'Switch to floating pill nav bar';
 }
 function closeAppearancePage() {
   const overlay = document.getElementById('appearanceOverlay');
@@ -20940,15 +21019,16 @@ async function clearAllPosts() {
   renderPosts();
   showToast('All posts deleted.', 'success');
 }
-async function clearAllAccounts() {
+function clearAllAccounts() {
   if (!isOwner) return;
-  if (!confirm('Delete ALL user accounts? This cannot be undone.')) return;
-  const allAccts = await SB.query('accounts', '') || [];
-  for (const a of allAccts) {
-    if (a.username !== OWNER_USER.toLowerCase()) await SB.delete('accounts', `username=eq.${encodeURIComponent(a.username)}`);
-  }
-  _clearCache();
-  showToast('All accounts cleared.', 'success');
+  _islandConfirm('Delete ALL user accounts? This cannot be undone.', async function() {
+    const allAccts = await SB.query('accounts', '') || [];
+    for (const a of allAccts) {
+      if (a.username !== OWNER_USER.toLowerCase()) await SB.delete('accounts', `username=eq.${encodeURIComponent(a.username)}`);
+    }
+    _clearCache();
+    showToast('All accounts cleared.', 'success');
+  }, { title: 'Delete all accounts?', confirmLabel: 'Delete All' });
 }
 
 // ── Image compression ──
@@ -21279,7 +21359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyTheme(_prefersLight);
   }
   if (localStorage.getItem('ka_glass') === '0') toggleGlassMorphism(false);
-  if (localStorage.getItem('ka_nav_style') === 'classic') applyNavStyle(false); else applyNavStyle(true);
+  applyNavStyle(true);
   // Start notification poll for returning logged-in non-owner users
   if (currentUser && !isOwner) {
     setTimeout(function() { if (typeof _startNotifPoll === 'function') _startNotifPoll(); }, 5000);
@@ -21815,7 +21895,7 @@ async function renderUserManager() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           <span>Delete</span>
         </button>
-        ${premTier ? `<button onclick="if(confirm('Completely remove Premium from @${escHtml(a.username)}? This strips the checkmark, artifact, and all perks.'))ownerRemovePremiumCompletely('${escHtml(a.username)}','${escHtml(a.display_name)}')" title="Remove Premium completely" style="font-family:var(--font);font-size:11px;font-weight:600;padding:7px 4px;border-radius:10px;background:rgba(255,69,58,0.06);border:1px solid rgba(255,69,58,0.2);color:#ff453a;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;">
+        ${premTier ? `<button onclick="_islandConfirm('Completely remove Premium from @${escHtml(a.username)}? This strips the checkmark, artifact, and all perks.', function(){ownerRemovePremiumCompletely('${escHtml(a.username)}','${escHtml(a.display_name)}')}, {title:'Remove Premium?', confirmLabel:'Remove'})" title="Remove Premium completely" style="font-family:var(--font);font-size:11px;font-weight:600;padding:7px 4px;border-radius:10px;background:rgba(255,69,58,0.06);border:1px solid rgba(255,69,58,0.2);color:#ff453a;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.8 5.3.8-3.8 3.7.9 5.3L12 14l-4.8 2.6.9-5.3-3.8-3.7 5.3-.8z"/><line x1="4" y1="20" x2="20" y2="4"/></svg>
           <span>Un-Premium</span>
         </button>` : ''}
@@ -21906,21 +21986,21 @@ async function ownerMigrateLegacyPremiumToTrial() {
     rows = await SB.query('premium_users', '?tier=is.null&select=username,subscribed_at');
   } catch(e) { showToast('Migration failed: could not load premium_users', 'error'); return; }
   if (!rows || !rows.length) { showToast('No legacy premium users to migrate.', ''); return; }
-  if (!confirm(`Migrate ${rows.length} legacy Premium user(s) to a 7-day Plus Pro trial? Each will be notified by DM. This cannot be undone automatically.`)) return;
-
-  let ok = 0, failed = 0;
-  for (const r of rows) {
-    const key = (r.username || '').toLowerCase();
-    if (!key) continue;
-    try {
-      await _grantPremiumTier(key, 'pro', { days: 7 });
-      const msg = `👋 Hi! We've relaunched Plus Premium with three new tiers: Plus Pro, Plus Premium, and Plus Prestige — each with more perks, animated profile artifacts, and channel benefits.\n\nAs a thank-you for being an early Premium subscriber, you've been given a *7-day Plus Pro trial* free of charge, starting now. You'll see a countdown to your expiry in Wallet → Premium.\n\nWant to keep your perks going after the trial? Head to Wallet → Premium to subscribe to a plan that fits you. — Social Plus`;
-      await _sendBetAnalyticsDM(key, msg);
-      await addNotifForUser(key, `👑 You've been given a 7-day Plus Pro trial — Premium has been upgraded to 3 tiers! Check Wallet → Premium.`, null, null, 'premium');
-      ok++;
-    } catch(e) { console.warn('[migration] failed for', key, e); failed++; }
-  }
-  showToast(`Migrated ${ok} user(s) to Plus Pro trial${failed ? ', ' + failed + ' failed' : ''}.`, failed ? 'error' : 'success');
+  _islandConfirm(`Migrate ${rows.length} legacy Premium user(s) to a 7-day Plus Pro trial? Each will be notified by DM. This cannot be undone automatically.`, async function() {
+    let ok = 0, failed = 0;
+    for (const r of rows) {
+      const key = (r.username || '').toLowerCase();
+      if (!key) continue;
+      try {
+        await _grantPremiumTier(key, 'pro', { days: 7 });
+        const msg = `👋 Hi! We've relaunched Plus Premium with three new tiers: Plus Pro, Plus Premium, and Plus Prestige — each with more perks, animated profile artifacts, and channel benefits.\n\nAs a thank-you for being an early Premium subscriber, you've been given a *7-day Plus Pro trial* free of charge, starting now. You'll see a countdown to your expiry in Wallet → Premium.\n\nWant to keep your perks going after the trial? Head to Wallet → Premium to subscribe to a plan that fits you. — Social Plus`;
+        await _sendBetAnalyticsDM(key, msg);
+        await addNotifForUser(key, `👑 You've been given a 7-day Plus Pro trial — Premium has been upgraded to 3 tiers! Check Wallet → Premium.`, null, null, 'premium');
+        ok++;
+      } catch(e) { console.warn('[migration] failed for', key, e); failed++; }
+    }
+    showToast(`Migrated ${ok} user(s) to Plus Pro trial${failed ? ', ' + failed + ' failed' : ''}.`, failed ? 'error' : 'success');
+  }, { title: 'Migrate legacy Premium users?', confirmLabel: 'Migrate' });
 }
 function ownerMergeAccountPrompt(fromUsername, fromDisplay) {
   // Show a modal prompt to pick the target account to merge INTO
@@ -21970,10 +22050,14 @@ function renderMergeList(fromUsername) {
     </div>`).join('');
 }
 
-async function ownerMergeAccount(fromUsername, toUsername) {
+function ownerMergeAccount(fromUsername, toUsername) {
+  _islandConfirm(`Merge @${fromUsername} → @${toUsername}? This will transfer all followers, following, and posts to @${toUsername}, then delete @${fromUsername}. This cannot be undone.`, function() {
+    _ownerMergeAccountDo(fromUsername, toUsername);
+  }, { title: 'Merge accounts?', confirmLabel: 'Merge' });
+}
+async function _ownerMergeAccountDo(fromUsername, toUsername) {
   const from = fromUsername.toLowerCase();
   const to = toUsername.toLowerCase();
-  if (!confirm(`Merge @${fromUsername} → @${toUsername}?\n\nThis will transfer all followers, following, and posts to @${toUsername}, then delete @${fromUsername}. This cannot be undone.`)) return;
 
   // Close the overlay
   const ov = document.getElementById('mergeAccountOverlay');
@@ -22039,15 +22123,16 @@ async function ownerMergeAccount(fromUsername, toUsername) {
 }
 
 function ownerBan(username) {
-  if (!confirm('Ban ' + username + '? They will be unable to log in.')) return;
-  const b = JSON.parse(localStorage.getItem('ka_banned') || '[]');
-  if (!b.includes(username)) { b.push(username); localStorage.setItem('ka_banned', JSON.stringify(b)); }
-  SB.update('accounts', { is_banned: true }, `username=eq.${encodeURIComponent(username.toLowerCase())}`).catch(() => {});
-  if (_cache['acct_' + username.toLowerCase()]) _cache['acct_' + username.toLowerCase()].is_banned = true;
-  _cache['all_accounts'] = null;
-  addNotifForUser(username.toLowerCase(), `🚫 Your account @${username} has been banned by Social Plus.`);
-  _sendBetAnalyticsDM(username.toLowerCase(), `🚫 Hi @${username}, your account has been banned by Social Plus. If you think this is a mistake, please contact support.`);
-  showToast(username + ' banned.', ''); renderUserManager();
+  _islandConfirm('Ban ' + username + '? They will be unable to log in.', function() {
+    const b = JSON.parse(localStorage.getItem('ka_banned') || '[]');
+    if (!b.includes(username)) { b.push(username); localStorage.setItem('ka_banned', JSON.stringify(b)); }
+    SB.update('accounts', { is_banned: true }, `username=eq.${encodeURIComponent(username.toLowerCase())}`).catch(() => {});
+    if (_cache['acct_' + username.toLowerCase()]) _cache['acct_' + username.toLowerCase()].is_banned = true;
+    _cache['all_accounts'] = null;
+    addNotifForUser(username.toLowerCase(), `🚫 Your account @${username} has been banned by Social Plus.`);
+    _sendBetAnalyticsDM(username.toLowerCase(), `🚫 Hi @${username}, your account has been banned by Social Plus. If you think this is a mistake, please contact support.`);
+    showToast(username + ' banned.', ''); renderUserManager();
+  }, { title: 'Ban user?', confirmLabel: 'Ban' });
 }
 function ownerUnban(username) {
   const b = JSON.parse(localStorage.getItem('ka_banned') || '[]');
@@ -22077,8 +22162,12 @@ function ownerUnrestrict(username) {
   addNotifForUser(username.toLowerCase(), `✅ Your account @${username} is no longer restricted.`);
   showToast(username + ' unrestricted.', 'success'); renderUserManager();
 }
-async function ownerDeleteUser(username) {
-  if (!confirm('Delete "' + username + '"? This cannot be undone.')) return;
+function ownerDeleteUser(username) {
+  _islandConfirm('Delete "' + username + '"? This cannot be undone.', function() {
+    _ownerDeleteUserDo(username);
+  }, { title: 'Delete user?', confirmLabel: 'Delete' });
+}
+async function _ownerDeleteUserDo(username) {
   const uLow = (username || '').toLowerCase();
   if (!uLow) return;
 
@@ -22908,6 +22997,8 @@ closeChat = function() {
       <input id="exploreSearch" placeholder="Search people, posts, groups…" oninput="var _cb=document.getElementById('exploreSearchClear');if(_cb)_cb.style.display=this.value?'flex':'none';renderExploreResults();" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1px solid var(--b-std);border-radius:16px;padding:11px 44px 11px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(245,197,24,0.4)'" onblur="this.style.borderColor='var(--b-std)'"/>
       <button id="exploreSearchClear" onclick="document.getElementById('exploreSearch').value='';this.style.display='none';renderExploreResults();document.getElementById('exploreSearch').focus();" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--surface5);border:none;color:var(--text2);font-size:13px;cursor:pointer;align-items:center;justify-content:center;font-family:var(--font);line-height:1;">✕</button>
     </div>
+    <!-- Result-type tabs — only shown once a search is active -->
+    <div id="exploreResultTabs" style="display:none;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
   </div>
   <!-- Scrollable content area -->
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;">
@@ -22998,12 +23089,8 @@ closeChat = function() {
   <!-- Topbar - clean dark with properly centred title -->
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
     <div style="display:flex;align-items:center;padding:16px 18px 10px;position:relative;">
-      <!-- Left: back button -->
-      <div style="display:flex;align-items:center;gap:8px;flex:1;">
-        <button onclick="closeMessagesPage()" style="width:34px;height:34px;background:var(--surface4);border:1px solid var(--b-std);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-      </div>
+      <!-- Back button removed — Messages is a bottom-tab page now, leave via tab switch or hardware/gesture back. -->
+      <div style="display:flex;align-items:center;gap:8px;flex:1;"></div>
       <!-- Centre: title — absolutely centred so it doesn't move with button counts -->
       <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);pointer-events:none;">Messages</div>
       <!-- Right: group + search buttons -->
@@ -23061,11 +23148,24 @@ closeChat = function() {
 <div id="alertsPageOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;">
   <!-- Topbar -->
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(28,28,36,0.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.10);box-shadow:0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeAlertsPage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <!-- Back button removed — Alerts is a bottom-tab page now, leave via tab switch or hardware/gesture back. -->
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Alerts</div>
     <button onclick="clearNotifs();renderAlertsPage()" style="font-family:var(--font);font-size:12px;font-weight:500;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;">Clear All</button>
   </div>
   <div style="flex:1;overflow-y:auto;max-width:620px;width:100%;margin:0 auto;padding:14px 16px 100px;" id="alertsPageContent"></div>
+</div>
+
+<!-- ═══ NOTIFICATION DETAIL SHEET — opened by tapping a card in Alerts; shows
+     the full text plus an explicit "Go" action and its own Close button,
+     instead of navigating away the instant a card is tapped. ═══ -->
+<div id="notifDetailSheetOverlay" style="display:none;position:fixed;inset:0;z-index:20800;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeNotifDetailSheet()">
+  <div id="notifDetailSheet" style="background:rgba(255,255,255,0.07);backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:10px 20px 34px;border:1px solid rgba(255,255,255,0.14);border-top-color:rgba(255,255,255,0.22);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.08) inset;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);box-sizing:border-box;">
+    <div class="_u-drawer-handle"></div>
+    <div style="font-size:15px;line-height:1.55;color:var(--text);margin:12px 0 6px;" id="notifDetailSheetText"></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:20px;" id="notifDetailSheetTime"></div>
+    <button id="notifDetailSheetGoBtn" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">Go</button>
+    <button onclick="closeNotifDetailSheet()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);font-family:var(--font);font-size:14px;cursor:pointer;">Close</button>
+  </div>
 </div>
 
 <!-- Create Group Sheet -->
@@ -23116,12 +23216,19 @@ closeChat = function() {
   </div>
 </div>
 
-<!-- ═══ CHANNELS LIST PAGE — own full page (Telegram-style), no tab bar / post FAB ═══ -->
-<div id="channelsListOverlay" style="position:fixed;inset:0;z-index:20540;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
+<!-- ═══ CHANNEL MONETIZATION STATS — full page, Telegram-style earnings history ═══ -->
+<div id="channelMonetizationStatsOverlay" style="position:fixed;inset:0;z-index:20580;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeChannelsListPage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button onclick="closeChannelMonetizationStats()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Monetization</div>
+  </div>
+  <div style="max-width:620px;width:100%;margin:0 auto;padding:20px 16px 100px;box-sizing:border-box;" id="channelMonetizationStatsBody"></div>
+</div>
+
+<!-- ═══ CHANNELS LIST PAGE — full page, tab bar stays visible like Messages/Alerts ═══ -->
+<div id="channelsListOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Channels</div>
-    <div id="channelsListViewToggle" style="display:flex;gap:3px;background:rgba(255,255,255,0.04);border-radius:10px;padding:2px;flex-shrink:0;"></div>
     <button onclick="openCreateChannelSheet()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:100px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Create
@@ -23136,7 +23243,21 @@ closeChat = function() {
   </div>
 </div>
 
-<!-- ═══ CHANNEL DETAIL PAGE ═══ -->
+<!-- ═══ SEE ALL SUGGESTED CHANNELS — full page opened from "See more" on the main Channels tab. Same ranking rules, 15/page + Load more, list/card toggle + search live here. ═══ -->
+<div id="channelsSeeMoreOverlay" style="position:fixed;inset:0;z-index:20560;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
+    <button onclick="closeChannelsSeeMorePage()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;flex:1;">Suggested Channels</div>
+    <div id="channelsSeeMoreViewToggle" style="display:flex;gap:3px;background:rgba(255,255,255,0.04);border-radius:10px;padding:2px;flex-shrink:0;"></div>
+  </div>
+  <div style="max-width:620px;width:100%;margin:0 auto;padding:24px 16px 100px;box-sizing:border-box;">
+    <div style="position:relative;margin-bottom:16px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="channelsSeeMoreSearch" oninput="_onChannelsSeeMoreSearchInput()" placeholder="Search channels…" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px 12px 38px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+    </div>
+    <div id="channelsSeeMoreBody"></div>
+  </div>
+</div>
 <div id="channelDetailOverlay" style="position:fixed;inset:0;z-index:20550;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;pointer-events:none;">
   <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:rgba(10,10,14,0.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-border);">
     <button onclick="closeChannelDetail()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -23271,14 +23392,16 @@ closeChat = function() {
     <div id="channelPollOptions"></div>
     <button onclick="_addChannelPollOption()" style="width:100%;padding:10px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.18);color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;margin-bottom:14px;">+ Add option</button>
     <label style="font-size:12px;font-weight:600;color:var(--text3);display:block;margin-bottom:6px;">Poll duration</label>
-    <select id="channelPollDuration" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:14px;-webkit-appearance:none;">
-      <option value="0">No end date (open until closed manually)</option>
-      <option value="1">1 hour</option>
-      <option value="6">6 hours</option>
-      <option value="24" selected>1 day</option>
-      <option value="72">3 days</option>
-      <option value="168">1 week</option>
-    </select>
+    <input type="hidden" id="channelPollDuration" value="24"/>
+    <div id="channelPollDurationChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+    <!-- Custom duration — replaces the native OS picker with an in-app number + unit input. -->
+    <div id="channelPollCustomDurationRow" style="display:none;align-items:center;gap:8px;margin-bottom:14px;">
+      <input id="channelPollCustomDurationValue" type="number" min="1" step="1" placeholder="e.g. 12" oninput="_onChannelPollCustomDurationChange()" style="flex:1;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
+      <select id="channelPollCustomDurationUnit" onchange="_onChannelPollCustomDurationChange()" style="flex:1;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;">
+        <option value="1">Hours</option>
+        <option value="24">Days</option>
+      </select>
+    </div>
     <button onclick="_submitChannelPoll()" style="width:100%;padding:14px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">Send Poll</button>
     <button onclick="closeChannelPollSheet()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);font-family:var(--font);font-size:14px;cursor:pointer;">Cancel</button>
   </div>
@@ -23488,8 +23611,36 @@ function _searchHL(text, q) {
 // ── Debounce timer for search ──
 var _searchDebTimer = null;
 
+// ── Search result type tabs (All / People / Channels / Posts) ──
+// Filters the same combined result set renderExploreResults already builds
+// — no separate fetch, just changes which sections get included in the
+// final HTML. "All" (the default) preserves the original combined-list
+// behavior exactly; Groups, Pages, and the AI answer are treated as
+// supplementary and always shown regardless of which tab is active, since
+// the ask was specifically for People/Channels/Posts, not a 5-way split.
+let _exploreResultTab = 'all';
+
+function _exploreResultTabsHtml(counts) {
+  const tabs = [
+    { id: 'all', label: 'All' },
+    { id: 'people', label: `People${counts.people ? ' (' + counts.people + ')' : ''}` },
+    { id: 'channels', label: `Channels${counts.channels ? ' (' + counts.channels + ')' : ''}` },
+    { id: 'posts', label: `Posts${counts.posts ? ' (' + counts.posts + ')' : ''}` },
+  ];
+  return tabs.map(t => {
+    const isActive = _exploreResultTab === t.id;
+    return `<button onclick="_setExploreResultTab('${t.id}')" style="flex-shrink:0;font-family:var(--font);font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:100px;white-space:nowrap;cursor:pointer;border:1px solid ${isActive ? 'var(--gold)' : 'var(--glass-border)'};background:${isActive ? 'var(--gold)' : 'rgba(255,255,255,0.05)'};color:${isActive ? '#000' : 'var(--text2)'};">${t.label}</button>`;
+  }).join('');
+}
+
+function _setExploreResultTab(id) {
+  _exploreResultTab = id;
+  renderExploreResults();
+}
+
 async function renderExploreResults() {
   const q = (document.getElementById('exploreSearch').value || '').trim();
+  const tabsEl = document.getElementById('exploreResultTabs');
   if (!q) {
     // Show normal explore on empty
     document.getElementById('exploreSuggestedSection').style.display = '';
@@ -23498,6 +23649,8 @@ async function renderExploreResults() {
     if (tipWrap) tipWrap.style.display = '';
     const resultsEl = document.getElementById('_exploreSearchResults');
     if (resultsEl) resultsEl.remove();
+    if (tabsEl) { tabsEl.style.display = 'none'; tabsEl.innerHTML = ''; }
+    _exploreResultTab = 'all'; // reset so the next fresh search starts on All, not wherever they left off
     renderExploreSuggested();
     _renderExploreTipCards();
     return;
@@ -23606,7 +23759,21 @@ async function renderExploreResults() {
       p.name.toLowerCase().includes(qLow) || p.desc.toLowerCase().includes(qLow)
     );
     let html = '';
-    const hasAny = userResults.length || postResults.length || communityResults.length || channelResults.length || pageResults.length;
+
+    // Populate and reveal the People/Channels/Posts tab strip now that we
+    // know real counts. If the person had a specific tab selected from a
+    // previous query and this new query has zero results for it, fall back
+    // to "all" so they don't land on a dead, empty tab.
+    if (_exploreResultTab !== 'all' && !{people: userResults.length, channels: channelResults.length, posts: postResults.length}[_exploreResultTab]) {
+      _exploreResultTab = 'all';
+    }
+    if (tabsEl) {
+      tabsEl.style.display = 'flex';
+      tabsEl.innerHTML = _exploreResultTabsHtml({ people: userResults.length, channels: channelResults.length, posts: postResults.length });
+    }
+    const showPeople = _exploreResultTab === 'all' || _exploreResultTab === 'people';
+    const showChannels = _exploreResultTab === 'all' || _exploreResultTab === 'channels';
+    const showPosts = _exploreResultTab === 'all' || _exploreResultTab === 'posts';
 
     // Store query safely for onclick use — avoids any quote-escaping issues in HTML attributes
     window._searchCurrentQuery = q;
@@ -23628,7 +23795,7 @@ async function renderExploreResults() {
     </div>`;
 
     // Users section
-    if (userResults.length) {
+    if (userResults.length && showPeople) {
       html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">👤 People</div>`;
       html += userResults.slice(0, 6).map(p => {
         const isFollowing = myFollows.includes(p.username);
@@ -23648,7 +23815,7 @@ async function renderExploreResults() {
     }
 
     // Posts section
-    if (postResults.length) {
+    if (postResults.length && showPosts) {
       window._searchPostResults = postResults;
       html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">📝 Posts</div>`;
       html += postResults.map((p, pi) => {
@@ -23667,7 +23834,7 @@ async function renderExploreResults() {
     }
 
     // Channels section
-    if (channelResults.length) {
+    if (channelResults.length && showChannels) {
       window._searchChannels = channelResults;
       html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Channels</div>`;
       html += channelResults.map((c, ci) => {
@@ -23718,7 +23885,8 @@ async function renderExploreResults() {
       html += '<div style="margin-bottom:18px;"></div>';
     }
 
-    if (!hasAny) {
+    const hasAnyVisible = (userResults.length && showPeople) || (postResults.length && showPosts) || (channelResults.length && showChannels) || communityResults.length || pageResults.length;
+    if (!hasAnyVisible) {
       html += `<div style="text-align:center;padding:28px 0 10px;">
         <div style="margin-bottom:10px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
         <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">No results for "${escHtml(q)}"</div>
@@ -23994,16 +24162,17 @@ async function openCommunityDetail(id) {
   _cdOv.style.pointerEvents = 'auto';
   _cdOv.style.transform = 'translateX(0)';
 }
-async function _deleteGroup(id) {
-  if (!confirm('Delete this group? This cannot be undone.')) return;
-  let communities = _communityCache.data || [];
-  communities = communities.filter(function(x){ return x.id !== id; });
-  _communityCache.data = communities;
-  try { localStorage.setItem('ka_communities', JSON.stringify(communities)); } catch(e) {}
-  closeCommunityDetail();
-  renderExploreCommunities();
-  showToast('Group deleted.', 'success');
-  saveCommunities(communities).catch(function(){});
+function _deleteGroup(id) {
+  _islandConfirm('Delete this group? This cannot be undone.', function() {
+    let communities = _communityCache.data || [];
+    communities = communities.filter(function(x){ return x.id !== id; });
+    _communityCache.data = communities;
+    try { localStorage.setItem('ka_communities', JSON.stringify(communities)); } catch(e) {}
+    closeCommunityDetail();
+    renderExploreCommunities();
+    showToast('Group deleted.', 'success');
+    saveCommunities(communities).catch(function(){});
+  }, { title: 'Delete group?', confirmLabel: 'Delete' });
 }
 function closeCommunityDetail() {
   const _cdOv = document.getElementById('communityDetailOverlay');
@@ -24549,16 +24718,17 @@ async function _exploreLikeComment(authorKey, postId, commentId, btn) {
   }
 }
 
-async function _exploreDeleteComment(authorKey, postId, commentId, btn) {
+function _exploreDeleteComment(authorKey, postId, commentId, btn) {
   if (!currentUser) return;
-  if (!confirm('Delete this comment?')) return;
-  let rows = []; try { rows = await SB.query('profile_posts', `?id=eq.${encodeURIComponent(postId)}`) || []; } catch(e) {}
-  const prow = rows[0]; if (!prow) return;
-  const updatedComments = (prow.pp_comments || []).filter(c => c.id !== commentId);
-  try { await SB.update('profile_posts', { pp_comments: updatedComments }, `id=eq.${encodeURIComponent(postId)}`); } catch(e) {}
-  const el = document.getElementById('ex-citem-' + commentId);
-  if (el) el.remove(); else renderExplorePostsFeed();
-  showToast('Comment deleted.', '');
+  _islandConfirm('Delete this comment?', async function() {
+    let rows = []; try { rows = await SB.query('profile_posts', `?id=eq.${encodeURIComponent(postId)}`) || []; } catch(e) {}
+    const prow = rows[0]; if (!prow) return;
+    const updatedComments = (prow.pp_comments || []).filter(c => c.id !== commentId);
+    try { await SB.update('profile_posts', { pp_comments: updatedComments }, `id=eq.${encodeURIComponent(postId)}`); } catch(e) {}
+    const el = document.getElementById('ex-citem-' + commentId);
+    if (el) el.remove(); else renderExplorePostsFeed();
+    showToast('Comment deleted.', '');
+  }, { title: 'Delete comment?', confirmLabel: 'Delete' });
 }
 
 function _exploreEditComment(postId, commentId) {
@@ -25350,16 +25520,19 @@ function renderAlertsPage() {
       onclick = `closeAlertsPage();window.scrollTo({top:0,behavior:'smooth'})`;
     }
 
-    const onclickAttr = `onclick="${onclick}"`;
-    const chevron = `<svg class="alert-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>`;
-    return `<div class="alert-item clickable" ${onclickAttr}>
+    // The resolved navigation action is stashed (not fired on tap anymore) —
+    // tapping a card opens a detail sheet with the full text and an explicit
+    // "Go" button that runs this action, plus its own Close button.
+    window._notifActionById = window._notifActionById || {};
+    window._notifActionById[n.id] = onclick;
+    const hasAction = !!onclick;
+    return `<div class="alert-item ${hasAction ? 'clickable' : ''} ${!n.read ? 'unread' : ''}" ${hasAction ? `onclick="_openNotifDetailSheet('${escHtml(n.id)}')"` : ''}>
       <div class="alert-icon ${cls}">${icon}</div>
       <div class="alert-body">
         <div class="alert-text">${escHtml(t)}</div>
         <div class="alert-time">${formatTime(n.time)}</div>
       </div>
       ${!n.read ? `<div class="alert-unread-dot"></div>` : ''}
-      ${chevron}
     </div>`;
   }
 
@@ -25373,6 +25546,36 @@ function renderAlertsPage() {
     html += earlierNotifs.map(buildItem).join('');
   }
   container.innerHTML = html;
+}
+
+// Tapping a notification card opens this detail sheet instead of navigating
+// immediately — shows the full notification content with an explicit "Go"
+// button (runs the same resolved action the old direct-tap used) and its
+// own Close button, per the request that cards should open detail first
+// rather than jump straight to wherever they point.
+function _openNotifDetailSheet(notifId) {
+  const n = (window._notifById || {})[notifId];
+  if (!n) return;
+  const action = (window._notifActionById || {})[notifId] || '';
+  const overlay = document.getElementById('notifDetailSheetOverlay');
+  const sheet = document.getElementById('notifDetailSheet');
+  if (!overlay || !sheet) return;
+  document.getElementById('notifDetailSheetText').textContent = n.text || '';
+  document.getElementById('notifDetailSheetTime').textContent = formatTime(n.time);
+  const goBtn = document.getElementById('notifDetailSheetGoBtn');
+  if (goBtn) {
+    goBtn.style.display = action ? '' : 'none';
+    goBtn.onclick = function() { closeNotifDetailSheet(); if (action) { (new Function(action))(); } };
+  }
+  overlay.style.display = 'flex';
+  requestAnimationFrame(function() { sheet.style.transform = 'translateY(0)'; });
+  if (window._kaPushBack) window._kaPushBack();
+}
+function closeNotifDetailSheet() {
+  const overlay = document.getElementById('notifDetailSheetOverlay');
+  const sheet = document.getElementById('notifDetailSheet');
+  if (sheet) sheet.style.transform = 'translateY(100%)';
+  setTimeout(function() { if (overlay) overlay.style.display = 'none'; }, 280);
 }
 </script>
 
@@ -25420,6 +25623,22 @@ function renderAlertsPage() {
       <span class="tab-badge-count" id="tab-home-badge"></span>
     </div>
     <span class="tab-lbl">Home</span>
+  </button>
+
+  <!-- CHANNELS -->
+  <button class="tab-btn" id="tab-channels" onclick="tabSwitch('channels')">
+    <div class="tab-icon-wrap" style="position:relative;">
+      <!-- Broadcast signal — clean concentric arcs instead of the busy megaphone glyph -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="2"/>
+        <path d="M16.24 7.76a6 6 0 0 1 0 8.49"/>
+        <path d="M7.76 16.24a6 6 0 0 1 0-8.49"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
+      </svg>
+      <span class="tab-badge-count" id="tab-channels-badge"></span>
+    </div>
+    <span class="tab-lbl">Channels</span>
   </button>
 
   <!-- MESSAGES -->
@@ -25600,12 +25819,29 @@ async function _runDailyChannelPayoutsIfDue() {
     const channels = await SB.query('channels', '?select=*');
     if (!channels || !channels.length) { localStorage.setItem(KEY, today); return; }
     let paidCount = 0;
+    const todayDateStr = new Date().toISOString().slice(0, 10);
+    // Writes one earnings-log row per channel per day, whatever branch below
+    // finished with — including the two early-exit cases (no subs, no posts)
+    // — so a "last N days" chart never has silent gaps where the job ran but
+    // logged nothing.
+    async function logDay(c, payout, subCount, reactionCount, commentTotal, mult) {
+      try {
+        await SB.upsert('channel_earnings_log', {
+          id: c.id + '_' + todayDateStr,
+          channel_id: c.id, date: todayDateStr,
+          payout: payout || 0, subscriber_count: subCount || 0,
+          engagement_reactions: reactionCount || 0, engagement_comments: commentTotal || 0,
+          payout_multiplier: mult, created_at: new Date().toISOString()
+        }, 'id');
+      } catch(e) { console.warn('[channel_earnings_log] write failed (table may not exist yet):', e); }
+    }
     for (const c of channels) {
-      if (c.status === 'banned') continue; // never pay out banned channels
+      if (c.status === 'banned') continue; // never pay out (or log) banned channels
       const subMult = _channelSubscriberMultiplier(c.subscriber_count);
       const adminOverride = c.monetization_enabled === true;
       if (subMult <= 0 && !adminOverride) {
         await _handleChannelMonetizationMultiplierChange(c, 0);
+        await logDay(c, 0, c.subscriber_count, 0, 0, 0);
         continue; // genuinely 0 subs and no admin override — nothing to pay, nothing to monitor
       }
       const since = new Date(Date.now() - 86400000).toISOString();
@@ -25620,7 +25856,10 @@ async function _runDailyChannelPayoutsIfDue() {
       const engMult = await _channelEngagementMultiplier(c.id);
       const combinedMult = Math.min(subMult || (adminOverride ? 1 : 0), engMult);
       await _handleChannelMonetizationMultiplierChange(c, combinedMult);
-      if (!posts || !posts.length) continue;
+      if (!posts || !posts.length) {
+        await logDay(c, 0, c.subscriber_count, 0, 0, combinedMult);
+        continue;
+      }
       const reactionCount = (reactions||[]).length;
       const commentTotal = posts.reduce((sum, p) => sum + (p.comment_count||0), 0);
       const engagement = reactionCount + commentTotal * 2 + (c.subscriber_count||0) * 0.05;
@@ -25629,6 +25868,7 @@ async function _runDailyChannelPayoutsIfDue() {
         await _creditUserCoins(c.owner, payout, `Channel "${c.name}" daily earnings`, 'wallet_credit');
         paidCount++;
       }
+      await logDay(c, payout, c.subscriber_count, reactionCount, commentTotal, combinedMult);
     }
     localStorage.setItem(KEY, today);
     if (paidCount && typeof showToast === 'function') showToast(`Daily channel payouts complete — ${paidCount} channel(s) paid.`, 'success');
@@ -26000,6 +26240,7 @@ function tabSwitch(tab) {
   if (msgsOverlay) msgsOverlay.style.display = 'none';
   if (alertsOverlay) alertsOverlay.style.display = 'none';
   if (savedOverlay) { savedOverlay.style.display = 'none'; document.body.style.overflow = ''; }
+  if (tab !== 'channels' && typeof closeChannelsListPage === 'function') closeChannelsListPage();
 
   if (tab !== 'profile') {
     const profileOverlay = document.getElementById('profileOverlay');
@@ -26057,6 +26298,9 @@ function tabSwitch(tab) {
       } else {
         if (typeof openProfilePage === 'function') openProfilePage();
       }
+      break;
+    case 'channels':
+      if (typeof openChannelsListPage === 'function') openChannelsListPage();
       break;
   }
 }
@@ -26637,16 +26881,17 @@ async function doPumPush() {
   }
 }
 
-async function doPumClear() {
-  if (!confirm('Remove the update banner for all users?')) return;
-  try {
-    await fetch(SB_URL + '/rest/v1/app_config?key=eq.latest_update', {
-      method: 'DELETE',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-    });
-    showToast('Update cleared. Dynamic Island will no longer show.', 'success');
-    closePumModal();
-  } catch(e) { showToast('Failed to clear update.', 'error'); }
+function doPumClear() {
+  _islandConfirm('Remove the update banner for all users?', async function() {
+    try {
+      await fetch(SB_URL + '/rest/v1/app_config?key=eq.latest_update', {
+        method: 'DELETE',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      });
+      showToast('Update cleared. Dynamic Island will no longer show.', 'success');
+      closePumModal();
+    } catch(e) { showToast('Failed to clear update.', 'error'); }
+  }, { title: 'Remove update banner?', confirmLabel: 'Remove' });
 }
 
 // ── Boot: check for update after posts load ──
@@ -27710,6 +27955,7 @@ async function demoteChannelAdmin(channelId, username) {
   if ((c.owner || '').toLowerCase() !== key) { showToast('Only the channel owner can remove admins.', 'error'); return false; }
   try {
     await SB.delete('channel_members', `id=eq.${encodeURIComponent('cm_' + channelId + '_' + username.toLowerCase())}`);
+    addNotifForUser(username.toLowerCase(), `You are no longer an admin of "${c.name}".`, null, null, 'channel').catch(()=>{});
     showToast('Admin removed.', 'success');
     return true;
   } catch(e) {
@@ -28521,8 +28767,8 @@ async function _renderChannelPostCard(p, channel, preloaded) {
   return `<div data-channel-post-id="${escHtml(p.id)}" data-channel-id="${escHtml(channel.id)}" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:14px 16px;margin-bottom:12px;">    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;" onclick="openChannelDetail('${escHtml(channel.id)}')">
       <div style="width:38px;height:38px;border-radius:12px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avi}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;">${escHtml(channel.name)} <span style="font-size:10px;color:var(--text3);font-weight:600;display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>CHANNEL</span></div>
-        <div style="font-size:11.5px;color:var(--text3);">${timeStr}${p.edited_at ? ' · edited' : ''}${(p.view_count||0) > 0 ? ' · <span data-cpost-view-count>' + _formatCompactCountSafe(p.view_count) + ' views</span>' : ''}</div>
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);">${escHtml(channel.name)}</div>
+        <div style="font-size:11.5px;color:var(--text3);">${timeStr}${p.edited_at ? ' · edited' : ''}</div>
       </div>
       ${editBtnHtml}
       ${deleteBtnHtml}
@@ -28532,7 +28778,12 @@ async function _renderChannelPostCard(p, channel, preloaded) {
     ${!p.is_poll && p.body ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;">${linkify(escHtml(p.body))}</div>` : ''}
     ${mediaHtml}
     ${pollHtml}
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center;">
+    <div style="display:flex;align-items:center;gap:5px;margin-top:12px;font-size:10px;color:var(--text3);font-weight:600;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>CHANNEL</span>
+      ${(p.view_count||0) > 0 ? `<span>· <span data-cpost-view-count>${_formatCompactCountSafe(p.view_count)} views</span></span>` : ''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center;">
       ${reactionTray}
       <button onclick="_openChannelPostComments('${escHtml(channel.id)}','${escHtml(p.id)}')" style="margin-left:auto;font-family:var(--font);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:100px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
@@ -28836,23 +29087,43 @@ async function openChannelsListPage() {
   if (!ov) return;
   const searchEl = document.getElementById('channelsListSearch');
   if (searchEl) searchEl.value = '';
-  const toggleEl = document.getElementById('channelsListViewToggle');
-  if (toggleEl) toggleEl.innerHTML = _channelsListViewToggleHtml();
-  ov.style.pointerEvents = 'auto';
-  ov.style.transform = 'translateX(0)';
-  if (typeof window._forceRepaint === 'function') window._forceRepaint();
+  // Same instant show as Messages/Alerts/Profile — no slide-in transform,
+  // so Channels doesn't feel like a separate app being pushed on top.
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
   if (window._kaPushBack) window._kaPushBack();
+  // Channels is a real bottom-tab destination, so it follows the same
+  // active-tab convention as Home/Messages/Alerts/Profile — tab bar stays
+  // visible, its own icon highlights active. Force the tab bar visible
+  // here directly (not just on close) so a stuck 'tabbar-hidden' class
+  // from a closed overlay elsewhere can never leave it missing while
+  // Channels is open.
   const tb = document.getElementById('appTabbar');
-  if (tb) tb.classList.add('tabbar-hidden');
+  if (tb) { tb.classList.remove('tabbar-hidden'); tb.style.display = ''; }
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  const channelsTabBtn = document.getElementById('tab-channels');
+  if (channelsTabBtn) channelsTabBtn.classList.add('active');
+  _currentActiveTab = 'channels';
   if (typeof window._syncFab === 'function') window._syncFab();
   await _renderChannelsListPage();
 }
 
 function closeChannelsListPage() {
   const ov = document.getElementById('channelsListOverlay');
-  if (ov) { ov.style.transform = 'translateX(100%)'; ov.style.pointerEvents = 'none'; }
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
   const tb = document.getElementById('appTabbar');
   if (tb) tb.classList.remove('tabbar-hidden');
+  // Only reset the active tab back to Home if Channels is still the one
+  // marked active — if the person already switched to another tab (which
+  // itself closes Channels via tabSwitch above), don't stomp on that tab's
+  // active state.
+  if (_currentActiveTab === 'channels') {
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    const homeBtn = document.getElementById('tab-home');
+    if (homeBtn) homeBtn.classList.add('active');
+    _currentActiveTab = 'home';
+  }
   if (typeof window._syncFab === 'function') window._syncFab();
 }
 
@@ -28882,9 +29153,11 @@ async function _renderChannelsListPage() {
   _channelsListSubIdsCache = subIds;
   const suggested = _channelsListAllCache.filter(c => !ownedOrSubbedIds.has(c.id));
 
+  // Full ranked list is cached so the "See more" page can reuse the exact
+  // same ranking/shuffle instead of re-rolling it — opening See more should
+  // feel like a continuation of this list, not a different randomized set.
   const suggestedShuffled = await _weightedShuffleChannelsForDiscovery(suggested);
   _channelsListSuggestedShuffledCache = suggestedShuffled;
-  _channelsListSuggestedPage = 1;
 
   if (!_channelsListAllCache.length) {
     body.innerHTML = `
@@ -28898,70 +29171,157 @@ async function _renderChannelsListPage() {
     return;
   }
 
-  body.innerHTML = _renderChannelsListSections(mySubsForDisplay, suggestedShuffled);
+  body.innerHTML = await _renderChannelsListSections(mySubsForDisplay, suggestedShuffled);
 }
 
+// Main Channels tab always shows Suggested as a fixed-style, swipable strip
+// of 6 — no list/card toggle here anymore (that only lives on the "See more"
+// page, alongside search and full pagination).
 const CHANNELS_LIST_PAGE_SIZE = 15;
+const CHANNELS_MAIN_TAB_SUGGESTED_LIMIT = 6;
 let _channelsListSuggestedShuffledCache = [];
-let _channelsListSuggestedPage = 1;
-let _channelsListViewMode = localStorage.getItem('ka_channels_view_mode') || 'list'; // 'list' | 'card'
 
-function _setChannelsListViewMode(mode) {
-  _channelsListViewMode = mode;
-  localStorage.setItem('ka_channels_view_mode', mode);
-  _channelsListSuggestedPage = 1; // restart pagination on layout switch, avoids an awkward half-page
-  const body = document.getElementById('channelsListBody');
-  if (body) _renderChannelsListFiltered((document.getElementById('channelsListSearch')||{}).value?.toLowerCase().trim() || '');
-  const toggleEl = document.getElementById('channelsListViewToggle');
-  if (toggleEl) toggleEl.innerHTML = _channelsListViewToggleHtml();
+// ── Subscribed channels: pinning + unread tracking (both device-local, like
+// other per-device UI state in this app — no server round trip needed for
+// either). Pin caps by the viewer's own Plus tier.
+const CHANNEL_PIN_LIMITS = { free: 3, pro: 10, premium: 10, prestige: 20 };
+function _channelPinLimitForMe() {
+  const t = getPremiumTier(_myUsernameKey());
+  if (!t) return CHANNEL_PIN_LIMITS.free;
+  return CHANNEL_PIN_LIMITS[t.tier] || CHANNEL_PIN_LIMITS.free;
 }
-
-function _channelsListViewToggleHtml() {
-  const isCard = _channelsListViewMode === 'card';
-  return `
-    <button onclick="_setChannelsListViewMode('list')" title="List view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'transparent':'rgba(245,197,24,0.14)'};border:1px solid ${isCard?'transparent':'rgba(245,197,24,0.3)'};color:${isCard?'var(--text3)':'var(--gold)'};">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-    </button>
-    <button onclick="_setChannelsListViewMode('card')" title="Card view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'rgba(245,197,24,0.14)':'transparent'};border:1px solid ${isCard?'rgba(245,197,24,0.3)':'transparent'};color:${isCard?'var(--gold)':'var(--text3)'};">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-    </button>`;
+function _getPinnedChannelIds() {
+  try { return JSON.parse(localStorage.getItem('ka_pinned_channels') || '[]'); } catch(e) { return []; }
 }
-
-function _renderSuggestedChannelsPaginated() {
-  const start = 0;
-  const end = _channelsListSuggestedPage * CHANNELS_LIST_PAGE_SIZE;
-  const slice = _channelsListSuggestedShuffledCache.slice(start, end);
-  const hasMore = _channelsListSuggestedShuffledCache.length > end;
-  let html = _channelsListViewMode === 'card'
-    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${slice.map(c => _channelsListCard(c, false)).join('')}</div>`
-    : slice.map(c => _channelsListRow(c, false)).join('');
-  if (hasMore) {
-    html += `<button onclick="_loadMoreSuggestedChannels()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more channels</button>`;
+function _savePinnedChannelIds(arr) {
+  localStorage.setItem('ka_pinned_channels', JSON.stringify(arr));
+}
+function _isChannelPinned(channelId) {
+  return _getPinnedChannelIds().includes(channelId);
+}
+function _toggleChannelPin(channelId) {
+  const pinned = _getPinnedChannelIds();
+  const idx = pinned.indexOf(channelId);
+  if (idx !== -1) {
+    pinned.splice(idx, 1);
+    _savePinnedChannelIds(pinned);
+    showToast('Channel unpinned.', 'success');
+  } else {
+    const limit = _channelPinLimitForMe();
+    if (pinned.length >= limit) {
+      showToast(`You can pin up to ${limit} channels on your current plan.`, 'error');
+      return;
+    }
+    pinned.push(channelId);
+    _savePinnedChannelIds(pinned);
+    showToast('Channel pinned.', 'success');
   }
-  return html;
+  // Re-render whichever Subscribed list is currently on screen.
+  if (document.getElementById('channelsListBody')) _renderChannelsListPage();
+}
+function _getChannelLastSeenMap() {
+  try { return JSON.parse(localStorage.getItem('ka_channel_last_seen') || '{}'); } catch(e) { return {}; }
+}
+function _markChannelSeenNow(channelId) {
+  const map = _getChannelLastSeenMap();
+  map[channelId] = Date.now();
+  localStorage.setItem('ka_channel_last_seen', JSON.stringify(map));
+}
+// Batches "latest post per channel" into a single query instead of one
+// per-channel round trip — same batching philosophy as
+// _getChannelEngagementTotals above.
+async function _getLatestPostPerChannel(channelIds) {
+  const out = {}; // channelId -> post
+  if (!channelIds.length) return out;
+  try {
+    const rows = await SB.query('channel_posts', `?channel_id=in.(${channelIds.map(encodeURIComponent).join(',')})&order=timestamp.desc&select=id,channel_id,body,timestamp`);
+    (rows || []).forEach(function(p) {
+      if (!out[p.channel_id]) out[p.channel_id] = p; // first row per channel wins — already sorted desc
+    });
+  } catch(e) {}
+  return out;
 }
 
-function _loadMoreSuggestedChannels() {
-  _channelsListSuggestedPage++;
-  const container = document.getElementById('channelsListSuggestedBody');
-  if (container) container.innerHTML = _renderSuggestedChannelsPaginated();
+// Builds the "Subscribed" list: Telegram-style rows with a latest-broadcast
+// preview and an unread badge that clears once the channel is opened. Pinned
+// channels (device-local, capped by the viewer's Plus tier) always sort
+// first, in the order pinned.
+async function _renderSubscribedChannelsSection(mySubs) {
+  if (!mySubs.length) return '';
+  const pinned = _getPinnedChannelIds();
+  const lastSeen = _getChannelLastSeenMap();
+  const sorted = mySubs.slice().sort(function(a, b) {
+    const pa = pinned.indexOf(a.id), pb = pinned.indexOf(b.id);
+    if (pa !== -1 && pb !== -1) return pa - pb;
+    if (pa !== -1) return -1;
+    if (pb !== -1) return 1;
+    return 0; // keep existing relative order otherwise
+  });
+  const latestByChannel = await _getLatestPostPerChannel(mySubs.map(c => c.id));
+  const rows = sorted.map(function(c) {
+    const latest = latestByChannel[c.id];
+    const isUnread = !!(latest && (!lastSeen[c.id] || new Date(latest.timestamp).getTime() > lastSeen[c.id]));
+    const isPinned = pinned.indexOf(c.id) !== -1;
+    return _channelsSubscribedRow(c, latest, isUnread, isPinned);
+  }).join('');
+  return `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Subscribed</div>${rows}`;
 }
 
-// Builds the "My Channels" + "Suggested Channels" section HTML. Shared by
-// both the default (unfiltered) view and the search-filtered view below.
-function _renderChannelsListSections(mySubs, suggested) {
+// Telegram-style subscribed-channel row: avatar, name, latest-broadcast
+// preview snippet, timestamp, unread dot, and a pin toggle.
+function _channelsSubscribedRow(c, latest, isUnread, isPinned) {
+  const avi = _channelAviHtml(c.avatar, c.name, 46);
+  const restricted = _channelIsRestricted(c);
+  const preview = latest ? escHtml((latest.body || '').slice(0, 60)) + ((latest.body||'').length > 60 ? '…' : '') : 'No broadcasts yet';
+  const timeStr = latest ? _relativeTimeShort(new Date(latest.timestamp)) : '';
+  return `<div onclick="openChannelDetail('${escHtml(c.id)}')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">
+    <div style="position:relative;flex-shrink:0;">
+      <div style="width:46px;height:46px;border-radius:14px;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">${avi}</div>
+      ${isUnread ? '<div style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);"></div>' : ''}
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;">
+        ${isPinned ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" style="flex-shrink:0;"><path d="M12 2l1.5 5.5L19 9l-4.5 3.5L16 18l-4-3-4 3 1.5-5.5L5 9l5.5-1.5z"/></svg>' : ''}
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(c.name)}</span>${channelVerifiedBadgeHtml(c)}${restricted ? '<span style="font-size:10px;color:#ff9500;font-weight:700;">RESTRICTED</span>' : ''}
+      </div>
+      <div style="font-size:12px;color:${isUnread ? 'var(--text)' : 'var(--text3)'};font-weight:${isUnread ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+      <span style="font-size:11px;color:var(--text3);">${timeStr}</span>
+      <button onclick="event.stopPropagation();_toggleChannelPin('${escHtml(c.id)}')" title="${isPinned ? 'Unpin' : 'Pin'}" style="width:24px;height:24px;border-radius:8px;background:${isPinned ? 'rgba(245,197,24,0.14)' : 'rgba(255,255,255,0.05)'};border:1px solid ${isPinned ? 'rgba(245,197,24,0.3)' : 'var(--glass-border)'};color:${isPinned ? 'var(--gold)' : 'var(--text3)'};display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 2l1.5 5.5L19 9l-4.5 3.5L16 18l-4-3-4 3 1.5-5.5L5 9l5.5-1.5z"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+// Short relative-time label ("2m", "3h", "5d") for the broadcast preview row.
+function _relativeTimeShort(date) {
+  const diffMs = Date.now() - date.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return mins + 'm';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h';
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days + 'd';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Builds the "Subscribed" + "Suggested Channels" section HTML for the main
+// Channels tab. Suggested is always exactly 6 cards in a horizontal swipe
+// row (never wraps into a grid/list) with a "See more" button that opens
+// the dedicated full page — same ranking rules, no 6-item cap there.
+async function _renderChannelsListSections(mySubs, suggested) {
   let html = '';
-  const isCard = _channelsListViewMode === 'card';
-  if (mySubs.length) {
-    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">My Channels</div>`;
-    html += isCard
-      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${mySubs.map(c => _channelsListCard(c, true)).join('')}</div>`
-      : mySubs.map(c => _channelsListRow(c, true)).join('');
-    html += '<div style="margin-bottom:14px;"></div>';
-  }
+  const subsHtml = await _renderSubscribedChannelsSection(mySubs);
+  if (subsHtml) html += subsHtml + '<div style="margin-bottom:14px;"></div>';
   if (suggested.length) {
+    const picked = suggested.slice(0, CHANNELS_MAIN_TAB_SUGGESTED_LIMIT);
     html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Suggested Channels</div>`;
-    html += `<div id="channelsListSuggestedBody">${_renderSuggestedChannelsPaginated()}</div>`;
+    html += `<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none;">${picked.map(c => `<div style="flex:0 0 44%;min-width:150px;">${_channelsListCard(c, false)}</div>`).join('')}</div>`;
+    if (suggested.length > CHANNELS_MAIN_TAB_SUGGESTED_LIMIT) {
+      html += `<button onclick="openChannelsSeeMorePage()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more →</button>`;
+    }
   }
   if (!mySubs.length && !suggested.length) {
     html += `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
@@ -29001,7 +29361,7 @@ function _channelsListCard(c, isSubbed) {
   const restricted = _channelIsRestricted(c);
   const isOwnChannel = (c.owner || '').toLowerCase().trim() === (_myUsernameKey() || '').toLowerCase().trim();
   const tier = _channelOwnerTier(c);
-  const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;">${escHtml(tier.label)}</span>` : '';
+  const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;line-height:1;display:inline-block;">${escHtml(tier.label)}</span>` : '';
   const actionBtn = isOwnChannel
     ? `<span style="font-family:var(--font);font-size:11px;font-weight:700;padding:7px 0;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);width:100%;text-align:center;display:block;">Yours</span>`
     : isSubbed
@@ -29062,36 +29422,152 @@ function _renderChannelsListFiltered(q) {
     const suggested = all.filter(c => !isMine(c));
     (async () => {
       _channelsListSuggestedShuffledCache = await _weightedShuffleChannelsForDiscovery(suggested);
-      _channelsListSuggestedPage = 1;
-      body.innerHTML = _renderChannelsListSections(mySubs, _channelsListSuggestedShuffledCache);
+      body.innerHTML = await _renderChannelsListSections(mySubs, _channelsListSuggestedShuffledCache);
     })();
     return;
   }
-  // Active search: show direct matches in full, no shuffle/pagination —
+  // Active search: show direct matches in full, no shuffle/pagination/cap —
   // someone searching wants complete, predictable results for their query,
-  // not a randomized discovery subset.
+  // not a randomized 6-item discovery subset. Fixed card grid, matching the
+  // main tab's fixed (non-toggleable) style.
   const matches = all.filter(c => (c.name || '').toLowerCase().includes(q) || (c.bio || '').toLowerCase().includes(q));
   const mySubs = matches.filter(isMine);
   const suggested = matches.filter(c => !isMine(c));
-  const isCard = _channelsListViewMode === 'card';
-  let html = '';
-  if (mySubs.length) {
-    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">My Channels</div>`;
-    html += isCard
-      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${mySubs.map(c => _channelsListCard(c, true)).join('')}</div>`
-      : mySubs.map(c => _channelsListRow(c, true)).join('');
-    html += '<div style="margin-bottom:14px;"></div>';
+  (async () => {
+    let html = '';
+    const subsHtml = await _renderSubscribedChannelsSection(mySubs);
+    if (subsHtml) html += subsHtml + '<div style="margin-bottom:14px;"></div>';
+    if (suggested.length) {
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Suggested Channels</div>`;
+      html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${suggested.map(c => _channelsListCard(c, false)).join('')}</div>`;
+    }
+    if (!mySubs.length && !suggested.length) {
+      html += `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
+    }
+    body.innerHTML = html;
+  })();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SEE-MORE SUGGESTED CHANNELS PAGE — opened from the main Channels tab's
+// "See more" button. Same ranking rules as the tab (reuses
+// _channelsListSuggestedShuffledCache so it's a continuation, not a
+// re-shuffle), but with no 6-item cap: 15 per page + "See more" to load the
+// next batch, plus the list/card toggle and its own search bar, both of
+// which live only on this page now.
+// ══════════════════════════════════════════════════════════════
+let _channelsSeeMorePage = 1;
+let _channelsSeeMoreViewMode = localStorage.getItem('ka_channels_view_mode') || 'card'; // 'list' | 'card'
+let _channelsSeeMoreSearchToken = 0;
+
+function openChannelsSeeMorePage() {
+  const ov = document.getElementById('channelsSeeMoreOverlay');
+  if (!ov) return;
+  const searchEl = document.getElementById('channelsSeeMoreSearch');
+  if (searchEl) searchEl.value = '';
+  _channelsSeeMorePage = 1;
+  const toggleEl = document.getElementById('channelsSeeMoreViewToggle');
+  if (toggleEl) toggleEl.innerHTML = _channelsSeeMoreViewToggleHtml();
+  ov.style.pointerEvents = 'auto';
+  ov.style.transform = 'translateX(0)';
+  if (typeof window._forceRepaint === 'function') window._forceRepaint();
+  if (window._kaPushBack) window._kaPushBack();
+  if (typeof window._syncFab === 'function') window._syncFab();
+  _renderChannelsSeeMorePage();
+}
+
+function closeChannelsSeeMorePage() {
+  const ov = document.getElementById('channelsSeeMoreOverlay');
+  if (ov) { ov.style.transform = 'translateX(100%)'; ov.style.pointerEvents = 'none'; }
+  if (typeof window._syncFab === 'function') window._syncFab();
+}
+
+function _channelsSeeMoreViewToggleHtml() {
+  const isCard = _channelsSeeMoreViewMode === 'card';
+  return `
+    <button onclick="_setChannelsSeeMoreViewMode('list')" title="List view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'transparent':'rgba(245,197,24,0.14)'};border:1px solid ${isCard?'transparent':'rgba(245,197,24,0.3)'};color:${isCard?'var(--text3)':'var(--gold)'};">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </button>
+    <button onclick="_setChannelsSeeMoreViewMode('card')" title="Card view" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${isCard?'rgba(245,197,24,0.14)':'transparent'};border:1px solid ${isCard?'rgba(245,197,24,0.3)':'transparent'};color:${isCard?'var(--gold)':'var(--text3)'};">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </button>`;
+}
+
+function _setChannelsSeeMoreViewMode(mode) {
+  _channelsSeeMoreViewMode = mode;
+  localStorage.setItem('ka_channels_view_mode', mode);
+  _channelsSeeMorePage = 1; // restart pagination on layout switch, avoids an awkward half-page
+  const toggleEl = document.getElementById('channelsSeeMoreViewToggle');
+  if (toggleEl) toggleEl.innerHTML = _channelsSeeMoreViewToggleHtml();
+  const q = (document.getElementById('channelsSeeMoreSearch')||{}).value?.toLowerCase().trim() || '';
+  if (q) _renderChannelsSeeMoreFiltered(q); else _renderChannelsSeeMorePage();
+}
+
+async function _renderChannelsSeeMorePage() {
+  const body = document.getElementById('channelsSeeMoreBody');
+  if (!body) return;
+  // Reuse the main tab's already-ranked cache when present (keeps ranking
+  // consistent with what was just seen); fall back to computing it fresh if
+  // See more is somehow opened before the main tab has rendered once.
+  if (!_channelsListSuggestedShuffledCache || !_channelsListSuggestedShuffledCache.length) {
+    let all = [], subscribed = [];
+    try { [all, subscribed] = await Promise.all([getAllChannels(), getMySubscribedChannels()]); } catch(e) {}
+    const myKey = (_myUsernameKey() || '').toLowerCase().trim();
+    const subIds = new Set((subscribed || []).map(c => c.id));
+    const isMine = c => subIds.has(c.id) || (c.owner || '').toLowerCase().trim() === myKey;
+    const suggested = (all || []).filter(c => !isMine(c));
+    _channelsListSuggestedShuffledCache = await _weightedShuffleChannelsForDiscovery(suggested);
   }
-  if (suggested.length) {
-    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin:4px 0 10px;">Suggested Channels</div>`;
-    html += isCard
-      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${suggested.map(c => _channelsListCard(c, false)).join('')}</div>`
-      : suggested.map(c => _channelsListRow(c, false)).join('');
+  body.innerHTML = _renderChannelsSeeMorePaginated();
+}
+
+function _renderChannelsSeeMorePaginated() {
+  const end = _channelsSeeMorePage * CHANNELS_LIST_PAGE_SIZE;
+  const slice = _channelsListSuggestedShuffledCache.slice(0, end);
+  const hasMore = _channelsListSuggestedShuffledCache.length > end;
+  if (!slice.length) {
+    return `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
   }
-  if (!mySubs.length && !suggested.length) {
-    html += `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search, or create your own.</div></div>`;
+  let html = _channelsSeeMoreViewMode === 'card'
+    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${slice.map(c => _channelsListCard(c, false)).join('')}</div>`
+    : slice.map(c => _channelsListRow(c, false)).join('');
+  if (hasMore) {
+    html += `<button onclick="_loadMoreChannelsSeeMore()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more</button>`;
   }
-  body.innerHTML = html;
+  return html;
+}
+
+function _loadMoreChannelsSeeMore() {
+  _channelsSeeMorePage++;
+  const body = document.getElementById('channelsSeeMoreBody');
+  if (body) body.innerHTML = _renderChannelsSeeMorePaginated();
+}
+
+function _onChannelsSeeMoreSearchInput() {
+  const myToken = ++_channelsSeeMoreSearchToken;
+  const q = (document.getElementById('channelsSeeMoreSearch')?.value || '').toLowerCase().trim();
+  clearTimeout(window._channelsSeeMoreSearchDebounce);
+  window._channelsSeeMoreSearchDebounce = setTimeout(function() {
+    if (myToken !== _channelsSeeMoreSearchToken) return;
+    if (q) _renderChannelsSeeMoreFiltered(q); else _renderChannelsSeeMorePage();
+  }, 150);
+}
+
+function _renderChannelsSeeMoreFiltered(q) {
+  const body = document.getElementById('channelsSeeMoreBody');
+  if (!body) return;
+  const all = _channelsListAllCache || [];
+  const subIds = _channelsListSubIdsCache || new Set();
+  const myKey = (_myUsernameKey() || '').toLowerCase().trim();
+  const isMine = c => subIds.has(c.id) || (c.owner || '').toLowerCase().trim() === myKey;
+  const matches = all.filter(c => !isMine(c) && ((c.name || '').toLowerCase().includes(q) || (c.bio || '').toLowerCase().includes(q)));
+  if (!matches.length) {
+    body.innerHTML = `<div class="empty"><div class="empty-title">No channels found</div><div class="empty-sub">Try a different search.</div></div>`;
+    return;
+  }
+  body.innerHTML = _channelsSeeMoreViewMode === 'card'
+    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${matches.map(c => _channelsListCard(c, false)).join('')}</div>`
+    : matches.map(c => _channelsListRow(c, false)).join('');
 }
 
 
@@ -29223,7 +29699,7 @@ async function _renderExploreChannelsInner(container) {
     const tier = _channelOwnerTier(c);
     // Small, quiet tier chip — present but visually minor, matching "there
     // but not taken too seriously": no glow, no animation, just a muted tag.
-    const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;">${escHtml(tier.label)}</span>` : '';
+    const tierChip = tier ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text3);background:rgba(255,255,255,0.06);border-radius:100px;padding:1px 6px;text-transform:uppercase;line-height:1;display:inline-block;">${escHtml(tier.label)}</span>` : '';
     const actionBtn = isOwnChannel
       ? `<span style="font-family:var(--font);font-size:11px;font-weight:700;padding:7px 0;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:var(--text2);width:100%;text-align:center;display:block;">Yours</span>`
       : `<button id="ecs-${escHtml(c.id)}" onclick="event.stopPropagation();_quickSubscribeToggle('${escHtml(c.id)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 0;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid ${isSub ? 'rgba(245,197,24,0.3)' : 'var(--gold)'};background:${isSub ? 'rgba(245,197,24,0.12)' : 'var(--gold)'};color:${isSub ? 'var(--gold)' : '#000'};width:100%;">${isSub ? 'Subscribed' : 'Subscribe'}</button>`;
@@ -29236,11 +29712,13 @@ async function _renderExploreChannelsInner(container) {
       </div>
       <div style="width:100%;margin-top:2px;">${actionBtn}</div>
     </div>`;
-  }).join('');
+  }); // array of card HTML strings, one per channel — not joined yet
   const moreBtn = channels.length > EXPLORE_CHANNELS_LIMIT
-    ? `<button onclick="openChannelsListPage()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">See more channels →</button>`
+    ? `<button onclick="openChannelsListPage()" style="width:100%;margin-top:12px;padding:11px;border-radius:14px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">View all channels →</button>`
     : '';
-  container.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">${cards}</div>${moreBtn}`;
+  // Horizontal swipe row instead of a wrapping 2-col grid — 6 cards you
+  // scroll through, not a stack that pushes the rest of the page down.
+  container.innerHTML = `<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none;">${cards.map(c => `<div style="flex:0 0 44%;min-width:150px;">${c}</div>`).join('')}</div>${moreBtn}`;
 }
 
 // ── Create Channel sheet ──
@@ -29395,6 +29873,7 @@ async function openChannelDetail(channelId) {
   // Open the page and show a skeleton immediately — don't make the user
   // stare at the previous screen while several network calls resolve.
   _currentChannelId = channelId;
+  if (typeof _markChannelSeenNow === 'function') _markChannelSeenNow(channelId);
   const ovEarly = document.getElementById('channelDetailOverlay');
   if (ovEarly) { ovEarly.style.display = 'flex'; ovEarly.style.pointerEvents = 'auto'; }
   const tbEarly = document.getElementById('appTabbar');
@@ -29534,17 +30013,18 @@ async function _submitChannelBroadcastAndClose() {
 
 // Confirms, deletes a single broadcast, and refreshes whichever view is
 // currently showing it (channel detail page, or the home Channels feed).
-async function _onDeleteChannelPostTap(channelId, postId) {
-  if (!confirm('Delete this broadcast? This cannot be undone.')) return;
-  const ok = await deleteChannelPost(channelId, postId);
-  if (!ok) return;
-  showToast('Broadcast deleted.', 'success');
-  const card = document.querySelector(`[data-channel-post-id="${CSS.escape(postId)}"]`);
-  if (card) card.remove();
-  if (document.getElementById('channelPostsFeed') && document.getElementById('channelPostsFeed').children.length === 0) {
-    const c = await getChannel(channelId);
-    await renderChannelPosts(c);
-  }
+function _onDeleteChannelPostTap(channelId, postId) {
+  _islandConfirm('Delete this broadcast? This cannot be undone.', async function() {
+    const ok = await deleteChannelPost(channelId, postId);
+    if (!ok) return;
+    showToast('Broadcast deleted.', 'success');
+    const card = document.querySelector(`[data-channel-post-id="${CSS.escape(postId)}"]`);
+    if (card) card.remove();
+    if (document.getElementById('channelPostsFeed') && document.getElementById('channelPostsFeed').children.length === 0) {
+      const c = await getChannel(channelId);
+      await renderChannelPosts(c);
+    }
+  }, { title: 'Delete broadcast?', confirmLabel: 'Delete' });
 }
 
 async function renderChannelPosts(channel) {
@@ -29814,6 +30294,143 @@ function closeChannelMemberActionSheet() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// Monetization full stats page — Telegram-style earnings history, backed
+// by channel_earnings_log (one row per channel per day, written by
+// _runDailyChannelPayoutsIfDue). Only the channel owner can open this.
+// ══════════════════════════════════════════════════════════════
+const CHANNEL_STATS_DAYS = 7; // fetch a week for the trend line; the "last 5 days" summary the owner asked for is a subset of this
+let _channelStatsCurrentId = null;
+
+async function openChannelMonetizationStats(channelId) {
+  const c = await getChannel(channelId);
+  if (!c) { showToast('Channel not found.', 'error'); return; }
+  const myKey = _myUsernameKey();
+  if ((c.owner || '').toLowerCase().trim() !== (myKey || '').toLowerCase().trim() && !isOwner) {
+    showToast('Only the channel owner can view its monetization stats.', 'error');
+    return;
+  }
+  _channelStatsCurrentId = channelId;
+  const ov = document.getElementById('channelMonetizationStatsOverlay');
+  if (!ov) return;
+  ov.style.pointerEvents = 'auto';
+  ov.style.transform = 'translateX(0)';
+  if (typeof window._forceRepaint === 'function') window._forceRepaint();
+  if (window._kaPushBack) window._kaPushBack();
+  if (typeof window._syncFab === 'function') window._syncFab();
+  await _renderChannelMonetizationStats(c);
+}
+
+function closeChannelMonetizationStats() {
+  const ov = document.getElementById('channelMonetizationStatsOverlay');
+  if (ov) { ov.style.transform = 'translateX(100%)'; ov.style.pointerEvents = 'none'; }
+  _channelStatsCurrentId = null;
+  if (typeof window._syncFab === 'function') window._syncFab();
+}
+
+async function _renderChannelMonetizationStats(c) {
+  const body = document.getElementById('channelMonetizationStatsBody');
+  if (!body) return;
+  body.innerHTML = _buildFeedSkeleton(2, 'predictions');
+
+  let log = [];
+  try {
+    const since = new Date(Date.now() - (CHANNEL_STATS_DAYS - 1) * 86400000).toISOString().slice(0, 10);
+    log = await SB.query('channel_earnings_log', `?channel_id=eq.${encodeURIComponent(c.id)}&date=gte.${encodeURIComponent(since)}&order=date.asc&select=*`);
+  } catch(e) {
+    // Table may not exist yet on this Supabase project — show the empty
+    // state below rather than a broken page.
+    log = [];
+  }
+
+  // Build a full CHANNEL_STATS_DAYS-day frame (today going back), filling
+  // in $0/no-data days that have no log row yet — e.g. the very first days
+  // after this feature ships, before the daily job has run enough times.
+  const days = [];
+  for (let i = CHANNEL_STATS_DAYS - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const dateStr = d.toISOString().slice(0, 10);
+    const row = (log || []).find(r => r.date === dateStr);
+    days.push({
+      date: dateStr,
+      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+      payout: row ? (row.payout || 0) : 0,
+      subs: row ? (row.subscriber_count || 0) : (c.subscriber_count || 0),
+      mult: row ? row.payout_multiplier : null,
+      hasData: !!row
+    });
+  }
+  const last5 = days.slice(-5);
+  const totalLast5 = last5.reduce((s, d) => s + d.payout, 0);
+  const maxPayout = Math.max(1, ...days.map(d => d.payout));
+  const currentMult = days[days.length - 1].mult;
+  const hasAnyData = days.some(d => d.hasData);
+
+  if (!hasAnyData) {
+    body.innerHTML = `
+      <div style="text-align:center;padding:40px 20px 20px;">
+        <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--text3);"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No earnings data yet</div>
+        <div style="font-size:13px;color:var(--text3);line-height:1.5;max-width:280px;margin:0 auto;">Stats appear here after the daily payout job runs at least once. Check back tomorrow.</div>
+      </div>`;
+    return;
+  }
+
+  const barsHtml = days.map(d => {
+    const pct = Math.round((d.payout / maxPayout) * 100);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:10px;color:var(--text3);">${d.payout.toLocaleString()}</div>
+      <div style="width:100%;height:80px;display:flex;align-items:flex-end;">
+        <div style="width:100%;border-radius:6px 6px 2px 2px;background:${d.payout > 0 ? 'var(--gold)' : 'rgba(255,255,255,0.08)'};height:${Math.max(pct, 3)}%;"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);font-weight:600;">${d.label}</div>
+    </div>`;
+  }).join('');
+
+  const multPct = currentMult != null ? Math.round(currentMult * 100) : null;
+  const multColor = multPct == null ? 'var(--text3)' : multPct >= 100 ? '#30D158' : multPct > 0 ? '#ff9500' : '#ff453a';
+
+  body.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:4px;">Last 5 Days</div>
+        <div style="font-size:22px;font-weight:800;color:var(--gold);">${totalLast5.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Plus Coins earned</div>
+      </div>
+      <div style="flex:1;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:4px;">Payout Rate</div>
+        <div style="font-size:22px;font-weight:800;color:${multColor};">${multPct != null ? multPct + '%' : '—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${multPct == null ? 'No data yet' : multPct >= 100 ? 'Full reward' : 'Reduced — see requirements below'}</div>
+      </div>
+    </div>
+
+    <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;">Daily Earnings — Last ${CHANNEL_STATS_DAYS} Days</div>
+      <div style="display:flex;gap:6px;align-items:flex-end;">${barsHtml}</div>
+    </div>
+
+    <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Channel Snapshot</div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <span style="font-size:12.5px;color:var(--text3);">Subscribers</span>
+        <span style="font-size:12.5px;font-weight:700;color:var(--text);">${(c.subscriber_count||0).toLocaleString()}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <span style="font-size:12.5px;color:var(--text3);">Monetization threshold</span>
+        <span style="font-size:12.5px;font-weight:700;color:var(--text);">${CHANNEL_MONETIZATION_MIN_SUBS.toLocaleString()} subs</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;">
+        <span style="font-size:12.5px;color:var(--text3);">Rate</span>
+        <span style="font-size:12.5px;font-weight:700;color:var(--text);">${CHANNEL_PAYOUT_RATE_PER_ENGAGEMENT} coins / engagement point</span>
+      </div>
+    </div>
+
+    <div style="font-size:11.5px;color:var(--text3);line-height:1.6;padding:0 4px;">
+      Payouts run once daily and depend on your subscriber count and recent engagement (reactions + comments). If your payout rate drops below 100%, check that your channel is still above ${CHANNEL_MONETIZATION_MIN_SUBS.toLocaleString()} subscribers and that recent posts are getting normal engagement.
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════
 // Poll composer
 // ══════════════════════════════════════════════════════════════
 let _channelPollCurrentId = null;
@@ -29825,12 +30442,72 @@ function openChannelPollComposer(channelId) {
   const optsEl = document.getElementById('channelPollOptions');
   optsEl.innerHTML = '';
   _addChannelPollOption(); _addChannelPollOption();
+  _renderChannelPollDurationChips();
   sheet.style.display = 'flex';
 }
 function closeChannelPollSheet() {
   const sheet = document.getElementById('channelPollSheet');
   if (sheet) sheet.style.display = 'none';
   _channelPollCurrentId = null;
+}
+
+// ── Poll duration picker — in-app chips + custom value, replacing the
+// native OS <select> dropdown (which looked jarring against the rest of the
+// app's UI). Preset hour values match what the old <select> offered;
+// "Custom" reveals a number + Hours/Days input instead of a fixed list.
+const CHANNEL_POLL_DURATION_PRESETS = [
+  { label: 'No end date', hrs: 0 },
+  { label: '1 hour', hrs: 1 },
+  { label: '6 hours', hrs: 6 },
+  { label: '1 day', hrs: 24 },
+  { label: '3 days', hrs: 72 },
+  { label: '1 week', hrs: 168 },
+];
+function _renderChannelPollDurationChips() {
+  const wrap = document.getElementById('channelPollDurationChips');
+  if (!wrap) return;
+  const hiddenInput = document.getElementById('channelPollDuration');
+  const current = parseInt(hiddenInput.value || '24', 10);
+  const isPreset = CHANNEL_POLL_DURATION_PRESETS.some(p => p.hrs === current);
+  wrap.innerHTML = CHANNEL_POLL_DURATION_PRESETS.map(p => {
+    const active = isPreset && p.hrs === current;
+    return `<button type="button" onclick="_selectChannelPollDurationPreset(${p.hrs})" style="padding:8px 14px;border-radius:100px;font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid ${active ? 'var(--gold)' : 'rgba(255,255,255,0.12)'};background:${active ? 'rgba(245,197,24,0.14)' : 'rgba(255,255,255,0.05)'};color:${active ? 'var(--gold)' : 'var(--text2)'};">${p.label}</button>`;
+  }).join('') + `<button type="button" onclick="_selectChannelPollDurationCustom()" style="padding:8px 14px;border-radius:100px;font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid ${!isPreset ? 'var(--gold)' : 'rgba(255,255,255,0.12)'};background:${!isPreset ? 'rgba(245,197,24,0.14)' : 'rgba(255,255,255,0.05)'};color:${!isPreset ? 'var(--gold)' : 'var(--text2)'};">Custom</button>`;
+  const customRow = document.getElementById('channelPollCustomDurationRow');
+  if (customRow) customRow.style.display = isPreset ? 'none' : 'flex';
+  if (!isPreset) {
+    // Reflect the current custom value back into the number+unit inputs —
+    // prefer whole days if it divides evenly, otherwise show hours.
+    const valEl = document.getElementById('channelPollCustomDurationValue');
+    const unitEl = document.getElementById('channelPollCustomDurationUnit');
+    if (current > 0 && current % 24 === 0) { valEl.value = current / 24; unitEl.value = '24'; }
+    else { valEl.value = current; unitEl.value = '1'; }
+  }
+}
+function _selectChannelPollDurationPreset(hrs) {
+  document.getElementById('channelPollDuration').value = String(hrs);
+  _renderChannelPollDurationChips();
+}
+function _selectChannelPollDurationCustom() {
+  // Switch into custom mode with a sensible starting value (1 day) rather
+  // than leaving the hidden input on whatever preset was active.
+  const hiddenInput = document.getElementById('channelPollDuration');
+  const current = parseInt(hiddenInput.value || '24', 10);
+  const isPreset = CHANNEL_POLL_DURATION_PRESETS.some(p => p.hrs === current);
+  if (isPreset) hiddenInput.value = '24';
+  _renderChannelPollDurationChips();
+  const valEl = document.getElementById('channelPollCustomDurationValue');
+  if (valEl) setTimeout(() => valEl.focus(), 50);
+}
+function _onChannelPollCustomDurationChange() {
+  const valEl = document.getElementById('channelPollCustomDurationValue');
+  const unitEl = document.getElementById('channelPollCustomDurationUnit');
+  const n = Math.max(1, parseInt(valEl.value || '1', 10) || 1);
+  const unitMultiplier = parseInt(unitEl.value || '1', 10);
+  // Soft ceiling of 1 year — guards against a typo (e.g. an extra zero)
+  // creating a poll that would technically stay open for decades.
+  const hrs = Math.min(n * unitMultiplier, 8760);
+  document.getElementById('channelPollDuration').value = String(hrs);
 }
 function _addChannelPollOption() {
   const optsEl = document.getElementById('channelPollOptions');
@@ -30007,6 +30684,7 @@ async function openChannelManage(channelId) {
         <div style="height:6px;border-radius:100px;background:rgba(255,255,255,0.08);margin-top:8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--gold);border-radius:100px;"></div></div>`;
       })()}
     </div>
+    ${isOwnerForManage ? `<button onclick="openChannelMonetizationStats('${escHtml(c.id)}')" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;">📊 View Full Stats</button>` : ''}
     <div style="font-size:12px;font-weight:600;color:var(--text3);margin:18px 0 8px;">Channel Name</div>
     <div style="margin-bottom:6px;">
       <input id="channelManageNameInput" value="${escHtml(c.name || '')}" placeholder="Channel name" maxlength="50" ${isOwnerForManage ? '' : 'disabled'} style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;"/>
@@ -30159,29 +30837,31 @@ async function _toggleChannelPrivacyUI(channelId, btn) {
 // Rotates channel.invite_code to a fresh random value. Old share links
 // (built with the previous code) stop resolving; the channel's real `id`
 // never changes, so posts/subscribers/reactions are unaffected.
-async function _resetChannelInviteLinkUI(channelId) {
-  if (!confirm('Reset the invite link? Anyone using the old link will no longer be able to join.')) return;
-  const newCode = 'inv_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-  try {
-    await SB.update('channels', { invite_code: newCode }, `id=eq.${encodeURIComponent(channelId)}`);
-    _invalidateChannelCache(channelId);
-    showToast('Invite link reset.', 'success');
-    openChannelManage(channelId);
-  } catch(e) {
-    console.error('[_resetChannelInviteLinkUI] failed:', e);
-    showToast('Could not reset the link — try again.', 'error');
-  }
+function _resetChannelInviteLinkUI(channelId) {
+  _islandConfirm('Reset the invite link? Anyone using the old link will no longer be able to join.', async function() {
+    const newCode = 'inv_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    try {
+      await SB.update('channels', { invite_code: newCode }, `id=eq.${encodeURIComponent(channelId)}`);
+      _invalidateChannelCache(channelId);
+      showToast('Invite link reset.', 'success');
+      openChannelManage(channelId);
+    } catch(e) {
+      console.error('[_resetChannelInviteLinkUI] failed:', e);
+      showToast('Could not reset the link — try again.', 'error');
+    }
+  }, { title: 'Reset invite link?', confirmLabel: 'Reset' });
 }
 
 // ── Clear all broadcasts ───────────────────────────────────────────────
-async function _clearAllBroadcastsUI(channelId) {
-  if (!confirm('Delete every broadcast in this channel? This cannot be undone.')) return;
-  const ok = await deleteAllChannelPosts(channelId);
-  if (!ok) return;
-  showToast('All broadcasts cleared.', 'success');
-  closeChannelManageSheet();
-  const c = await getChannel(channelId);
-  if (c) await renderChannelPosts(c);
+function _clearAllBroadcastsUI(channelId) {
+  _islandConfirm('Delete every broadcast in this channel? This cannot be undone.', async function() {
+    const ok = await deleteAllChannelPosts(channelId);
+    if (!ok) return;
+    showToast('All broadcasts cleared.', 'success');
+    closeChannelManageSheet();
+    const c = await getChannel(channelId);
+    if (c) await renderChannelPosts(c);
+  }, { title: 'Clear all broadcasts?', confirmLabel: 'Delete All' });
 }
 
 // ── Delete channel (owner only) ────────────────────────────────────────
@@ -30216,37 +30896,43 @@ async function deleteChannel(channelId) {
     return false;
   }
 }
-async function _deleteChannelUI(channelId) {
-  const c = await getChannel(channelId);
-  if (!c) return;
-  if (!confirm(`Delete "${c.name}" permanently? All broadcasts, subscribers, and history will be lost. This cannot be undone.`)) return;
-  const ok = await deleteChannel(channelId);
-  if (!ok) return;
-  showToast('Channel deleted.', 'success');
-  closeChannelManageSheet();
-  closeChannelDetail();
-  if (typeof openChannelsListPage === 'function') openChannelsListPage();
+function _deleteChannelUI(channelId) {
+  getChannel(channelId).then(function(c) {
+    if (!c) return;
+    _islandConfirm(`Delete "${c.name}" permanently? All broadcasts, subscribers, and history will be lost. This cannot be undone.`, async function() {
+      const ok = await deleteChannel(channelId);
+      if (!ok) return;
+      showToast('Channel deleted.', 'success');
+      closeChannelManageSheet();
+      closeChannelDetail();
+      if (typeof openChannelsListPage === 'function') openChannelsListPage();
+    }, { title: 'Delete channel?', confirmLabel: 'Delete' });
+  });
 }
 
 // ── Transfer ownership ─────────────────────────────────────────────────
 // Notifies both the outgoing and incoming owner, same as the moderation
 // notifications elsewhere in the channels feature.
-async function _openTransferChannelOwnershipUI(channelId) {
-  const target = prompt('Transfer ownership to which username? (without @)');
-  if (!target) return;
-  const targetClean = target.trim().replace(/^@+/, '').toLowerCase();
-  if (!targetClean) return;
-  const c = await getChannel(channelId);
-  if (!c) return;
-  if (targetClean === (c.owner || '').toLowerCase()) { showToast('That user already owns this channel.', 'error'); return; }
-  const targetAccount = (await getAllAccounts().catch(() => [])).find(a => (a.username || '').toLowerCase() === targetClean);
-  if (!targetAccount) { showToast(`No account found for @${targetClean}.`, 'error'); return; }
-  if (!confirm(`Transfer ownership of "${c.name}" to @${targetClean}? You will become an admin instead of the owner. This cannot be undone by you alone — the new owner would need to transfer it back.`)) return;
-  const ok = await transferChannelOwnership(channelId, targetClean);
-  if (!ok) return;
-  showToast(`Ownership transferred to @${targetClean}.`, 'success');
-  closeChannelManageSheet();
-  openChannelDetail(channelId);
+function _openTransferChannelOwnershipUI(channelId) {
+  _islandPrompt('', function(target) {
+    if (!target) return;
+    const targetClean = target.trim().replace(/^@+/, '').toLowerCase();
+    if (!targetClean) return;
+    (async function() {
+      const c = await getChannel(channelId);
+      if (!c) return;
+      if (targetClean === (c.owner || '').toLowerCase()) { showToast('That user already owns this channel.', 'error'); return; }
+      const targetAccount = (await getAllAccounts().catch(() => [])).find(a => (a.username || '').toLowerCase() === targetClean);
+      if (!targetAccount) { showToast(`No account found for @${targetClean}.`, 'error'); return; }
+      _islandConfirm(`Transfer ownership of "${c.name}" to @${targetClean}? You will become an admin instead of the owner. This cannot be undone by you alone — the new owner would need to transfer it back.`, async function() {
+        const ok = await transferChannelOwnership(channelId, targetClean);
+        if (!ok) return;
+        showToast(`Ownership transferred to @${targetClean}.`, 'success');
+        closeChannelManageSheet();
+        openChannelDetail(channelId);
+      }, { title: 'Transfer ownership?', confirmLabel: 'Transfer' });
+    })();
+  }, { title: 'Transfer ownership to which username?', placeholder: 'username (without @)', confirmLabel: 'Next' });
 }
 async function transferChannelOwnership(channelId, newOwnerUsername) {
   const key = _myUsernameKey();
@@ -30593,20 +31279,23 @@ async function demoteGroupAdmin(groupId, username) {
   var uk = username.toLowerCase();
   group.admins = (group.admins || []).filter(function(a) { return (a || '').toLowerCase() !== uk; });
   await _saveGroup(group);
+  try { addNotifForUser(uk, 'You are no longer an admin of "' + group.name + '".'); } catch(e) {}
   showToast('@' + uk + ' is no longer an admin.', '');
   return true;
 }
-async function _promoteGroupAdminUI(username) {
+function _promoteGroupAdminUI(username) {
   if (!_currentGroupId) return;
-  if (!confirm('Make @' + username + ' an admin of this group? They\'ll be able to add/remove members and change settings.')) return;
-  var ok = await promoteGroupAdmin(_currentGroupId, username);
-  if (ok) openGroupMgmt();
+  _islandConfirm('Make @' + username + ' an admin of this group? They\'ll be able to add/remove members and change settings.', async function() {
+    var ok = await promoteGroupAdmin(_currentGroupId, username);
+    if (ok) openGroupMgmt();
+  }, { title: 'Make admin?', confirmLabel: 'Make Admin' });
 }
-async function _demoteGroupAdminUI(username) {
+function _demoteGroupAdminUI(username) {
   if (!_currentGroupId) return;
-  if (!confirm('Remove @' + username + ' as admin?')) return;
-  var ok = await demoteGroupAdmin(_currentGroupId, username);
-  if (ok) openGroupMgmt();
+  _islandConfirm('Remove @' + username + ' as admin?', async function() {
+    var ok = await demoteGroupAdmin(_currentGroupId, username);
+    if (ok) openGroupMgmt();
+  }, { title: 'Remove admin?', confirmLabel: 'Remove' });
 }
 
 // Regenerates the group's shareable invite code, invalidating old links —
@@ -30657,11 +31346,12 @@ async function _resetGroupInviteLinkUI(groupId) {
   var group = _groupCache[groupId];
   if (!group) return;
   if (!_groupIsAdmin(group, myKey)) { showToast('Only a group admin can reset the invite link.', 'error'); return; }
-  if (!confirm('Reset the invite link? Anyone using the old link will no longer be able to join.')) return;
-  group.invite_code = 'ginv_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-  await _saveGroup(group);
-  showToast('Invite link reset.', 'success');
-  openGroupMgmt();
+  _islandConfirm('Reset the invite link? Anyone using the old link will no longer be able to join.', async function() {
+    group.invite_code = 'ginv_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    await _saveGroup(group);
+    showToast('Invite link reset.', 'success');
+    openGroupMgmt();
+  }, { title: 'Reset invite link?', confirmLabel: 'Reset' });
 }
 function _groupInviteUrl(group) {
   // Username-based short link when the group has one set (plusng.com.ng/<username>)
@@ -30718,17 +31408,18 @@ async function _saveGroupDescriptionUI() {
 
 // ── Unlink from group side (mirrors _channelUnlinkGroupUI on the channel
 // settings sheet — either side can break the link). ──
-async function _groupUnlinkChannelUI(groupId) {
+function _groupUnlinkChannelUI(groupId) {
   var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   var group = _groupCache[groupId];
   if (group && !_groupIsAdmin(group, myKey)) { showToast('Only a group admin can unlink the channel.', 'error'); return; }
-  if (!confirm('Unlink this channel? Subscribers\' Comment button will no longer open this group.')) return;
-  var chanRows = await SB.query('channels', `?linked_group_id=eq.${encodeURIComponent(groupId)}&select=id`).catch(function(){return [];});
-  var chan = chanRows && chanRows[0];
-  if (!chan) { showToast('No linked channel found.', 'error'); return; }
-  await unlinkChannelGroup(chan.id);
-  showToast('Channel unlinked.', 'success');
-  openGroupMgmt();
+  _islandConfirm('Unlink this channel? Subscribers\' Comment button will no longer open this group.', async function() {
+    var chanRows = await SB.query('channels', `?linked_group_id=eq.${encodeURIComponent(groupId)}&select=id`).catch(function(){return [];});
+    var chan = chanRows && chanRows[0];
+    if (!chan) { showToast('No linked channel found.', 'error'); return; }
+    await unlinkChannelGroup(chan.id);
+    showToast('Channel unlinked.', 'success');
+    openGroupMgmt();
+  }, { title: 'Unlink channel?', confirmLabel: 'Unlink' });
 }
 
 // ── GROUP MANAGEMENT ─────────────────────────────────
@@ -30950,31 +31641,33 @@ async function submitAddGroupMembers() {
   if (gcMembersEl) gcMembersEl.textContent = group.members.length + ' members — tap to manage';
 }
 
-async function removeGroupMember(memberKey) {
+function removeGroupMember(memberKey) {
   if (!_currentGroupId) return;
   var group = _groupCache[_currentGroupId];
   if (!group) return;
   var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   if (!_groupIsAdmin(group, myKey)) { showToast('Only a group admin can remove members.', 'error'); return; }
   if (_groupIsCreator(group, memberKey)) { showToast('The group creator can\'t be removed.', 'error'); return; }
-  if (!confirm('Remove @' + memberKey + ' from the group?')) return;
-  group.members = (group.members || []).filter(function(m) { return m !== memberKey; });
-  group.admins = (group.admins || []).filter(function(m) { return (m||'').toLowerCase() !== memberKey.toLowerCase(); });
-  await _saveGroup(group);
-  showToast('@' + memberKey + ' removed.', '');
-  openGroupMgmt(); // re-render the management sheet
+  _islandConfirm('Remove @' + memberKey + ' from the group?', async function() {
+    group.members = (group.members || []).filter(function(m) { return m !== memberKey; });
+    group.admins = (group.admins || []).filter(function(m) { return (m||'').toLowerCase() !== memberKey.toLowerCase(); });
+    await _saveGroup(group);
+    showToast('@' + memberKey + ' removed.', '');
+    openGroupMgmt(); // re-render the management sheet
+  }, { title: 'Remove member?', confirmLabel: 'Remove' });
 }
 
-async function leaveGroupChat() {
+function leaveGroupChat() {
   if (!_currentGroupId) return;
   var group = _groupCache[_currentGroupId];
   if (!group) return;
-  if (!confirm('Leave "' + group.name + '"?')) return;
-  var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
-  group.members = (group.members || []).filter(function(m) { return m !== myKey; });
-  closeGroupChat();
-  showToast('You left the group.', '');
-  _saveGroup(group).catch(function(){});
+  _islandConfirm('Leave "' + group.name + '"?', function() {
+    var myKey = (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
+    group.members = (group.members || []).filter(function(m) { return m !== myKey; });
+    closeGroupChat();
+    showToast('You left the group.', '');
+    _saveGroup(group).catch(function(){});
+  }, { title: 'Leave group?', confirmLabel: 'Leave' });
 }
 
 async function setGroupIcon(emoji) {
@@ -34533,12 +35226,12 @@ function _cancelPostProgress() {
   // open/close call site, _syncFab now checks directly whether any full-
   // screen overlay is currently on-screen and hides the FAB itself if so.
   function _fabBlockingOverlayOpen() {
-    var slideIds = ['channelDetailOverlay', 'channelsListOverlay'];
+    var slideIds = ['channelDetailOverlay', 'channelsSeeMoreOverlay', 'channelMonetizationStatsOverlay'];
     for (var i = 0; i < slideIds.length; i++) {
       var el = document.getElementById(slideIds[i]);
       if (el && (el.style.transform === 'translateX(0)' || el.style.transform === 'translateX(0px)')) return true;
     }
-    var displayIds = ['explorePageOverlay', 'messagesPageOverlay', 'groupChatOverlay', 'chatOverlay', 'profileOverlay', 'uprofileOverlay', 'notifOverlay', 'userManagerOverlay', 'savedPostsOverlay', 'appearanceOverlay', 'flOverlay'];
+    var displayIds = ['explorePageOverlay', 'messagesPageOverlay', 'channelsListOverlay', 'groupChatOverlay', 'chatOverlay', 'profileOverlay', 'uprofileOverlay', 'notifOverlay', 'userManagerOverlay', 'savedPostsOverlay', 'appearanceOverlay', 'flOverlay'];
     for (var j = 0; j < displayIds.length; j++) {
       var d = document.getElementById(displayIds[j]);
       if (d && d.style.display && d.style.display !== 'none') return true;
@@ -37416,24 +38109,24 @@ function _saChannelRowHtml(c, ci) {
   </div>`;
 }
 
-// Prompts for an optional expiry before applying restrict/ban — a plain
-// browser prompt keeps this lightweight rather than building a whole new
-// date-picker sheet just for an admin-only action.
+// Prompts for an optional expiry before applying restrict/ban, via the
+// island-based text prompt (replaces the old raw browser prompt()).
 function _saOpenChannelActionPrompt(ci, status) {
   const c = window._saChannelsCache && window._saChannelsCache[ci];
   if (!c) return;
   const label = status === 'banned' ? 'ban' : 'restrict';
-  const hours = prompt(`${label === 'ban' ? 'Ban' : 'Restrict'} "${c.name}" for how many hours? (Leave blank for indefinite)`, '');
-  if (hours === null) return; // cancelled
-  let untilIso = null;
-  if (hours.trim()) {
-    const h = parseFloat(hours);
-    if (!isNaN(h) && h > 0) untilIso = new Date(Date.now() + h * 3600000).toISOString();
-  }
-  _adminSetChannelStatus(c.id, status, untilIso, label).then(function(ok) {
-    if (ok) { showToast(`Channel ${label === 'ban' ? 'banned' : 'restricted'}.`, 'success'); _saRenderChannels(); }
-    else showToast('Action failed — try again.', 'error');
-  });
+  _islandPrompt('Leave blank for indefinite.', function(hours) {
+    if (hours === null) return; // cancelled
+    let untilIso = null;
+    if (hours && hours.trim()) {
+      const h = parseFloat(hours);
+      if (!isNaN(h) && h > 0) untilIso = new Date(Date.now() + h * 3600000).toISOString();
+    }
+    _adminSetChannelStatus(c.id, status, untilIso, label).then(function(ok) {
+      if (ok) { showToast(`Channel ${label === 'ban' ? 'banned' : 'restricted'}.`, 'success'); _saRenderChannels(); }
+      else showToast('Action failed — try again.', 'error');
+    });
+  }, { title: `${label === 'ban' ? 'Ban' : 'Restrict'} "${c.name}" for how many hours?`, placeholder: 'Hours (optional)', inputType: 'number', confirmLabel: label === 'ban' ? 'Ban' : 'Restrict' });
 }
 function _saLiftChannelStatus(ci) {
   const c = window._saChannelsCache && window._saChannelsCache[ci];
@@ -37472,45 +38165,47 @@ async function _saRunLootingScan() {
 }
 // Admin decides the flag was a false positive (or acceptable, e.g. shared
 // family device with a legit referral) — releases the frozen coins to the referrer.
-async function _saReleaseFlaggedReward(flagId) {
-  if (!confirm('Release the frozen reward to the referrer? This closes the flag.')) return;
-  try {
-    const rows = await SB.query('flagged_accounts', `?id=eq.${flagId}&select=*`);
-    const flag = rows && rows[0];
-    if (!flag) return;
-    if (flag.reward_amount > 0) {
-      // account_a is alphabetically first of the pair, not necessarily the referrer —
-      // look up which of the two actually has referred_by pointing at the other.
-      const accts = await SB.query('accounts', `?username=in.(${encodeURIComponent(flag.account_a)},${encodeURIComponent(flag.account_b)})&select=username,referred_by,plus_coins`);
-      const a = accts.find(x => x.username === flag.account_a);
-      const b = accts.find(x => x.username === flag.account_b);
-      const referrer = (a && a.referred_by === flag.account_b) ? b : (b && b.referred_by === flag.account_a) ? a : null;
-      if (referrer) {
-        await SB.update('accounts', { plus_coins: (referrer.plus_coins || 0) + flag.reward_amount }, `username=eq.${encodeURIComponent(referrer.username)}`);
-        if (typeof addNotifForUser === 'function') {
-          addNotifForUser(referrer.username, `🎁 Referral reward released — +${flag.reward_amount} coins`, null, null, 'referral').catch(()=>{});
+function _saReleaseFlaggedReward(flagId) {
+  _islandConfirm('Release the frozen reward to the referrer? This closes the flag.', async function() {
+    try {
+      const rows = await SB.query('flagged_accounts', `?id=eq.${flagId}&select=*`);
+      const flag = rows && rows[0];
+      if (!flag) return;
+      if (flag.reward_amount > 0) {
+        // account_a is alphabetically first of the pair, not necessarily the referrer —
+        // look up which of the two actually has referred_by pointing at the other.
+        const accts = await SB.query('accounts', `?username=in.(${encodeURIComponent(flag.account_a)},${encodeURIComponent(flag.account_b)})&select=username,referred_by,plus_coins`);
+        const a = accts.find(x => x.username === flag.account_a);
+        const b = accts.find(x => x.username === flag.account_b);
+        const referrer = (a && a.referred_by === flag.account_b) ? b : (b && b.referred_by === flag.account_a) ? a : null;
+        if (referrer) {
+          await SB.update('accounts', { plus_coins: (referrer.plus_coins || 0) + flag.reward_amount }, `username=eq.${encodeURIComponent(referrer.username)}`);
+          if (typeof addNotifForUser === 'function') {
+            addNotifForUser(referrer.username, `🎁 Referral reward released — +${flag.reward_amount} coins`, null, null, 'referral').catch(()=>{});
+          }
         }
       }
-    }
-    await SB.update('flagged_accounts', { status: 'reviewed', reward_status: 'released' }, `id=eq.${flagId}`);
-    showToast('Reward released', 'success');
-    _saRenderSecurity();
-  } catch(e) { showToast('Failed to release — try again', 'error'); }
+      await SB.update('flagged_accounts', { status: 'reviewed', reward_status: 'released' }, `id=eq.${flagId}`);
+      showToast('Reward released', 'success');
+      _saRenderSecurity();
+    } catch(e) { showToast('Failed to release — try again', 'error'); }
+  }, { title: 'Release reward?', confirmLabel: 'Release' });
 }
 // Admin confirms this is looting — seizes the frozen reward (never paid out)
 // and freezes both accounts' wallets (withdrawals blocked) pending manual review.
-async function _saSeizeFlaggedAccounts(flagId) {
-  if (!confirm('Seize the frozen reward and freeze both wallets? This blocks withdrawals for both accounts.')) return;
-  try {
-    const rows = await SB.query('flagged_accounts', `?id=eq.${flagId}&select=*`);
-    const flag = rows && rows[0];
-    if (!flag) return;
-    await SB.update('accounts', { wallet_frozen: true }, `username=eq.${encodeURIComponent(flag.account_a)}`);
-    await SB.update('accounts', { wallet_frozen: true }, `username=eq.${encodeURIComponent(flag.account_b)}`);
-    await SB.update('flagged_accounts', { status: 'reviewed', reward_status: 'seized' }, `id=eq.${flagId}`);
-    showToast('Reward seized, wallets frozen', 'success');
-    _saRenderSecurity();
-  } catch(e) { showToast('Failed to seize — try again', 'error'); }
+function _saSeizeFlaggedAccounts(flagId) {
+  _islandConfirm('Seize the frozen reward and freeze both wallets? This blocks withdrawals for both accounts.', async function() {
+    try {
+      const rows = await SB.query('flagged_accounts', `?id=eq.${flagId}&select=*`);
+      const flag = rows && rows[0];
+      if (!flag) return;
+      await SB.update('accounts', { wallet_frozen: true }, `username=eq.${encodeURIComponent(flag.account_a)}`);
+      await SB.update('accounts', { wallet_frozen: true }, `username=eq.${encodeURIComponent(flag.account_b)}`);
+      await SB.update('flagged_accounts', { status: 'reviewed', reward_status: 'seized' }, `id=eq.${flagId}`);
+      showToast('Reward seized, wallets frozen', 'success');
+      _saRenderSecurity();
+    } catch(e) { showToast('Failed to seize — try again', 'error'); }
+  }, { title: 'Seize reward & freeze wallets?', confirmLabel: 'Seize' });
 }
 function _escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -38646,6 +39341,7 @@ const MIG_TABLES = [
   'user_settings','verif_requests','admin_controls',
   'channels','channel_members','channel_moderation','channel_poll_votes',
   'channel_polls','channel_posts','channel_reactions','channel_subscribers',
+  'channel_earnings_log',
   'device_sessions','dm_messages','flagged_accounts','push_subscriptions',
   'wallet_boosts','wallet_payout_methods','wallet_task_claims',
   'wallet_task_requests','wallet_transfers','wallet_withdrawals'
@@ -40604,11 +41300,13 @@ function _ppcAIPickVersion(idx) {
   function _kaIsOpen(id) {
     var el = document.getElementById(id);
     if (!el) return false;
-    // Slide-in page overlays (channel detail / channels list) stay
-    // display:flex permanently and use a translateX transform to hide
-    // off-screen instead — so for those, "open" means translated on-screen,
-    // not just display !== none.
-    if (id === 'channelDetailOverlay' || id === 'channelsListOverlay') {
+    // channelDetailOverlay is a genuine drill-down page (opened from inside
+    // Channels) and still stays display:flex permanently, hiding off-screen
+    // via translateX — so for that one, "open" means translated on-screen,
+    // not just display !== none. channelsListOverlay itself is now a plain
+    // tab page (display none/flex, like Messages/Alerts) so it uses the
+    // normal check below.
+    if (id === 'channelDetailOverlay' || id === 'channelsSeeMoreOverlay' || id === 'channelMonetizationStatsOverlay') {
       return el.style.transform === 'translateX(0)' || el.style.transform === 'translateX(0px)';
     }
     return el.classList.contains('open') || (el.style.display && el.style.display !== 'none' && el.style.display !== '');
@@ -40616,6 +41314,7 @@ function _ppcAIPickVersion(idx) {
 
   // Ordered from topmost (highest z-index / most recent) to base
   var _kaLayers = [
+    { check: 'notifDetailSheetOverlay', close: function() { if(typeof closeNotifDetailSheet==='function') closeNotifDetailSheet(); } },
     { check: 'boostModal',            close: function() { if(typeof closeBoostModal==='function') closeBoostModal(); } },
     { check: 'smartBoostModal',       close: function() { if(typeof closeSmartBoostModal==='function') closeSmartBoostModal(); } },
     { check: 'editPostModal',         close: function() { if(typeof closeEditPostModal==='function') closeEditPostModal(); } },
@@ -40632,7 +41331,15 @@ function _ppcAIPickVersion(idx) {
     { check: 'chatOverlay',           close: function() { if(typeof closeChat==='function') closeChat(); } },
     { check: 'profileOverlay',        close: function() { if(typeof closeProfilePage==='function') closeProfilePage(); } },
     { check: 'channelDetailOverlay',  close: function() { if(typeof closeChannelDetail==='function') closeChannelDetail(); } },
+    { check: 'channelsSeeMoreOverlay',close: function() { if(typeof closeChannelsSeeMorePage==='function') closeChannelsSeeMorePage(); } },
+    { check: 'channelMonetizationStatsOverlay', close: function() { if(typeof closeChannelMonetizationStats==='function') closeChannelMonetizationStats(); } },
     { check: 'channelsListOverlay',   close: function() { if(typeof closeChannelsListPage==='function') closeChannelsListPage(); } },
+    // Messages/Alerts lost their on-screen back button (now bottom-tab
+    // pages, same as Channels/Profile) — registered here so hardware/
+    // gesture back still closes them instead of falling through to the
+    // WebView shell.
+    { check: 'messagesPageOverlay',   close: function() { if(typeof closeMessagesPage==='function') closeMessagesPage(); } },
+    { check: 'alertsPageOverlay',     close: function() { if(typeof closeAlertsPage==='function') closeAlertsPage(); } },
     // ── Full-page overlays added since this list was last updated ──────────
     // These all follow the same display:none/flex subpage pattern as the
     // ones above but were never registered here, so hardware back on any of
@@ -40708,6 +41415,8 @@ function _ppcAIPickVersion(idx) {
     openNotifPanel:              window.openNotifPanel,
     openBugReportToDave:         window.openBugReportToDave,
     openUserManager:             window.openUserManager,
+    openMessagesPage:            window.openMessagesPage,
+    openNotifsPage:              window.openNotifsPage,
     closeSavedPosts:             null, // no patch needed, savedPosts open is inline
   };
 
@@ -40739,6 +41448,8 @@ function _ppcAIPickVersion(idx) {
     'openNotifPanel',
     'openBugReportToDave',
     'openUserManager',
+    'openMessagesPage',
+    'openNotifsPage',
     // ── Full-page overlays added since this patch list was last updated ──
     // Same issue as the _kaLayers gap above: these never pushed a back-state,
     // so even after being recognized in _kaLayers there was nothing for the
