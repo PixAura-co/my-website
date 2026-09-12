@@ -23,6 +23,13 @@
 <link rel="dns-prefetch" href="https://api.groq.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Alternative fonts for the Appearance → Font picker. All loaded up front
+     (light-weight webfont display=swap) so switching feels instant with no
+     extra network wait the first time someone picks one. SF Pro isn't a
+     downloadable webfont — it's Apple's system font and resolves natively
+     via the -apple-system/BlinkMacSystemFont keywords in FONT_OPTIONS below;
+     it isn't in this stylesheet link because there's nothing to fetch. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Prevent mobile keyboard auto-zoom: browsers zoom in on any input/textarea/select under 16px */
 input, textarea, select { font-size: 16px !important; }
@@ -102,7 +109,7 @@ body.light-mode .skeleton-rect {
   animation: skeleton-shimmer 1.6s ease-in-out infinite;
 }
 #postsContainer { will-change: scroll-position; contain: layout style; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-.post, .post-card { contain: layout style; /* NO paint — it breaks backdrop-filter/liquid glass */ }
+.post, .post-card { contain: layout style; /* base containment; .post-card below tightens to include paint now that it's a flat card, not blurred glass */ }
 img { content-visibility: auto; }
 .res-btn-active { outline: 2px solid currentColor; outline-offset: 1px; opacity: 1 !important; font-weight: 800 !important; }
 @keyframes _livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
@@ -155,7 +162,7 @@ img { content-visibility: auto; }
   0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px rgba(167,139,250,0.4)); }
   50% { opacity: 0.85; filter: drop-shadow(0 0 14px rgba(167,139,250,0.7)); }
 }
-.mention-dropdown { position: fixed; z-index: 999999; background: rgba(18,18,22,0.98); border: 1px solid var(--glass-border); border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4); max-height: 260px; overflow-y: auto; min-width: 220px; -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+.mention-dropdown { position: fixed; z-index: 999999; background: rgba(18,18,22,0.98); border: 1px solid var(--glass-border); border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4); max-height: 260px; overflow-y: auto; min-width: 220px; }
 .mention-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.12s; -webkit-tap-highlight-color: transparent; }
 .mention-item:hover, .mention-item.active { background: rgba(245,197,24,0.1); }
 .mention-item-handle { color: var(--text3); font-size: 12px; margin-top: 1px; }
@@ -221,7 +228,7 @@ html { scroll-behavior: auto; } /* smooth on html causes jank on mobile — use 
      "REDESIGN OVERRIDES"). That second block silently won the cascade
      for some properties and lost for others — the actual cause of the
      inconsistent look. There is now exactly one source of truth. ═══ */
-  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
   --mono: 'DM Mono', 'SF Mono', 'Fira Mono', 'Monaco', monospace;
   --gold: #F5C518;
   --gold-dim: rgba(245,197,24,0.16);
@@ -1013,6 +1020,64 @@ body.light-mode #commentOverlayBg { background: var(--bg); }
 .toast.success { border-color: rgba(48,209,88,0.35); color: var(--green); }
 .toast.error { border-color: rgba(255,69,58,0.35); color: var(--red); }
 /* ═══════════════════════════════
+   FLOATING SHEET — reusable utility for popups/modals/confirmations
+   (NOT for primary pages like Explore/Messages/Channels, which stay
+   full-screen since they're destinations, not popups).
+   Usage: <div class="floating-sheet-backdrop" id="xBackdrop">
+          <div class="floating-sheet" id="xOverlay"> ... </div>
+   Toggle both with .classList.add/remove('open').
+   Add .floating-sheet-compact for auto-height (confirmations, small
+   pickers) instead of the tall, fixed-height default (bigger sheets).
+═══════════════════════════════ */
+.floating-sheet-backdrop { position: fixed; inset: 0; z-index: 19499; background: rgba(0,0,0,0.45); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.floating-sheet-backdrop.open { opacity: 1; pointer-events: all; }
+.floating-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 600px;
+  height: min(88vh, 860px);
+  z-index: 19500;
+  display: none;
+  flex-direction: column;
+  background: #111113;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+  box-shadow: 0 -12px 50px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-bottom: none;
+  transform: translateY(100%);
+  transition: transform 0.36s cubic-bezier(0.32,0.72,0,1);
+}
+.floating-sheet.open { display: flex; transform: translateY(0); }
+.floating-sheet::after {
+  content: ''; position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 4px; border-radius: 3px; background: rgba(255,255,255,0.22); z-index: 1;
+}
+/* Compact variant — auto height, centered-ish near the bottom, for small
+   confirmations/pickers rather than tall scrolling sheets. */
+.floating-sheet.floating-sheet-compact {
+  height: auto;
+  max-height: 84vh;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  border-radius: 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.floating-sheet.floating-sheet-compact::after { display: none; }
+.floating-sheet-header { display: flex; align-items: center; justify-content: center; position: relative; padding: 22px 18px 14px; flex-shrink: 0; }
+.floating-sheet.floating-sheet-compact .floating-sheet-header { padding: 18px 16px 10px; }
+.floating-sheet-title { display: flex; align-items: center; gap: 7px; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+.floating-sheet-close { position: absolute; right: 16px; top: 18px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.09); border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+.floating-sheet-close:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.floating-sheet-scroll { overflow-y: auto; padding: 6px 16px; padding-bottom: max(28px, env(safe-area-inset-bottom)); flex: 1; -webkit-overflow-scrolling: touch; }
+body.light-mode .floating-sheet { background: #f0f2f7; box-shadow: 0 24px 70px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.6) inset; border-color: rgba(0,0,0,0.06); }
+body.light-mode .floating-sheet-title { color: #111; }
+@media (max-width: 480px) {
+  .floating-sheet:not(.floating-sheet-compact) { height: min(90vh, 880px); border-radius: 28px 28px 0 0; }
+}
+
+/* ═══════════════════════════════
    SETTINGS — Floating Bottom Sheet (Apple-style)
 ═══════════════════════════════ */
 .settings-backdrop { position: fixed; inset: 0; z-index: 19499; background: rgba(0,0,0,0.45); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -1269,7 +1334,7 @@ body.light-mode .notif-clear-btn { background: rgba(0,0,0,0.05); border-color: r
 body.light-mode .msgs-conv-name { color: #111; }
 body.light-mode .msgs-conv-preview { color: rgba(0,0,0,0.45); }
 body.light-mode .msgs-conv-item { border-color: rgba(0,0,0,0.06); }
-body.light-mode .post-card { background: rgba(255,255,255,0.52) !important; backdrop-filter: blur(24px) saturate(180%) brightness(1.04) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.04) !important; border-color: rgba(255,255,255,0.70) !important; border-top-color: rgba(255,255,255,0.85) !important; box-shadow: 0 2px 14px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset !important; }
+body.light-mode .post-card { background: #f5f5f7 !important; border-color: rgba(0,0,0,0.09) !important; border-top-color: rgba(0,0,0,0.12) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset !important; }
 body.light-mode .post-author { color: #111; }
 body.light-mode .post-time { color: rgba(0,0,0,0.4); }
 body.light-mode .comments-label { color: rgba(0,0,0,0.45); }
@@ -1387,7 +1452,6 @@ body.light-mode .composer-tab { background: rgba(255,255,255,0.70); border-color
 body.light-mode .composer-tab.active { background: rgba(245,197,24,0.12); border-color: rgba(245,197,24,0.35); color: var(--gold); }
 body.light-mode .ppc-footer { border-top-color: rgba(0,0,0,0.07); }
 body.light-mode .ppc-avi { border-color: rgba(245,197,24,0.35); }
-body.light-mode .profile-topbar,
 body.light-mode .uprofile-topbar,
 body.light-mode .chat-topbar { background: rgba(255,255,255,0.55); }
 body.light-mode .profile-topbar-back,
@@ -1487,7 +1551,7 @@ body.light-mode #uprofileCoverBanner { background: linear-gradient(135deg, #e8d8
 body.light-mode .profile-section { border-bottom-color: rgba(0,0,0,0.08); }
 body.light-mode .profile-section-label { color: rgba(0,0,0,0.38); }
 body.light-mode .profile-avatar { box-shadow: 0 4px 14px rgba(0,0,0,0.15); border-color: var(--bg); }
-body.light-mode .profile-avatar.avi-premium { box-shadow: 0 0 0 4px rgba(184,134,11,0.15), 0 8px 32px rgba(0,0,0,0.15) !important; border-color: rgba(184,134,11,0.6) !important; }
+body.light-mode .profile-avatar.avi-premium { box-shadow: none !important; border-color: var(--glass-border) !important; }
 body.light-mode .profile-stats { background: rgba(255,255,255,0.80); border: none; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 2px 10px rgba(0,0,0,0.08); }
 body.light-mode .profile-stat { border-right-color: rgba(0,0,0,0.07); }
 body.light-mode .profile-stat:hover { background: rgba(0,0,0,0.03); }
@@ -1721,25 +1785,29 @@ body.light-mode [style*="background:rgba(30,28,40"] { background: rgba(248,246,2
 .profile-topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 20px 0;
   background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;
   border-bottom: none; box-shadow: none;
   pointer-events: none;
+  height: calc(64px + env(safe-area-inset-top, 0px));
 }
 .profile-topbar > * { pointer-events: auto; }
-/* X-style: each circle/pill button is transparent-ish while over the cover
-   photo, then each individually gets a stronger glass background once the
-   page is scrolled past the cover — there is no single shared bar. */
-.profile-topbar.profile-topbar-scrolled > button {
-  background: rgba(20,20,24,0.55) !important;
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+/* Light blur behind the header buttons so text/icons stay legible over any
+   photo, without a visible "card" edge. No border, no background tint —
+   just a modest blur so the boundary reads as soft, not as a bounded shape.
+   (An earlier mask-based fade-to-nothing version relied on mask-image on a
+   backdrop-filter element, which isn't reliably supported in this Android
+   WebView and rendered as a hard-edged blurred rectangle instead of a
+   fade — this simpler version is deliberately low-blur so any edge that
+   does show is barely noticeable rather than card-like.) */
+/* No shared blur strip across the whole header — instead each button and
+   the title get their own small blur "halo" sized to just themselves, so
+   the space between/around them stays completely clear. */
+.profile-topbar > button {
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-.profile-topbar.profile-topbar-scrolled .profile-topbar-title {
-  background: rgba(20,20,24,0.55);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  padding: 6px 14px; border-radius: 100px;
+.profile-topbar-title {
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 /* Since the topbar is now absolutely positioned over the cover instead of
    taking up flow space, the hero needs top padding so the cover banner
@@ -1762,15 +1830,11 @@ body.light-mode [style*="background:rgba(30,28,40"] { background: rgba(248,246,2
    permanent fixed layers always worth the budget.
 ══════════════════════════════════════════════════════════════════ */
 
-/* ── Post cards: reduce from blur(32px) saturate(200%) → blur(9px) ── */
+/* ── Post cards: now flat/solid, no blur needed — nothing to reduce here
+      anymore. Kept as a no-op comment so this section isn't mistaken for
+      missing coverage if android-fix perf issues come up again later. ── */
 body.android-fix .post-card {
-  backdrop-filter: blur(9px) !important;
-  -webkit-backdrop-filter: blur(9px) !important;
   contain: paint layout style !important;
-}
-body.android-fix.light-mode .post-card {
-  backdrop-filter: blur(9px) !important;
-  -webkit-backdrop-filter: blur(9px) !important;
 }
 
 /* ── Glass elements: reduce from blur(24px) saturate(180%) → blur(10px) ── */
@@ -1821,12 +1885,21 @@ body.android-fix .uprofile-overlay [style*="backdrop-filter"] {
   -webkit-backdrop-filter: blur(8px) !important;
 }
 
-/* ── Profile overlays: same reduced treatment ── */
+/* ── Profile overlays: Android gets a lighter per-button blur — no shared
+   strip, no background/border on the header container itself, just a
+   gentler blur value on each button/title (less prone to the stacked-blur
+   rendering glitches Android WebView has here). ── */
 body.android-fix .profile-topbar,
 body.android-fix .uprofile-topbar {
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  background: rgba(255,255,255,0.06) !important;
+  background: transparent !important;
+  border: none !important;
+}
+body.android-fix .profile-topbar > button,
+body.android-fix .profile-topbar-title,
+body.android-fix .uprofile-topbar > button,
+body.android-fix .uprofile-title {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 body.android-fix .profile-overlay .post-card,
 body.android-fix .profile-overlay .glass,
@@ -2023,15 +2096,15 @@ body.light-mode .profile-cover-banner { background: linear-gradient(135deg, #e8d
 .profile-input:focus { border-color: rgba(245,197,24,0.4); }
 .profile-save-btn { width: 100%; background: var(--gold); color: #000; font-family: var(--font); font-size: 15px; font-weight: 600; padding: 14px; border-radius: 14px; border: none; cursor: pointer; transition: opacity 0.18s; margin-top: 4px; letter-spacing: -0.2px; }
 .profile-save-btn:hover { opacity: 0.88; }
-.suggest-card { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.04); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); border-radius: 0; transition: background 0.15s; }
+.suggest-card { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); background: transparent; border-radius: 0; transition: background 0.15s; }
 .suggest-card:first-child { border-radius: 16px 16px 0 0; }
 .suggest-card:last-child { border-bottom: none; border-radius: 0 0 16px 16px; }
 .suggest-card:first-child:last-child { border-radius: 16px; }
 .suggest-card:hover { background: rgba(255,255,255,0.07); }
 .suggest-avi { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: rgba(245,197,24,0.12); border: 1.5px solid rgba(245,197,24,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--gold); }
 .suggest-avi img { width: 100%; height: 100%; object-fit: cover; }
-.avi-premium { border-radius: 10px !important; border: 2px solid var(--gold) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; overflow: hidden !important; }
-.uprofile-avi.avi-premium { border-radius: 18px !important; border: 2.5px solid var(--gold) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.3) !important; }
+.avi-premium { border-radius: 10px !important; border: 2px solid var(--glass-border) !important; box-shadow: none !important; overflow: hidden !important; }
+.uprofile-avi.avi-premium { border-radius: 18px !important; border: 2.5px solid var(--glass-border) !important; box-shadow: none !important; }
 .suggest-info { flex: 1; min-width: 0; overflow: hidden; }
 .suggest-name { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; white-space: nowrap; overflow: visible; }
 .suggest-name > span:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -2044,7 +2117,7 @@ body.light-mode .profile-cover-banner { background: linear-gradient(135deg, #e8d
 .profile-stat:hover { background: rgba(255,255,255,0.05); }
 .fl-overlay { position: fixed; inset: 0; z-index: 10500; background: rgba(0,0,0,0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
 .fl-overlay.open { opacity: 1; pointer-events: all; }
-.fl-sheet { background: rgba(255,255,255,0.07); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-top-color: rgba(255,255,255,0.15); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; max-height: 70vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); padding-bottom: env(safe-area-inset-bottom); }
+.fl-sheet { background: #161616; border: 1px solid var(--glass-border); border-top-color: rgba(255,255,255,0.15); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; max-height: 70vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); padding-bottom: env(safe-area-inset-bottom); }
 .fl-overlay.open .fl-sheet { transform: translateY(0); }
 .fl-sheet-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
 .fl-sheet-title { font-size: 16px; font-weight: 700; text-align: center; padding: 12px 20px 10px; flex-shrink: 0; border-bottom: 1px solid var(--glass-border); }
@@ -2058,9 +2131,16 @@ body.light-mode .profile-cover-banner { background: linear-gradient(135deg, #e8d
 .fl-empty { text-align: center; padding: 30px 0; color: var(--text3); font-size: 14px; }
 .uprofile-overlay { position: fixed; inset: 0; z-index: 10200; background: var(--bg); display: none; flex-direction: column; overflow-y: auto; }
 .uprofile-overlay.open { display: flex; }
-.uprofile-topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px; background: rgba(255,255,255,0.06); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.10); box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; transform: translateZ(0); -webkit-transform: translateZ(0); will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.uprofile-back { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 0; }
-.uprofile-back::before { content: ''; width: 15px; height: 15px; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; background-color: currentColor; }
+.uprofile-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: calc(8px + env(safe-area-inset-top, 0px)) 20px 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: none; box-shadow: none; pointer-events: none; height: calc(64px + env(safe-area-inset-top, 0px)); }
+.uprofile-topbar > * { pointer-events: auto; }
+/* No shared blur strip — each button/title gets its own small blur halo,
+   matching .profile-topbar, so the space between them stays clear. */
+.uprofile-topbar > button,
+.uprofile-title {
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.uprofile-back { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 0; }
+.uprofile-back::before { content: ''; width: 19px; height: 19px; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 18 9 12 15 6'/%3E%3C/svg%3E") center/contain no-repeat; background-color: currentColor; }
 .uprofile-title { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 .uprofile-hero { display: flex; flex-direction: column; align-items: flex-start; padding: 0 0 20px; border-bottom: 1px solid var(--glass-border); position: relative; z-index: 1; }
 .uprofile-hero::before { display: none; } /* ambient glow removed — cover banner replaces it */
@@ -2543,25 +2623,16 @@ body {
 #postActionBtns .f-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 #postActionBtns .f-btn svg { width: 14px; height: 14px; }
 #postAppUpdateBtn { color: var(--gold) !important; border-color: rgba(245,197,24,0.3) !important; background: rgba(245,197,24,0.06) !important; }
-.composer { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border: 1px solid rgba(255,255,255,0.10); border-top-color: rgba(255,255,255,0.16); border-radius: var(--radius-card); box-shadow: 0 1px 0 rgba(255,255,255,0.09) inset, 0 8px 32px rgba(0,0,0,0.35); }
+.composer { background: #161616; border: 1px solid rgba(255,255,255,0.10); border-top-color: rgba(255,255,255,0.16); border-radius: var(--radius-card); box-shadow: 0 1px 0 rgba(255,255,255,0.09) inset, 0 8px 32px rgba(0,0,0,0.35); }
 .composer-wrapper { margin-bottom: 14px; }
 .composer-tabs { gap: 6px; padding: 12px 12px 0; }
 .composer-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--text2); padding: 8px 14px; gap: 6px; }
 .composer-tab.active { background: rgba(245,197,24,0.10); border-color: rgba(245,197,24,0.3); color: var(--gold); }
-.post-card { background: var(--card-bg); backdrop-filter: blur(24px) saturate(200%) brightness(1.04); -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.04); border: 1px solid var(--card-border); border-top-color: var(--card-border-top); border-radius: var(--radius-card); margin-bottom: 10px; overflow: hidden; box-shadow: 0 4px 28px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.14) inset, 0 -1px 0 rgba(0,0,0,0.18) inset; transition: box-shadow 0.2s, transform 0.2s; contain: layout style paint; }
-/* Fallback for devices/browsers without backdrop-filter support (older
-   Android WebViews, some Chrome builds). Without blur, .post-card's actual
-   background is just a near-invisible rgba(255,255,255,0.062) tint — the
-   card's visible shape then comes almost entirely from the two competing
-   inset shadows (a light top edge, a dark bottom edge), which reads as two
-   different shades of black/gray stacked in one card instead of one
-   unified frosted surface. Blur normally smooths that into a single tone;
-   without it, give the card a real solid background instead so it looks
-   like one flat card, not a seam. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .post-card, .sp-ad-block { background: #161616 !important; box-shadow: 0 4px 28px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset !important; }
-  body.light-mode .post-card, body.light-mode .sp-ad-block { background: #f5f5f7 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset !important; }
-}
+/* Flat, well-bordered cards (not frosted glass) — solid background, crisp
+   border, a subtle top highlight for depth. True liquid glass is reserved
+   for floating chrome (FAB, avatar/cover edit buttons) via .glass instead. */
+.post-card { background: #161616; border: 1px solid var(--card-border); border-top-color: var(--card-border-top); border-radius: var(--radius-card); margin-bottom: 10px; overflow: hidden; box-shadow: 0 4px 28px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset; transition: box-shadow 0.2s, transform 0.2s; contain: layout style paint; }
+body.light-mode .post-card { background: #f5f5f7; box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset; }
 .post-card:hover { box-shadow: 0 4px 32px rgba(0,0,0,0.55); }
 .post-header { padding: 14px 16px 10px; }
 .post-avi { width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid rgba(245,197,24,0.3); box-shadow: 0 2px 8px rgba(245,197,24,0.15); overflow: hidden; flex-shrink: 0; }
@@ -2579,7 +2650,7 @@ body {
 .react:hover { background: rgba(245,197,24,0.08); border-color: rgba(245,197,24,0.22); }
 /* .react.reacted canonical above */
 .empty-icon { width: 60px; height: 60px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 20px; }
-.score-cell { background: rgba(255,255,255,0.04); backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%); border: 1px solid rgba(255,255,255,0.09); border-top-color: rgba(255,255,255,0.14); border-radius: 14px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
+.score-cell { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.09); border-top-color: rgba(255,255,255,0.14); border-radius: 14px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
 .c-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; color: var(--text); font-family: var(--font); font-size: 14px; }
 .c-input:focus { border-color: rgba(245,197,24,0.38); background: rgba(255,255,255,0.07); }
 .post-btn { background: var(--gold); color: #000; font-family: var(--font); font-weight: 700; font-size: 13px; border-radius: 12px; border: none; padding: 10px 20px; cursor: pointer; box-shadow: 0 2px 12px rgba(245,197,24,0.3); transition: opacity 0.18s, transform 0.18s; }
@@ -2589,7 +2660,7 @@ body {
 .comment-input:focus { border-color: rgba(245,197,24,0.3); }
 .comment-send { background: var(--gold); border-radius: 12px; font-weight: 700; }
 .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.28); }
-.tip-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
+.tip-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
 .result-pill.won { background: rgba(48,209,88,0.10); border-radius: 8px; }
 .result-pill.lost { background: rgba(255,69,58,0.10); border-radius: 8px; }
 .result-pill.pending { background: rgba(245,197,24,0.10); border-radius: 8px; }
@@ -2713,7 +2784,7 @@ body.light-mode .nav-pill { background: rgba(245,197,24,0.10) !important; border
 ._u-story-item { display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer; }
 ._u-section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:20px; }
 ._u-drawer-handle { width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);margin:0 auto 18px; }
-._u-post-card-bg { background:rgba(255,255,255,0.04);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);border:1px solid rgba(255,255,255,0.09);border-top-color:rgba(255,255,255,0.14);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 0 rgba(255,255,255,0.09) inset,0 2px 16px rgba(0,0,0,0.30); }
+._u-post-card-bg { background:#161616;border:1px solid rgba(255,255,255,0.09);border-top-color:rgba(255,255,255,0.14);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 2px 16px rgba(0,0,0,0.30); }
 ._u-ellipsis-sm { font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2823,13 +2894,13 @@ body.nav-classic-style .app {
 
 /* ══════════════════════
    SUB-PAGE HEADERS (Appearance, Saved Posts, Alerts,
-   App Updates, Profile) — follow same Pill/Classic toggle
-   as the main nav. Pill = default floating rounded look,
-   Classic = original full-width flat bar.
+   App Updates) — follow same Pill/Classic toggle as the main nav.
+   Pill = default floating rounded look, Classic = original full-width
+   flat bar. .profile-topbar and .uprofile-topbar are deliberately
+   excluded — both are X-style transparent-over-cover headers, not
+   floating pills.
 ══════════════════════ */
 .subpage-topbar,
-.profile-topbar,
-.uprofile-topbar,
 #commentSheetHeader,
 #suggestedOverlay > div:first-child {
   margin: 0 12px !important;
@@ -2841,8 +2912,6 @@ body.nav-classic-style .app {
   box-shadow: 0 4px 28px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset !important;
 }
 body.light-mode .subpage-topbar,
-body.light-mode .profile-topbar,
-body.light-mode .uprofile-topbar,
 body.light-mode #commentSheetHeader,
 body.light-mode #suggestedOverlay > div:first-child {
   /* Each header hardcodes an inline dark rgba(10,10,14,...) background meant
@@ -2854,8 +2923,6 @@ body.light-mode #suggestedOverlay > div:first-child {
   box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.95) inset !important;
 }
 body.nav-classic-style .subpage-topbar,
-body.nav-classic-style .profile-topbar,
-body.nav-classic-style .uprofile-topbar,
 body.nav-classic-style #commentSheetHeader,
 body.nav-classic-style #suggestedOverlay > div:first-child {
   margin: 0 !important;
@@ -2867,8 +2934,6 @@ body.nav-classic-style #suggestedOverlay > div:first-child {
   box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset !important;
 }
 body.light-mode.nav-classic-style .subpage-topbar,
-body.light-mode.nav-classic-style .profile-topbar,
-body.light-mode.nav-classic-style .uprofile-topbar,
 body.light-mode.nav-classic-style #commentSheetHeader,
 body.light-mode.nav-classic-style #suggestedOverlay > div:first-child {
   border-bottom: 1px solid rgba(0,0,0,0.10) !important;
@@ -3079,45 +3144,29 @@ body.light-mode .composer {
 /* ══════════════════════
    PROFILE / OVERLAY TOPBARS
 ══════════════════════ */
-.profile-topbar, .uprofile-topbar {
-  background: rgba(255,255,255,0.06) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.10) inset,
-    0 4px 20px rgba(0,0,0,0.20) !important;
-}
-body.light-mode .profile-topbar,
-body.light-mode .uprofile-topbar {
-  background: rgba(255,255,255,0.42) !important;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.96) inset,
-    0 4px 20px rgba(0,0,0,0.10) !important;
-}
+/* Both .profile-topbar (own profile) and .uprofile-topbar (someone else's
+   profile) are X-style: transparent over the cover photo, glass only once
+   scrolled past it — handled by .profile-topbar-scrolled rules above and
+   the base .uprofile-topbar rule below. Neither gets the forced-glass
+   treatment other overlay headers use. */
 
 /* ══════════════════════
    NOTIF / MSGS PANELS
 ══════════════════════ */
 body:not(.light-mode) .notif-panel,
 body:not(.light-mode) .msgs-panel {
-  background: rgba(16,16,24,0.65) !important;
-  backdrop-filter: blur(20px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-  border: none !important;
+  background: #161616 !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.14) inset,
-    0 -1px 0 rgba(0,0,0,0.30) inset,
+    0 1px 0 rgba(255,255,255,0.08) inset,
     0 12px 48px rgba(0,0,0,0.60) !important;
 }
 body.light-mode .notif-panel,
 body.light-mode .msgs-panel {
-  background: rgba(255,255,255,0.62) !important;
-  backdrop-filter: blur(24px) saturate(240%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(240%) !important;
-  border: none !important;
+  background: #f5f5f7 !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.96) inset,
+    0 1px 0 rgba(255,255,255,0.6) inset,
     0 12px 48px rgba(0,0,0,0.14) !important;
 }
 
@@ -3556,17 +3605,6 @@ body.light-mode .profile-topbar {
   -webkit-backdrop-filter: none !important;
   border-bottom-color: transparent !important;
   box-shadow: none !important;
-}
-body.light-mode .profile-topbar.profile-topbar-scrolled > button {
-  background: rgba(255,255,255,0.85) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
-  border-color: rgba(0,0,0,0.10) !important;
-}
-body.light-mode .profile-topbar.profile-topbar-scrolled .profile-topbar-title {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 body.light-mode [id$="PageOverlay"] > div:first-child button,
 body.light-mode .profile-topbar button {
@@ -4607,15 +4645,14 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 <div class="profile-overlay" id="profileOverlay">
   <div class="profile-topbar">
     <!-- Left: Settings gear -->
-    <button onclick="toggleSettingsPanel();" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;flex-shrink:0;" title="Open Settings">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <button onclick="toggleSettingsPanel();" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;flex-shrink:0;" title="Open Settings">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
-    <!-- Centre: title absolutely centred -->
-    <div class="profile-topbar-title" style="position:absolute;left:50%;transform:translateX(-50%);">My Profile</div>
-    <!-- Right: Streak pill -->
-    <button onclick="openStreakPage()" id="profileTopStreakBtn" style="display:flex;align-items:center;gap:5px;font-family:var(--font);font-size:13px;font-weight:700;padding:6px 12px;border-radius:100px;background:rgba(255,140,0,0.12);border:1px solid rgba(255,140,0,0.28);color:#ff9500;cursor:pointer;white-space:nowrap;transition:all 0.18s;flex-shrink:0;">
+    <!-- Right: Streak pill — same neutral styling as the gear button, no
+         colored background/border; the flame icon keeps its own orange. -->
+    <button onclick="openStreakPage()" id="profileTopStreakBtn" style="display:flex;align-items:center;gap:6px;font-family:var(--font);font-size:14px;font-weight:700;padding:9px 15px;border-radius:100px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);cursor:pointer;white-space:nowrap;transition:all 0.18s;flex-shrink:0;margin-left:auto;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff9500" stroke="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2Z"/></svg>
-      <span id="profileTopStreakCount">0</span>
+      <span id="profileTopStreakCount" style="color:var(--text);">0</span>
     </button>
   </div>
 
@@ -5649,8 +5686,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 <div class="uprofile-overlay" id="uprofileOverlay">
   <div class="uprofile-topbar">
     <button class="uprofile-back" id="uprofileBackBtn" title="Back" onclick="closeUserProfile()"></button>
-    <div class="uprofile-title" id="uprofileTitle">Profile</div>
-    <button id="uprofileManageBtn" onclick="openUprofileManager()" style="display:none;font-family:var(--font);font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.4);color:var(--gold);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-top:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Manage</button>
+    <button id="uprofileManageBtn" onclick="openUprofileManager()" style="display:none;font-family:var(--font);font-size:13px;font-weight:700;padding:8px 15px;border-radius:20px;background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.4);color:var(--gold);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-top:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Manage</button>
   </div>
   <div class="uprofile-hero" style="padding-top:0;border-top:none;">
     <!-- Cover photo banner — always visible with gradient placeholder, like X -->
@@ -5861,6 +5897,9 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
       <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;">Appearance</div>
       <div id="appearanceModeSegmented" style="display:flex;gap:6px;background:rgba(255,255,255,0.05);border-radius:14px;padding:4px;"></div>
     </div>
+    <!-- Font -->
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Font</div>
+    <div id="fontPickerList" style="margin-bottom:20px;"></div>
     <!-- Home Feed source -->
     <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Home Feed</div>
     <div class="settings-icon-group" style="margin-bottom:20px;">
@@ -13363,7 +13402,7 @@ async function openUserProfile(userKey) {
   }
   document.getElementById('uprofileFollowers').textContent = followersCount;
   document.getElementById('uprofileFollowing').textContent = followingCount;
-  document.getElementById('uprofileTitle').textContent = 'Profile';
+  { const _upTitleEl = document.getElementById('uprofileTitle'); if (_upTitleEl) _upTitleEl.textContent = 'Profile'; }
   _renderFeaturedChannelCard('uprofileFeaturedChannelSlot', acctData && acctData.featured_channel, false);
 
   const myKey_norm = normalizeFollowKey(localStorage.getItem('ka_username_key') || currentUser || '');
@@ -13389,25 +13428,16 @@ async function openUserProfile(userKey) {
   upo.scrollTop = 0;
   window._lastUprofileScrollTime = 0;
   upo.onscroll = function() { window._lastUprofileScrollTime = Date.now(); };
+  _initProfileTopbarScrollEffect(upo, '.uprofile-topbar');
+  { const _navElUp = document.querySelector('.nav'); if (_navElUp) _navElUp.style.display = 'none'; }
   const uprofileDbKey = (storedAcct && storedAcct.username) || (isKrisAccount2 ? OWNER_KEY : userKey.toLowerCase());
   _loadUserCover(uprofileDbKey);
   renderUprofilePosts(userKey, displayName, isFollowing).catch(console.error);
   if (typeof window._ppSyncStart === 'function') window._ppSyncStart();
 
-  // ── Premium subscriber Dynamic Island pop ──
-  (function() {
-    var _uk = (userKey || '').toLowerCase().replace(/\s+/g,'').replace(/^user_/,'');
-    var _premUsers = typeof PREMIUM_USERS !== 'undefined' ? PREMIUM_USERS : [OWNER_KEY];
-    var _isPrem = _premUsers.some(function(p){ return _uk === p || _uk.startsWith(p); });
-    if (_isPrem) {
-      var _pName = displayName || userKey;
-      setTimeout(function() {
-        if (typeof _showIsland === 'function') {
-          _showIsland({ type: 'premium', title: '\uD83D\uDC51 Plus Premium', sub: _pName + ' is a Premium subscriber', duration: 3500 });
-        }
-      }, 350);
-    }
-  })();
+  // Premium subscriber Dynamic Island pop — removed. It fired every time
+  // you viewed a premium user's profile (including checking your own),
+  // which was noisy and redundant with the verified badge already shown.
   (async () => {
     try {
       const dbUsername = (storedAcct && storedAcct.username) || (isKrisAccount2 ? OWNER_KEY : userKey.toLowerCase());
@@ -13531,7 +13561,6 @@ function closeUserProfile() {
     if (tb) { tb.classList.remove('tabbar-hidden'); }
   })();
   if (typeof window._ppSyncStop === 'function') window._ppSyncStop();
-
   const ret = _uprofileReturnTarget;
   _uprofileReturnTarget = null;
 
@@ -13609,6 +13638,7 @@ function closeUserProfile() {
       const ht = document.getElementById('tab-home');
       if (ht) ht.classList.add('active');
       _currentActiveTab = 'home';
+      { const _navElUpClose = document.querySelector('.nav'); if (_navElUpClose) _navElUpClose.style.display = ''; }
       break;
   }
 }
@@ -14480,11 +14510,13 @@ function _renderProfileLink(link) {
 
 // X-style topbar: transparent while over the cover photo, fades into a
 // translucent blurred bar once scrolled past it. Attached once per overlay
-// element (guarded so re-opening the profile page doesn't stack listeners).
-function _initProfileTopbarScrollEffect(overlayEl) {
+// element (guarded so re-opening the page doesn't stack listeners).
+// topbarSelector defaults to '.profile-topbar' (own profile); pass
+// '.uprofile-topbar' for the other-user profile page.
+function _initProfileTopbarScrollEffect(overlayEl, topbarSelector) {
   if (overlayEl._psTopbarScrollBound) return;
   overlayEl._psTopbarScrollBound = true;
-  const topbar = overlayEl.querySelector('.profile-topbar');
+  const topbar = overlayEl.querySelector(topbarSelector || '.profile-topbar');
   if (!topbar) return;
   const THRESHOLD = 90; // roughly where the cover banner's visible height ends
   overlayEl.addEventListener('scroll', function() {
@@ -21631,6 +21663,49 @@ function applyTheme(isLight) {
     localStorage.setItem('ka_theme', 'dark');
   }
 }
+// ── Font manager (Appearance → Font) ────────────────────────────
+// SF Pro has no webfont file — it's Apple's system font and only renders
+// via -apple-system/BlinkMacSystemFont on Apple devices; elsewhere it falls
+// back to the platform's own default sans (which is the honest behavior —
+// there's no legitimate way to force Apple's font on non-Apple hardware).
+const FONT_OPTIONS = [
+  { id: 'system',   label: 'Device Font', sample: 'Aa', stack: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+  { id: 'sfpro',    label: 'SF Pro',      sample: 'Aa', stack: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif' },
+  { id: 'dmsans',   label: 'DM Sans',     sample: 'Aa', stack: "'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'inter',    label: 'Inter',       sample: 'Aa', stack: "'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'jakarta',  label: 'Plus Jakarta Sans', sample: 'Aa', stack: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'roboto',   label: 'Roboto',      sample: 'Aa', stack: "'Roboto', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'manrope',  label: 'Manrope',     sample: 'Aa', stack: "'Manrope', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" },
+];
+function getAppFont() {
+  return localStorage.getItem('ka_font') || 'sfpro';
+}
+function applyFont(fontId) {
+  const opt = FONT_OPTIONS.find(f => f.id === fontId) || FONT_OPTIONS[1];
+  document.documentElement.style.setProperty('--font', opt.stack);
+  localStorage.setItem('ka_font', opt.id);
+}
+function setAppFont(fontId) {
+  applyFont(fontId);
+  renderFontPicker();
+}
+function renderFontPicker() {
+  const wrap = document.getElementById('fontPickerList');
+  if (!wrap) return;
+  const current = getAppFont();
+  wrap.innerHTML = FONT_OPTIONS.map(function(f) {
+    const active = f.id === current;
+    return '<button onclick="setAppFont(\'' + f.id + '\')" style="width:100%;display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:14px;background:' + (active ? 'rgba(245,197,24,0.10)' : 'rgba(255,255,255,0.04)') + ';border:1.5px solid ' + (active ? 'var(--gold)' : 'var(--glass-border)') + ';margin-bottom:8px;cursor:pointer;text-align:left;">'
+      + '<div style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-family:' + f.stack + ';font-size:18px;font-weight:700;color:var(--text);flex-shrink:0;">' + f.sample + '</div>'
+      + '<div style="flex:1;min-width:0;"><div style="font-family:' + f.stack + ';font-size:14.5px;font-weight:700;color:var(--text);">' + f.label + '</div>'
+      + (f.id === 'sfpro' ? '<div style="font-size:11px;color:var(--text3);margin-top:1px;">Apple devices only — falls back elsewhere</div>' : '')
+      + (f.id === 'system' ? '<div style="font-size:11px;color:var(--text3);margin-top:1px;">Matches your phone\u2019s own default font</div>' : '')
+      + '</div>'
+      + (active ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>' : '')
+      + '</button>';
+  }).join('');
+}
+
 function toggleTheme() {
   // If adapt system is on, turn it off first
   if (localStorage.getItem('ka_adapt_system') === '1') {
@@ -21804,6 +21879,7 @@ function openAppearancePage() {
   if (window._kaPushBack) window._kaPushBack();
   renderFeedSourcePicker();
   renderAppearanceSegmented();
+  renderFontPicker();
 }
 function closeAppearancePage() {
   const overlay = document.getElementById('appearanceOverlay');
@@ -22185,6 +22261,9 @@ function _maybeShowSignInForGuest() {
 
 // ── PAGE INIT ──
 document.addEventListener('DOMContentLoaded', async () => {
+  // Apply the saved font choice (defaults to SF Pro) before anything else
+  // renders, so there's no flash of the wrong typeface.
+  applyFont(getAppFont());
   // Default: auto-follow the OS light/dark setting on first launch, unless
   // the user has explicitly set a preference (adaptive on, or a manual
   // theme choice) previously.
@@ -35169,15 +35248,18 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
 </div>
 
 <!-- ══════════ TRANSACTION RECEIPT SHEET ══════════ -->
-<div id="receiptSheetOverlay" style="display:none;position:fixed;inset:0;z-index:9960;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeReceiptSheet()">
-  <div style="width:100%;max-width:560px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg2,#101014);border-radius:24px 24px 0 0;border:1px solid var(--glass-border);border-bottom:none;padding:14px 18px calc(20px + env(safe-area-inset-bottom,0px));">
+<div id="receiptSheetOverlay" class="floating-sheet-backdrop" style="display:none;z-index:9960;" onclick="if(event.target===this)closeReceiptSheet()">
+  <div class="floating-sheet open" style="position:fixed;display:flex;z-index:9961;max-height:88vh;height:auto;border-radius:28px;bottom:max(12px, env(safe-area-inset-bottom));">
+    <div class="floating-sheet-scroll" style="padding-top:14px;">
     <div style="width:36px;height:4px;border-radius:3px;background:rgba(255,255,255,0.2);margin:0 auto 16px;"></div>
     <div id="receiptSheetContent"></div>
+    </div>
   </div>
 </div>
 
 <!-- ══════════ CONFIRMATION SCREEN (Transfer / Withdrawal / Boost) ══════════ -->
-<div id="walletConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:9980;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+<div id="walletConfirmBackdrop" class="floating-sheet-backdrop" style="display:none;z-index:9979;"></div>
+<div id="walletConfirmOverlay" class="floating-sheet floating-sheet-compact" style="display:none;z-index:9980;align-items:center;justify-content:center;padding:28px 24px;text-align:center;">
   <div id="walletConfirmIcon" style="width:84px;height:84px;border-radius:50%;background:rgba(48,209,88,0.14);border:1px solid rgba(48,209,88,0.4);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
   </div>
@@ -35188,8 +35270,9 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
 </div>
 
 <!-- ══════════ PAYOUT METHOD SHEET ══════════ -->
-<div id="payoutSheetOverlay" style="display:none;position:fixed;inset:0;z-index:9950;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closePayoutSheet()">
-  <div style="width:100%;max-width:560px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg2,#101014);border-radius:24px 24px 0 0;border:1px solid var(--glass-border);border-bottom:none;padding:14px 18px calc(20px + env(safe-area-inset-bottom,0px));">
+<div id="payoutSheetOverlay" class="floating-sheet-backdrop" style="display:none;z-index:9950;" onclick="if(event.target===this)closePayoutSheet()">
+  <div class="floating-sheet open" style="position:fixed;display:flex;z-index:9951;max-height:88vh;height:auto;border-radius:28px;bottom:max(12px, env(safe-area-inset-bottom));">
+    <div class="floating-sheet-scroll" style="padding-top:14px;">
     <div style="width:36px;height:4px;border-radius:3px;background:rgba(255,255,255,0.2);margin:0 auto 16px;"></div>
 
     <!-- Step 1: choose type -->
@@ -35249,6 +35332,7 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
         <input class="c-input" id="payoutCryptoAddr" placeholder="Paste your wallet address" style="margin-top:8px;margin-bottom:0;font-family:monospace;font-size:13px;"/>
       </div>
       <button onclick="_savePayoutCrypto()" style="width:100%;padding:13px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">Save Payout Wallet</button>
+    </div>
     </div>
   </div>
 </div>
@@ -37145,10 +37229,11 @@ function openPayoutSheet() {
   document.getElementById('payoutStepNaira').style.display = 'none';
   document.getElementById('payoutStepCrypto').style.display = 'none';
   ov.style.display = 'flex';
+  ov.classList.add('open');
 }
 function closePayoutSheet() {
   const ov = document.getElementById('payoutSheetOverlay');
-  if (ov) ov.style.display = 'none';
+  if (ov) { ov.style.display = 'none'; ov.classList.remove('open'); }
 }
 function _payoutBackToStep1() {
   document.getElementById('payoutStep1').style.display = '';
@@ -37446,21 +37531,33 @@ function showWalletConfirm(opts) {
   if (titleEl) titleEl.textContent = opts.title || 'Done';
   if (subEl) subEl.textContent = opts.sub || '';
   if (detailBox) detailBox.innerHTML = opts.detailHtml || '';
-  document.getElementById('walletConfirmOverlay').style.display = 'flex';
+  const ov = document.getElementById('walletConfirmOverlay');
+  const bd = document.getElementById('walletConfirmBackdrop');
+  ov.style.display = 'flex';
+  ov.classList.add('open');
+  if (bd) bd.classList.add('open'), bd.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
 function closeWalletConfirm() {
-  document.getElementById('walletConfirmOverlay').style.display = 'none';
+  const ov = document.getElementById('walletConfirmOverlay');
+  const bd = document.getElementById('walletConfirmBackdrop');
+  ov.style.display = 'none';
+  ov.classList.remove('open');
+  if (bd) { bd.classList.remove('open'); bd.style.display = 'none'; }
   document.body.style.overflow = '';
 }
 
 // ── Receipt sheet ──
 function openReceiptSheet(html) {
   document.getElementById('receiptSheetContent').innerHTML = html;
-  document.getElementById('receiptSheetOverlay').style.display = 'flex';
+  const ov = document.getElementById('receiptSheetOverlay');
+  ov.style.display = 'flex';
+  ov.classList.add('open');
 }
 function closeReceiptSheet() {
-  document.getElementById('receiptSheetOverlay').style.display = 'none';
+  const ov = document.getElementById('receiptSheetOverlay');
+  ov.style.display = 'none';
+  ov.classList.remove('open');
 }
 
 function setWalletTab(tab) {
