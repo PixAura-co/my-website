@@ -228,7 +228,7 @@ html { scroll-behavior: auto; } /* smooth on html causes jank on mobile — use 
      "REDESIGN OVERRIDES"). That second block silently won the cascade
      for some properties and lost for others — the actual cause of the
      inconsistent look. There is now exactly one source of truth. ═══ */
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --mono: 'DM Mono', 'SF Mono', 'Fira Mono', 'Monaco', monospace;
   --gold: #F5C518;
   --gold-dim: rgba(245,197,24,0.16);
@@ -341,13 +341,54 @@ input, textarea {
    NAV — Liquid Glass bar
 ═══════════════════════════════ */
 /* .nav - canonical definition below */
-.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 900; display: flex; align-items: center; justify-content: space-between; user-select: none; -webkit-user-select: none; }
-.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; user-select: none; -webkit-user-select: none; }
-.nav-logo { width: 28px; height: 28px; border-radius: 8px; overflow: hidden; flex-shrink: 0; box-shadow: 0 0 0 1.5px var(--gold), 0 2px 12px rgba(245,197,24,0.35); }
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 900; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; }
+.nav-row1 { display: flex; align-items: center; justify-content: space-between; gap: 6px; position: relative; width: 100%; flex-shrink: 0; }
+.nav-row2 { display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden; transition: max-height 0.2s ease, opacity 0.2s ease, margin 0.2s ease; }
+.nav-feed-tab {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text2);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 7px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.nav-feed-tab-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
+body.light-mode .nav-feed-tab { color: rgba(0,0,0,0.55); background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); }
+body.light-mode .nav-feed-tab-active { color: #000; }
+/* Topic-sheet toggle switch */
+.nav-topic-toggle { display: inline-flex; align-items: center; width: 46px; height: 27px; border-radius: 100px; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.1); padding: 2px; cursor: pointer; flex-shrink: 0; transition: background 0.18s ease; }
+.nav-topic-toggle-knob { width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.18s ease; }
+.nav-topic-toggle-on { background: var(--gold); border-color: var(--gold); }
+.nav-topic-toggle-on .nav-topic-toggle-knob { transform: translateX(19px); }
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; user-select: none; -webkit-user-select: none; transition: gap 0.2s ease; }
+.nav-logo { width: 28px; height: 28px; border-radius: 8px; overflow: hidden; flex-shrink: 0; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.16), 0 2px 12px rgba(0,0,0,0.25); transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease; }
 .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
 .nav-name { display: flex; flex-direction: column; line-height: 1; white-space: nowrap; color: var(--text); }
-.nav-name .brand-main { font-size: 17px; font-weight: 800; letter-spacing: 1px; color: var(--gold); text-transform: uppercase; }
+.nav-name .brand-main { font-size: 17px; font-weight: 800; letter-spacing: -0.2px; color: var(--text); text-transform: uppercase; transition: font-size 0.2s ease; }
 .nav-name .brand-sub { display: none; }
+/* Connection-status readout — swaps in for the logo+name while the
+   connection is bad/reconnecting (see _navConnStatus* JS), reverts once
+   stable. Kept visually inside the same slot so nothing shifts position. */
+.nav-conn-status { line-height: 1; }
+.nav-conn-label { font-size: 14px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+/* Dot removed entirely per Dave's request — only the "…" (added via JS
+   as a separate span) animates. */
+.nav-conn-ellipsis { display: inline-block; width: 1.2em; text-align: left; overflow: hidden; vertical-align: bottom; }
+.nav-conn-ellipsis::after { content: ''; animation: navConnEllipsis 1.2s steps(4,end) infinite; }
+@keyframes navConnEllipsis { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75%,100% { content: '...'; } }
 .nav-pill { display: flex; align-items: center; gap: 6px; background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.22); border-radius: 100px; padding: 5px 14px; flex-shrink: 0; }
 .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
 .nav-pill-text { font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: 0.2px; }
@@ -2837,7 +2878,7 @@ body:not(.light-mode) {
   max-width: 420px !important;
   border-radius: 22px !important;
   top: calc(6px + env(safe-area-inset-top, 0px)) !important;
-  height: 62px !important;
+  height: auto !important;
   min-height: 62px !important;
   padding: 0 8px !important;
   background: rgba(255,255,255,0.06) !important;
@@ -2849,7 +2890,10 @@ body:not(.light-mode) {
     0 2px 8px rgba(0,0,0,0.06),
     0 1px 0 rgba(255,255,255,0.10) inset,
     0 -1px 0 rgba(0,0,0,0.04) inset !important;
+  transition: min-height 0.2s ease, top 0.2s ease, background 0.2s ease !important;
 }
+.nav-row1 { height: 54px; }
+.nav-row2 { max-height: 46px; opacity: 1; padding: 0 4px 10px; }
 body.light-mode .nav {
   background: rgba(240,240,252,0.55) !important;
   backdrop-filter: blur(24px) saturate(200%) brightness(1.06) !important;
@@ -2861,9 +2905,42 @@ body.light-mode .nav {
     0 1px 0 rgba(255,255,255,0.95) inset,
     0 -1px 0 rgba(0,0,0,0.04) inset !important;
 }
-/* Pill default: push app content below the floating pill */
+/* Compact scroll state — row 2 (feed tabs) collapses away, row 1 shrinks
+   in height/padding, but the pill itself stays the same floating rounded
+   shape (position/width/radius untouched). Toggled by _updateNavCompact()
+   below once the feed scrolls past a threshold. */
+.nav.nav-compact {
+  min-height: 50px !important;
+}
+.nav.nav-compact .nav-row1 {
+  height: 50px;
+}
+.nav.nav-compact .nav-row2 {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+.nav.nav-compact #navMenuBtn,
+.nav.nav-compact #navSearchBtn {
+  width: 32px !important;
+  height: 32px !important;
+}
+.nav.nav-compact .nav-logo {
+  width: 22px !important;
+  height: 22px !important;
+}
+.nav.nav-compact .nav-name .brand-main {
+  font-size: 14px !important;
+}
+.nav.nav-compact .nav-conn-label {
+  font-size: 12px !important;
+}
+/* Pill default: push app content below the floating pill (now taller with
+   row 2 present at rest) */
 .app {
-  padding-top: 80px;
+  padding-top: 122px;
 }
 
 /* Classic nav: opt-in via body.nav-classic-style — full-width edge-to-edge */
@@ -2932,6 +3009,20 @@ body.nav-classic-style #suggestedOverlay > div:first-child {
   border: none !important;
   border-bottom: 1px solid rgba(255,255,255,0.10) !important;
   box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset !important;
+}
+
+/* ══════════════════════
+   MESSAGES HEADER — shrink-on-scroll. Filter row collapses via inline
+   max-height/opacity (JS-driven, see _updateMsgsHeaderShrink); this block
+   only handles the parts that are cleaner as a CSS class toggle: tighter
+   row padding and a smaller title once compact.
+══════════════════════ */
+.msgs-topbar.msgs-header-compact .msgs-topbar-row {
+  padding-top: 10px !important;
+  padding-bottom: 8px !important;
+}
+.msgs-topbar.msgs-header-compact .msgs-title {
+  font-size: 15px !important;
 }
 body.light-mode.nav-classic-style .subpage-topbar,
 body.light-mode.nav-classic-style #commentSheetHeader,
@@ -4247,6 +4338,10 @@ function showPWAInstallBanner() {
         <div style="font-size:11px;color:rgba(255,255,255,0.28);font-weight:600;">OR</div>
         <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
       </div>
+      <button id="googleSignInBtn" onclick="startGoogleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:rgba(255,255,255,0.85);font-family:var(--font);font-size:15px;font-weight:600;padding:13px;border-radius:16px;cursor:pointer;letter-spacing:-0.2px;transition:background 0.15s;margin-bottom:12px;">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3c-7.6 0-14.1 4.3-17.3 10.6z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.4C29.6 36.2 26.9 37 24 37c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.9 40.6 16.4 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.5 5.4C41.6 35.7 45 30.4 45 24c0-1.4-.1-2.4-.4-3.5z"/></svg>
+        Continue with Google
+      </button>
       <button onclick="switchToSignup()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:rgba(255,255,255,0.65);font-family:var(--font);font-size:15px;font-weight:600;padding:14px;border-radius:16px;cursor:pointer;letter-spacing:-0.2px;transition:background 0.15s;">Create Account</button>
     </div>
 
@@ -4342,6 +4437,331 @@ body.light-mode #userModal [style*="color:rgba(255,255,255,0.45)"] { color:rgba(
 body.light-mode #userModal button[onclick*="switchToSignup"] { background:rgba(0,0,0,0.05) !important; border-color:rgba(0,0,0,0.10) !important; }
 body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,0,0,0.05) !important; border-color:rgba(0,0,0,0.10) !important; }
 </style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GOOGLE SIGN-IN — CONFIRM DISPLAY NAME
+     Fires immediately after a Google OAuth session lands, before any
+     `accounts` row is written. Lets the person keep or edit the name
+     pulled from their Google account (most apps prompt this — a
+     Google display name is frequently a nickname, all-caps, a business
+     name, etc. that the person may not want showing on their profile).
+
+     Wiring: call window.confirmGoogleDisplayName(googleName, onConfirm)
+     from your Supabase onAuthStateChange/OAuth callback, where
+     googleName is user.user_metadata.full_name (or similar) and
+     onConfirm(finalName) is your existing account-provisioning step
+     (the thing that currently does the SB.upsert('accounts', ...)).
+     This modal does NOT write to Supabase itself — it only resolves
+     the name string, so it stays clear of your schema/RLS work.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="googleNameModal" style="background:#000;padding:0;align-items:stretch;justify-content:flex-end;display:none;">
+  <div class="modal" style="width:100%;max-width:none;border-radius:24px 24px 0 0;padding:28px 22px 26px;box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
+    <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.16);margin:0 auto 18px;"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3c-7.6 0-14.1 4.3-17.3 10.6z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.4C29.6 36.2 26.9 37 24 37c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.9 40.6 16.4 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.5 5.4C41.6 35.7 45 30.4 45 24c0-1.4-.1-2.4-.4-3.5z"/></svg>
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;">Signed in with Google</div>
+    </div>
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.6px;color:rgba(255,255,255,0.94);line-height:1.15;margin-bottom:6px;">How should we show your name?</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:18px;line-height:1.4;">We pulled this from your Google account. Change it if you'd rather use something else — you can always edit it later too.</div>
+    <input class="modal-input" id="googleDisplayNameInput" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="margin-bottom:4px;"/>
+    <div class="modal-error" id="googleNameError"></div>
+    <button class="modal-btn" id="googleNameConfirmBtn" onclick="_confirmGoogleDisplayNameSubmit()" style="margin-top:6px;margin-bottom:0;font-size:15px;letter-spacing:0;">Continue →</button>
+  </div>
+</div>
+<script>
+// Holds the caller's completion callback between show + submit.
+window._googleNameConfirmCallback = null;
+
+/**
+ * Show the "confirm your display name" sheet after a Google OAuth session
+ * lands. Call this BEFORE writing any accounts/profile row, so whatever
+ * name the person confirms here is the one that gets persisted — not the
+ * raw Google name, and not a half-written row you'd have to patch after.
+ *
+ * @param {string} googleName - name from the Google profile (may be empty)
+ * @param {function(string)} onConfirm - called once with the final,
+ *   trimmed, non-empty name the person wants to use.
+ */
+window.confirmGoogleDisplayName = function(googleName, onConfirm) {
+  var input = document.getElementById('googleDisplayNameInput');
+  var errEl = document.getElementById('googleNameError');
+  var modal = document.getElementById('googleNameModal');
+  if (!input || !modal) { // markup missing somehow — never block sign-in
+    if (typeof onConfirm === 'function') onConfirm((googleName || '').trim());
+    return;
+  }
+  input.value = (googleName || '').trim();
+  errEl.textContent = '';
+  window._googleNameConfirmCallback = onConfirm;
+  modal.style.display = 'flex';
+  requestAnimationFrame(function() { modal.classList.add('open'); });
+  setTimeout(function() { input.focus(); input.select(); }, 260);
+};
+
+window._confirmGoogleDisplayNameSubmit = function() {
+  var input = document.getElementById('googleDisplayNameInput');
+  var errEl = document.getElementById('googleNameError');
+  var modal = document.getElementById('googleNameModal');
+  var name = (input.value || '').trim();
+  if (!name || name.length < 2) { errEl.textContent = 'Name must be at least 2 characters.'; return; }
+  if (name.length > 30) { errEl.textContent = 'Name must be 30 characters or fewer.'; return; }
+  errEl.textContent = '';
+  modal.style.display = 'none';
+  modal.classList.remove('open');
+  var cb = window._googleNameConfirmCallback;
+  window._googleNameConfirmCallback = null;
+  if (typeof cb === 'function') cb(name);
+};
+
+// Enter key submits, same as the rest of the auth sheet inputs.
+document.addEventListener('DOMContentLoaded', function() {
+  var el = document.getElementById('googleDisplayNameInput');
+  if (el) el.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); window._confirmGoogleDisplayNameSubmit(); }
+  });
+});
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GOOGLE SIGN-IN — CHOOSE YOUR ACCOUNT
+     Only shown for the rare case where the signed-in Google email
+     matches MORE THAN ONE existing account (a handful of people made
+     two accounts on the same email before Google sign-in existed).
+     google_signin_resolve() returns status:'needs_choice' with the
+     candidate usernames; this lets the person pick which one is
+     theirs instead of the app silently guessing and attaching the
+     wrong one.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="googleAccountPickerModal" style="background:#000;padding:0;align-items:stretch;justify-content:flex-end;display:none;">
+  <div class="modal" style="width:100%;max-width:none;border-radius:24px 24px 0 0;padding:28px 22px 26px;box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
+    <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.16);margin:0 auto 18px;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px;">Signed in with Google</div>
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.6px;color:rgba(255,255,255,0.94);line-height:1.15;margin-bottom:6px;">Which account is yours?</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:16px;line-height:1.4;">We found more than one account using this email. Pick the one you use.</div>
+    <div id="googleAccountPickerList"></div>
+    <div class="modal-error" id="googleAccountPickerError"></div>
+  </div>
+</div>
+<script>
+window._googleAccountPickerCallback = null;
+
+/**
+ * Shows the account-choice sheet. candidates is an array of usernames
+ * (from google_signin_resolve()'s status:'needs_choice' response).
+ * onChoose(username) fires once the person taps one.
+ */
+window.showGoogleAccountPicker = function(candidates, onChoose) {
+  var modal = document.getElementById('googleAccountPickerModal');
+  var list = document.getElementById('googleAccountPickerList');
+  var errEl = document.getElementById('googleAccountPickerError');
+  if (!modal || !list) { console.error('[GoogleAuth] account picker markup missing'); return; }
+  errEl.textContent = '';
+  list.innerHTML = (candidates || []).map(function(uname) {
+    return '<button class="google-acct-pick-btn" data-uname="' + escHtml(uname) + '" '
+      + 'style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);color:rgba(255,255,255,0.9);font-family:var(--font);font-size:15px;font-weight:600;padding:14px 16px;border-radius:14px;cursor:pointer;margin-bottom:10px;transition:background 0.15s;">'
+      + '@' + escHtml(uname) + '</button>';
+  }).join('');
+  window._googleAccountPickerCallback = onChoose;
+  modal.style.display = 'flex';
+  requestAnimationFrame(function() { modal.classList.add('open'); });
+};
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.google-acct-pick-btn');
+  if (!btn) return;
+  var uname = btn.getAttribute('data-uname');
+  var modal = document.getElementById('googleAccountPickerModal');
+  var cb = window._googleAccountPickerCallback;
+  window._googleAccountPickerCallback = null;
+  if (modal) { modal.style.display = 'none'; modal.classList.remove('open'); }
+  if (typeof cb === 'function') cb(uname);
+});
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GOOGLE SIGN-IN — CORE WIRING
+     Uses the real @supabase/supabase-js SDK (loaded below) ONLY for
+     auth (OAuth redirect + session/JWT). All existing data reads/writes
+     in this file keep going through the hand-rolled SB fetch() wrapper
+     and its anon key + x-app-user header exactly as before — this does
+     not touch that.
+
+     Flow on redirect back from Google:
+       1. SDK picks up the session from the URL automatically.
+       2. Call google_signin_resolve() RPC (runs server-side, uses the
+          real auth.uid() from the SDK's session — this is the part
+          that's NOT spoofable, unlike the old header).
+       3. status 'linked'      -> existing account matched by auth_uid
+                                   or by email (unambiguous) -> log in.
+       4. status 'needs_choice'-> more than one existing account shares
+                                   this email -> show picker -> then
+                                   google_signin_claim(chosen) -> log in.
+       5. status 'new'         -> no existing account at all -> show
+                                   confirmGoogleDisplayName() -> create
+                                   a fresh accounts row -> log in.
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// Separate client instance from the hand-rolled SB object above — this one
+// is ONLY used for auth (OAuth + session), never for table reads/writes.
+// It shares the same project URL/key so the JWT it mints is valid against
+// this project's RLS policies (which now check auth.uid()).
+var _gAuthClient = null;
+function _getGAuthClient() {
+  if (_gAuthClient) return _gAuthClient;
+  if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+    console.error('[GoogleAuth] supabase-js failed to load');
+    return null;
+  }
+  _gAuthClient = window.supabase.createClient(SB_URL, SB_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  return _gAuthClient;
+}
+
+window.startGoogleSignIn = async function() {
+  var client = _getGAuthClient();
+  if (!client) { showToast('Google sign-in unavailable. Try again shortly.', 'error'); return; }
+  var btn = document.getElementById('googleSignInBtn');
+  if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
+  try {
+    var { error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+    if (error) throw error;
+    // Browser navigates away to Google here; nothing else runs until redirect back.
+  } catch (e) {
+    console.error('[GoogleAuth] signInWithOAuth failed:', e);
+    showToast('Could not start Google sign-in.', 'error');
+    if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+  }
+};
+
+// Finishes provisioning once we know the target username (either matched,
+// chosen from the picker, or brand-new) — mirrors what joinAsUser()/
+// createAccount() already do at the end of a normal login/signup, so the
+// rest of the app (currentUser, ka_user, ka_username_key, setUserUI, etc.)
+// behaves identically regardless of which path got someone signed in.
+function _finishGoogleLogin(acct) {
+  currentUser = acct.display_name;
+  isOwner = false;
+  localStorage.setItem('ka_user', acct.display_name);
+  localStorage.setItem('ka_username_key', acct.username);
+  localStorage.removeItem('ka_owner');
+  closeUserModal();
+  setUserUI();
+  showWelcomeBack(acct.display_name, acct.profile_pic || '');
+  if (typeof autoFollowKris === 'function') autoFollowKris(acct.username);
+  if (typeof window._triggerSync === 'function') window._triggerSync();
+  if (typeof registerDeviceSession === 'function') registerDeviceSession(acct.username);
+  if (typeof startDeviceHeartbeat === 'function') startDeviceHeartbeat();
+  if (typeof loadPosts === 'function') loadPosts();
+  if (typeof renderPosts === 'function') renderPosts();
+}
+
+// Creates a brand-new accounts row for a Google user with no existing
+// account match, using the name they confirmed in the display-name sheet.
+// Username is derived from the email/name and de-duped against collisions —
+// same availability check createAccount() already does for manual signup.
+async function _createAccountForNewGoogleUser(uid, googleEmail, confirmedName) {
+  var base = (confirmedName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16) || 'user';
+  var candidate = base;
+  var suffix = 0;
+  while (true) {
+    var existing = await SB.query('accounts', '?username=eq.' + encodeURIComponent(candidate));
+    if (!existing || !existing.length) break;
+    suffix += 1;
+    candidate = base + suffix;
+  }
+  var ok = await SB.upsert('accounts', {
+    username: candidate,
+    display_name: confirmedName,
+    auth_uid: uid,
+    email: googleEmail || '',
+    password: null, // Google-only account: no legacy password path
+    bio: '', profile_pic: '', is_built_in: false,
+    device_fingerprint: (typeof getDeviceFingerprint === 'function') ? getDeviceFingerprint() : null
+  }, 'username');
+  if (!ok) { showToast('Failed to create account. Try again.', 'error'); return null; }
+  return { username: candidate, display_name: confirmedName };
+}
+
+// Runs once on page load to catch the redirect back from Google.
+// No-ops immediately (cheap check) for every other page load.
+async function _checkGoogleAuthRedirect() {
+  var client = _getGAuthClient();
+  if (!client) return;
+  var { data: { session } } = await client.auth.getSession();
+  if (!session) return; // not a post-Google-redirect load, or no session yet
+
+  // Call google_signin_resolve() via PostgREST RPC, authenticated with the
+  // REAL session JWT (not the anon key + spoofable header) so auth.uid()
+  // is populated correctly server-side.
+  async function callRpc(name, body) {
+    var r = await fetch(SB_URL + '/rest/v1/rpc/' + name, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body || {})
+    });
+    if (!r.ok) { throw new Error('[GoogleAuth] ' + name + ' failed (' + r.status + ')'); }
+    return r.json();
+  }
+
+  try {
+    var result = await callRpc('google_signin_resolve');
+
+    if (result.status === 'linked') {
+      var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(result.username));
+      var acct = rows && rows[0];
+      if (acct) _finishGoogleLogin(acct);
+      return;
+    }
+
+    if (result.status === 'needs_choice') {
+      showGoogleAccountPicker(result.candidates, async function(chosenUsername) {
+        try {
+          var claimResult = await callRpc('google_signin_claim', { chosen_username: chosenUsername });
+          var rows2 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(claimResult.username));
+          var acct2 = rows2 && rows2[0];
+          if (acct2) _finishGoogleLogin(acct2);
+        } catch (e) {
+          console.error('[GoogleAuth] claim failed:', e);
+          showToast('Could not link that account. Try again.', 'error');
+        }
+      });
+      return;
+    }
+
+    if (result.status === 'new') {
+      var googleName = (session.user.user_metadata && (session.user.user_metadata.full_name || session.user.user_metadata.name)) || '';
+      var googleEmail = session.user.email || '';
+      confirmGoogleDisplayName(googleName, async function(finalName) {
+        var created = await _createAccountForNewGoogleUser(session.user.id, googleEmail, finalName);
+        if (created) {
+          var rows3 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(created.username));
+          var acct3 = rows3 && rows3[0];
+          if (acct3) _finishGoogleLogin(acct3);
+        }
+      });
+      return;
+    }
+  } catch (e) {
+    console.error('[GoogleAuth] redirect handling failed:', e);
+    showToast('Google sign-in ran into a problem. Please try again.', 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Slight delay so SB_URL/SB_KEY (which can be overridden from localStorage
+  // by Super Admin's project switcher) are settled before we build the client.
+  setTimeout(_checkGoogleAuthRedirect, 50);
+});
+</script>
 
 <!-- FORGOT PASSWORD MODAL -->
 <div id="forgotPasswordModal" style="display:none;position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;">
@@ -4490,24 +4910,61 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
   </div>
 </div>
 
-<!-- TOP HEADER -->
+<!-- TOP HEADER — X-style layout: user avatar on the left (opens the side
+     menu, same as the hamburger did), centered logo/name (plain color, no
+     gold), search on the right. The centered area swaps to a connection-
+     status readout while the connection is bad/reconnecting, then reverts
+     to the normal logo+name once stable (see _navConnStatus* below). -->
 <nav class="nav">
-  <button id="navMenuBtn" onclick="openSideMenu()" style="width:40px;height:40px;border-radius:50%;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,0.08)'" ontouchend="this.style.background='none'">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <a class="nav-brand" href="javascript:void(0)" onclick="handleNavBrandClick()" id="navBrandEl" style="position:absolute;left:50%;transform:translateX(-50%);">
-    <div class="nav-logo">
+  <div class="nav-row1" id="navRow1">
+    <button id="navMenuBtn" onclick="openSideMenu()" title="Menu" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0;overflow:hidden;-webkit-tap-highlight-color:transparent;font-size:15px;font-weight:700;" ontouchstart="this.style.background='rgba(255,255,255,0.12)'" ontouchend="this.style.background='rgba(255,255,255,0.06)'">
+      <img id="navAvatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>
+      <span id="navAvatarInitial">?</span>
+    </button>
+    <a class="nav-brand" href="javascript:void(0)" onclick="handleNavBrandClick()" id="navBrandEl" style="flex:1;min-width:0;justify-content:flex-start;">
+      <div class="nav-logo" id="navLogoWrap" style="display:none;">
       <img src="data:image/png;base64,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" alt="Social Plus" style="width:100%;height:100%;object-fit:cover;"/>
     </div>
-    <div class="nav-name">
-      <span class="brand-main">Social Plus</span>
+    <div class="nav-name" id="navNameWrap">
+      <span class="brand-main" id="navBrandMain">Social Plus</span>
+    </div>
+    <div class="nav-conn-status" id="navConnStatus" style="display:none;align-items:center;gap:7px;">
+      <span class="nav-conn-label" id="navConnLabel">Connecting<span class="nav-conn-ellipsis"></span></span>
     </div>
   </a>
   <button id="navSearchBtn" onclick="openSearchPage();" style="width:40px;height:40px;border-radius:50%;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:background 0.15s;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,0.08)'" ontouchend="this.style.background='none'">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-  </button>
-
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+  <!-- Row 2 — feed selector. Collapses on scroll (see _updateNavCompact). -->
+  <div class="nav-row2" id="navRow2">
+    <button class="nav-feed-tab nav-feed-tab-active" id="navFeedTabForYou" onclick="_onNavFeedTabClick('foryou')">
+      <span>For you</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <button class="nav-feed-tab" id="navFeedTabFollowing" onclick="_onNavFeedTabClick('following')">Following</button>
+  </div>
 </nav>
+<!-- Topic picker sheet — opens when "For you" is tapped. Styled after the
+     reference "Snooze topics" list: one row per fixed topic with a toggle,
+     but repurposed here as a feed-topic filter rather than a snooze list. -->
+<div id="navTopicSheetOverlay" onclick="if(event.target===this)_closeNavTopicSheet()" style="display:none;position:fixed;inset:0;z-index:10800;background:rgba(0,0,0,0.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;">
+  <div id="navTopicSheet" style="background:rgba(18,18,22,0.98);backdrop-filter:blur(26px) saturate(200%);-webkit-backdrop-filter:blur(26px) saturate(200%);border-radius:22px 22px 0 0;width:100%;max-width:480px;max-height:82vh;overflow-y:auto;padding:10px 18px calc(22px + env(safe-area-inset-bottom));border:1px solid rgba(255,255,255,0.12);border-bottom:none;box-shadow:0 -8px 40px rgba(0,0,0,0.6);transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);">
+    <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.2);margin:6px auto 16px;"></div>
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:17px;font-weight:800;color:var(--text);">Topics for your feed</div>
+      <div style="font-size:12.5px;color:var(--text3);margin-top:3px;">Choose what shows up in For You</div>
+    </div>
+    <div id="navTopicSheetList" style="display:flex;flex-direction:column;gap:4px;"></div>
+  </div>
+</div>
+<style>
+/* Topic sheet background was hardcoded dark, so light mode showed dark
+   text (var(--text) correctly flips) on a dark background — unreadable.
+   Matches the same override pattern already used for #userModal. */
+body.light-mode #navTopicSheet { background:rgba(255,255,255,0.92) !important; border-color:rgba(0,0,0,0.09) !important; box-shadow:0 -8px 40px rgba(0,0,0,0.12) !important; }
+body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { background:rgba(0,0,0,0.15) !important; }
+</style>
 <button id="navAuthBtn" style="display:none!important;position:absolute;left:-9999px;">Sign in</button>
 <!-- MAIN APP -->
 <div class="app">
@@ -6737,7 +7194,7 @@ if (localStorage.getItem('ka_owner') === 'true' && !(currentUser === OWNER_USER 
   isOwner = false;
 }
 // ── Migrate owner's stored username_key from old to new ──
-if (localStorage.getItem('ka_username_key') === 'kris_analysis_ltd' || localStorage.getItem('ka_username_key') === 'dave') {
+if (localStorage.getItem('ka_username_key') === 'dave') {
   localStorage.setItem('ka_username_key', 'plusofficial');
 }
 let posts         = [];
@@ -6936,6 +7393,21 @@ const _SB_URL_FALLBACK = 'https://vubxekqmhrmmdaxmnpmz.supabase.co';
 const _SB_KEY_FALLBACK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1Ynhla3FtaHJtbWRheG1ucG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODQ3NjMsImV4cCI6MjEwNDU2MDc2M30.X9ZkGKoQmpkYIkr5V4WSQw3UrFtwyI3-uLjPPlpruHE';
 let SB_URL = localStorage.getItem('ps_active_sb_url') || _SB_URL_FALLBACK;
 let SB_KEY = localStorage.getItem('ps_active_sb_key') || _SB_KEY_FALLBACK;
+// Shared identity header builder for the many raw fetch() calls in this file
+// that talk to Supabase directly instead of going through the SB wrapper
+// (app_config reads/writes, storage uploads, admin tooling). RLS policies on
+// app_config and other admin-write tables check request_username() via the
+// x-app-user header — any raw call missing this header is treated as
+// anonymous and denied by those policies. Use this instead of hand-writing
+// the apikey/Authorization pair inline.
+function _sbRawHeaders(extra) {
+  const key = (localStorage.getItem('ka_username_key') || '').toLowerCase();
+  return Object.assign({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'x-app-user': key
+  }, extra || {});
+}
 /* ═══ SUPABASE TABLES REQUIRED (run once in SQL Editor) ═══════════
    -- Messages (DMs between users)
    create table if not exists messages (id text primary key, sender text not null, receiver text not null, messages jsonb default '[]', updated_at timestamptz default now());
@@ -7061,7 +7533,13 @@ function _syncConnectionBanner() {
   if (typeof window._showIsland !== 'function') return;
   if (!_sbOnline && !_connBannerShown) {
     _connBannerShown = true;
-    window._showIsland({ type: 'offline', title: 'Connection trouble', sub: 'Some actions may not save — retrying…', duration: 0, stackKey: 'conn-status' });
+    // Was duration:0 (stayed up indefinitely for as long as the connection
+    // was bad) — now shows briefly once per outage, then gets out of the
+    // way. The nav bar's own connection readout (#navConnStatus, driven by
+    // _setNavConnState) already shows the ongoing "Connecting…"/"Poor
+    // Connection" state persistently, so the island doesn't need to sit on
+    // screen the whole time too — just announce the change once.
+    window._showIsland({ type: 'offline', title: 'Connection trouble', sub: 'Some actions may not save — retrying…', duration: 3200, stackKey: 'conn-status' });
   } else if (_sbOnline && _connBannerShown) {
     _connBannerShown = false;
     window._showIsland({ type: 'network', title: 'Back online', sub: 'Connected', duration: 2800, stackKey: 'conn-status' });
@@ -7069,11 +7547,15 @@ function _syncConnectionBanner() {
 }
 
 const SB = {
-  headers: {
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
+  get headers() {
+    const key = (localStorage.getItem('ka_username_key') || '').toLowerCase();
+    return {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      'x-app-user': key
+    };
   },
   async query(table, params = '') {
     if (!await _checkSB()) return LS.query(table, params);
@@ -7333,6 +7815,15 @@ async function getAllAccounts() {
     return (a.display_name||'').localeCompare(b.display_name||'');
   });
   _cache['all_accounts'] = validRows;
+  // Re-check the nav avatar now that the real accounts cache is populated —
+  // fixes a race where a fixed 400ms timer (see _refreshNavAvatar below)
+  // fired before this fetch resolved on a slow connection, so a real saved
+  // profile_pic got missed on first paint and the "S" fallback stuck.
+  // Calling the function name directly (not window._refreshNavAvatar) works
+  // regardless of file order, since top-level `function` declarations are
+  // hoisted across the whole shared script scope — no need for a wrapper
+  // installed later in the file, which was too late for early callers.
+  if (typeof _refreshNavAvatar === 'function') _refreshNavAvatar();
   return validRows;
 }
 
@@ -7408,6 +7899,90 @@ function _aviStyle(pic) {
   if (pic && pic.startsWith('__gradient__')) return `background:${pic.slice(12)};`;
   return '';
 }
+// ── Returns the wrapper CSS for a user's avatar based on premium status:
+// premium subscribers get the squircle shape with a plain flat border (no
+// glow/color), everyone else keeps the default round gold-tinted ring.
+// Centralized here so every feed/card/list avatar can share one source of
+// truth instead of each call site hardcoding its own border-radius. ──
+function _aviWrapStyle(userKeyOrName, altName) {
+  const _prem = (typeof isPremiumUser === 'function') && (isPremiumUser(userKeyOrName) || (altName && isPremiumUser(altName)));
+  return _prem
+    ? 'border-radius:10px;background:rgba(255,255,255,0.06);border:1.5px solid var(--glass-border);'
+    : 'border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);';
+}
+
+// ══════════════════════════════════════════════════════════
+// TOPIC / HASHTAG SYSTEM — fixed topic list (matches X's own set, per
+// Dave's decision), hashtag extraction from post text, and a hashtag→topic
+// map used to auto-detect which topic a post belongs to. A poster can
+// still override the auto-detected topic manually (see post composer);
+// this only supplies the automatic guess.
+// ══════════════════════════════════════════════════════════
+var FIXED_TOPICS = ['Politics','Sports','Business & Finance','Science & Technology','Entertainment & Arts','Artificial Intelligence','Gaming','Crypto','Videos'];
+
+// Multiple hashtag spellings can map to the same topic (e.g. #crypto and
+// #bitcoin both mean Crypto). Keys are lowercase, no leading #.
+var HASHTAG_TOPIC_MAP = {
+  'politics':'Politics','election':'Politics','government':'Politics','vote':'Politics','naijapolitics':'Politics',
+  'sports':'Sports','football':'Sports','soccer':'Sports','nba':'Sports','nfl':'Sports','epl':'Sports','afcon':'Sports',
+  'business':'Business & Finance','finance':'Business & Finance','economy':'Business & Finance','naira':'Business & Finance','stocks':'Business & Finance','forex':'Business & Finance',
+  'science':'Science & Technology','technology':'Science & Technology','tech':'Science & Technology','innovation':'Science & Technology',
+  'entertainment':'Entertainment & Arts','movies':'Entertainment & Arts','music':'Entertainment & Arts','art':'Entertainment & Arts','naijamusic':'Entertainment & Arts','nollywood':'Entertainment & Arts',
+  'ai':'Artificial Intelligence','artificialintelligence':'Artificial Intelligence','machinelearning':'Artificial Intelligence','chatgpt':'Artificial Intelligence',
+  'gaming':'Gaming','games':'Gaming','esports':'Gaming','ps5':'Gaming','xbox':'Gaming',
+  'crypto':'Crypto','bitcoin':'Crypto','btc':'Crypto','eth':'Crypto','usdt':'Crypto','blockchain':'Crypto','web3':'Crypto',
+  'videos':'Videos','video':'Videos','vlog':'Videos'
+};
+
+// Extracts hashtags from post text. Returns an array of tags without the
+// leading # (original casing preserved for display; matching against
+// HASHTAG_TOPIC_MAP is done lowercase separately).
+function extractHashtags(text) {
+  if (!text || typeof text !== 'string') return [];
+  var matches = text.match(/#([a-zA-Z0-9_]{2,50})/g) || [];
+  var seen = {};
+  var out = [];
+  matches.forEach(function(m) {
+    var tag = m.slice(1);
+    var key = tag.toLowerCase();
+    if (!seen[key]) { seen[key] = true; out.push(tag); }
+  });
+  return out;
+}
+window.extractHashtags = extractHashtags;
+
+// Given post text, returns the auto-detected topic (one of FIXED_TOPICS)
+// or null if no hashtag in the text maps to a known topic. When a post
+// carries an explicit p.topic (set via manual override in the composer),
+// callers should prefer that over calling this at all.
+function detectTopicFromText(text) {
+  var tags = extractHashtags(text);
+  for (var i = 0; i < tags.length; i++) {
+    var mapped = HASHTAG_TOPIC_MAP[tags[i].toLowerCase()];
+    if (mapped) return mapped;
+  }
+  return null;
+}
+window.detectTopicFromText = detectTopicFromText;
+
+// Resolves the effective topic for a post object: manual override (p.topic)
+// wins if present, otherwise falls back to hashtag auto-detection.
+function resolvePostTopic(post) {
+  if (post && post.topic && FIXED_TOPICS.indexOf(post.topic) !== -1) return post.topic;
+  return detectTopicFromText(post && (post.text || post.body));
+}
+window.resolvePostTopic = resolvePostTopic;
+
+// Renders post text with #hashtags turned into tappable spans that open
+// the hashtag search/feed. Escapes HTML first via escHtml, then re-linkifies
+// the hashtag pattern (safe because escHtml has already neutralized `<`/`>`).
+function renderHashtags(escapedText) {
+  if (!escapedText) return escapedText;
+  return escapedText.replace(/#([a-zA-Z0-9_]{2,50})/g, function(full, tag) {
+    return '<a href="javascript:void(0)" class="hashtag-link" onclick="event.stopPropagation();openHashtagFeed(\'' + tag.replace(/'/g,"\\'") + '\')" style="color:var(--gold);font-weight:600;text-decoration:none;">#' + tag + '</a>';
+  });
+}
+window.renderHashtags = renderHashtags;
 
 async function ensureOwnerRow() {
   try {
@@ -7581,6 +8156,7 @@ async function createAccount() {
   registerDeviceSession(val.toLowerCase()); startDeviceHeartbeat();
   setTimeout(() => showRecoveryCodeModal(recCode), 1400);
   setTimeout(() => { if (typeof _suggestWalletAfterSignup === 'function') _suggestWalletAfterSignup(); }, 2600);
+  setTimeout(() => { if (typeof openOnboardingInterestsStep === 'function') openOnboardingInterestsStep(); }, 4200);
   loadPosts();
 }
 
@@ -7654,27 +8230,8 @@ async function _migrateFollowKeys() {
   } catch(e) { console.warn('Follow migration failed:', e); }
 }
 
-async function _migrateKrisFollowAlias() {
-  // v3: collapse all krisanalysisltd / kris_analysis_ltd entries -> krisanalysis
-  const FLAG = 'ka_follows_migrated_v3';
-  if (localStorage.getItem(FLAG)) return;
-  const KRIS_ALIASES = ['krisanalysisltd', 'krisanalysis ltd', 'kris_analysis_ltd', 'kris analysis ltd'];
-  try {
-    for (const alias of KRIS_ALIASES) {
-      // Find anyone following the alias
-      const rows = await SB.query('follows', `?following=eq.${encodeURIComponent(alias)}`) || [];
-      for (const r of rows) {
-        try {
-          await SB.delete('follows', `follower=eq.${encodeURIComponent(r.follower)}&following=eq.${encodeURIComponent(alias)}`);
-          // Re-add with canonical key (upsert handles duplicates)
-          await SB.upsert('follows', { follower: r.follower, following: OWNER_KEY }, 'follower,following');
-        } catch(e) {}
-      }
-    }
-    localStorage.setItem(FLAG, '1');
-    await loadFollows();
-  } catch(e) { console.warn('Kris alias migration failed:', e); }
-}
+// (Old kris_analysis_ltd/krisanalysisltd alias-migration function removed —
+// confirmed zero live rows still use those aliases, so it was dead code.)
 
 // Guards a background loadFollows() from clobbering the local optimistic
 // follow state for the current user while a toggleFollow/toggleFollowViewed
@@ -8422,16 +8979,24 @@ async function cacheFirstThenRefresh(opts) {
 window._appLoadTracker = (function() {
   var pending = new Map(); // id -> { label, progress }
   var hardCapTimer = null;
-  var ISLAND_ID = 'appBoot';
-  var HARD_CAP_MS = 10000; // absolute ceiling on how long the island can show "loading"
+  var HARD_CAP_MS = 10000; // absolute ceiling on how long the nav can show "loading"
 
+  // Per Dave's request: generic content loading (feed/messages/channels)
+  // no longer pops the Dynamic Island — that surface is reserved for real
+  // connection trouble (see _syncConnectionBanner). Ordinary loading now
+  // only drives the existing nav-bar connection readout, via the same
+  // _setNavConnState('connecting') state the poller already uses, so
+  // there's exactly one place showing "Connecting…" instead of two.
   function _renderIsland() {
-    if (typeof window._showIsland !== 'function') return;
-    var entries = Array.from(pending.values());
-    if (!entries.length) return;
-    var sub = entries.length === 1 ? entries[0].label : (entries.length + ' things loading…');
-    var progress = entries.reduce(function(s, e) { return s + (typeof e.progress === 'number' ? e.progress : 0.4); }, 0) / entries.length;
-    window._showIsland({ live: true, id: ISLAND_ID, type: 'loading', title: 'Loading', sub: sub, progress: progress });
+    if (typeof window._setNavConnState !== 'function') return;
+    if (pending.size) {
+      window._setNavConnState('connecting');
+    } else if (typeof _pollNavConnState === 'function') {
+      // Let the real connection poller decide the next state (it may still
+      // be 'poor'/'connecting' for a genuine network issue) rather than
+      // unconditionally forcing 'stable' out from under it.
+      _pollNavConnState();
+    }
   }
   function start(id, label) {
     if (!pending.size) hardCapTimer = setTimeout(forceFinish, HARD_CAP_MS);
@@ -8447,21 +9012,16 @@ window._appLoadTracker = (function() {
   }
   function done(id) {
     pending.delete(id);
-    if (!pending.size) {
-      clearTimeout(hardCapTimer);
-      if (typeof window._endLiveIsland === 'function') window._endLiveIsland(ISLAND_ID);
-    } else {
-      _renderIsland();
-    }
+    clearTimeout(hardCapTimer);
+    _renderIsland();
   }
   function forceFinish() {
     // Hard cap hit — something is still pending after 10s. Don't leave the
-    // island (or the caller) hanging forever; drop everything and close it.
-    // Whatever page is still loading keeps its own local "Couldn't load /
-    // tap to retry" state — this only stops the shared indicator from
-    // sitting there indefinitely.
+    // nav stuck showing "Connecting…" forever; drop everything and let the
+    // real poller re-settle it. Whatever page is still loading keeps its
+    // own local "Couldn't load / tap to retry" state independently.
     pending.clear();
-    if (typeof window._endLiveIsland === 'function') window._endLiveIsland(ISLAND_ID);
+    _renderIsland();
   }
   return { start: start, update: update, done: done };
 })();
@@ -8725,7 +9285,6 @@ async function loadPosts() {
       _followsReady
     ]);
     _migrateFollowKeys().catch(()=>{});
-    _migrateKrisFollowAlias().catch(()=>{});
 
     getProfilePosts(OWNER_KEY).catch(()=>{});
     if (currentUser) {
@@ -8940,6 +9499,7 @@ async function getProfilePosts(username) {
     }
     return {
       id: p.id, text: p.body, body: p.body, username: p.username || dbKey,
+      topic: p.topic || null,
       // Filter out legacy {hasData:true} placeholders left by old strip logic — these have no dataUrl
       media: (p.media || []).filter(m => m && (m.dataUrl || m.url || m.src)),
       visibility: p.visibility || 'public', comments: mergedComments,
@@ -9031,6 +9591,7 @@ async function _refreshForYouProfilePosts() {
         author: displayName,
         authorKey: (p.username || '').toLowerCase(),
         text: p.body,
+        topic: p.topic || null,
         media: (p.media || []).filter(m => m && (m.dataUrl || m.url || m.src)),
         time: p.timestamp,
         postId: p.id,
@@ -9066,7 +9627,7 @@ async function _refreshFollowingProfilePosts() {
   try {
     if (!currentUser) { window._followingProfilePosts = []; return; }
     const follows = getFollowData();
-    const myKey = (currentUser || '').toLowerCase();
+    const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser || '').toLowerCase();
     const myFollows = follows[myKey] || [];
     // Same race fix as _refreshForYouProfilePosts — don't build cards
     // against a still-empty accounts cache.
@@ -9087,6 +9648,7 @@ async function _refreshFollowingProfilePosts() {
           author: displayName,
           authorKey: followedKey,
           text: p.text,
+          topic: p.topic || null,
           media: p.media,
           time: p.time,
           postId: p.id,
@@ -9402,7 +9964,7 @@ function _buildCommentItemHTML(c, postId, isReply) {
     ? localStorage.getItem('ka_username_key')
     : (c.user || '').toLowerCase().replace(/\s+/g,'_');
   const isAIComment = (c.user || '').toLowerCase() === AI_BOT_KEY || c._isAI;
-  const isCommentOwner = c.user === OWNER_USER || (c.user||'').toLowerCase() === 'kris analysis ltd';
+  const isCommentOwner = c.user === OWNER_USER;
   const commentPic = isCommentOwner ? ownerPic() : (!isAIComment ? (picFor(c.user) || picFor(commentUserKey) || null) : null);
   const commentAviHtml = isAIComment
     ? `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;">${_aiLogoSvg(16)}</span>`
@@ -9460,7 +10022,7 @@ function _getFeaturedComment(comments) {
   const ai = comments.find(c => (c.user||'').toLowerCase() === AI_BOT_KEY || c._isAI);
   if (ai) return { comment: ai, type: 'ai' };
   // Priority 2: Owner/verified comment
-  const owner = comments.find(c => c.user === OWNER_USER || (c.user||'').toLowerCase() === 'kris analysis ltd');
+  const owner = comments.find(c => c.user === OWNER_USER);
   if (owner) return { comment: owner, type: 'owner' };
   // Priority 3: Comment with most likes (min 1 like)
   let topLiked = null, topCount = 0;
@@ -9924,7 +10486,7 @@ function _buildCommentSourcePostHTML(post, isProfilePost) {
   return `
   <div style="cursor:default;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <div style="width:42px;height:42px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer;" onclick="openUserProfile('${escHtml(authorKey)}')">${avi}</div>
+      <div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer;${_aviWrapStyle(authorKey, displayName)}" onclick="openUserProfile('${escHtml(authorKey)}')">${avi}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:2px;cursor:pointer;" onclick="openUserProfile('${escHtml(authorKey)}')">${escHtml(displayName)}${badges}</div>
         <div style="font-size:12px;color:var(--text3);">${timeAgo}</div>
@@ -10296,7 +10858,7 @@ function _closeShareTray() {
 
 function _shareTrayAviHtml(pic, name, size) {
   return pic
-    ? `<img src="${pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`
+    ? `<img src="${pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`
     : `<span style="font-size:${Math.round(size*0.4)}px;font-weight:700;color:var(--gold);">${escHtml((name||'?').charAt(0).toUpperCase())}</span>`;
 }
 
@@ -10380,7 +10942,7 @@ async function _renderShareTrayContent(postId) {
         const isOwnerPeer = (c.peer||'').replace(/[\s_]/g,'').toLowerCase() === OWNER_KEY;
         const pic = isOwnerPeer ? ownerPic() : ((typeof picFor === 'function' && (picFor(c.peer) || picFor(displayName))) || null);
         return `<div onclick="_shareTrayToDM('${escJsAttr(String(postId))}','${escJsAttr(c.peer)}')" style="display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer;">
-          <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${_shareTrayAviHtml(pic, displayName, 40)}</div>
+          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;${_aviWrapStyle(c.peer, displayName)}">${_shareTrayAviHtml(pic, displayName, 40)}</div>
           <div style="font-size:13.5px;font-weight:600;color:var(--text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
         </div>`;
       }).join('');
@@ -11120,7 +11682,21 @@ function _doRenderPosts() {
       p,
       _pinned: !!p._justPosted
     }));
-    filtered = [...mainItems, ...profileItems]
+    let _combined = [...mainItems, ...profileItems];
+    // Topic filter — if the user has picked any topics in the nav's topic
+    // sheet, only show posts whose resolved topic (manual override or
+    // hashtag-detected) matches one of them. Posts with no detectable
+    // topic are left in either way — a filter shouldn't silently blank
+    // the feed for people who don't hashtag their posts.
+    let _selectedTopics = [];
+    try { _selectedTopics = JSON.parse(localStorage.getItem('ka_feed_topics') || '[]'); } catch(e) {}
+    if (_selectedTopics.length && typeof resolvePostTopic === 'function') {
+      _combined = _combined.filter(x => {
+        const t = resolvePostTopic(x.p);
+        return !t || _selectedTopics.indexOf(t) !== -1;
+      });
+    }
+    filtered = _combined
       .sort((a, b) => {
         if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
         return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
@@ -11134,11 +11710,21 @@ function _doRenderPosts() {
       return (p.result || 'pending') === activeFilter;
     });
   } else if (activeFilter === 'following') {
+    // Was keyed by currentUser (display name) instead of the real
+    // username key, so follows[myKey] was almost always undefined —
+    // same bug class as the wallet/task-claim fix noted elsewhere in
+    // this file. _myUsernameKey() is the existing fix for that.
     const follows = getFollowData();
-    const myKey = (currentUser || '').toLowerCase();
+    const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser || '').toLowerCase();
     const myFollows = follows[myKey] || [];
-    const followsKris = myFollows.includes(OWNER_KEY) || myFollows.includes(OWNER_USER.toLowerCase());
-    filtered = followsKris ? [...filtered] : [];  // use already-filtered (no _compat) array
+    // The `posts` table (main feed) has no author column at all — every
+    // row in it is the owner's own broadcast content, always. So the only
+    // real question for this branch is "do I follow the owner account" —
+    // that part of the old logic was actually correct. The bug was purely
+    // the wrong lookup key above (currentUser instead of myKey), which
+    // made myFollows come back empty for almost everyone.
+    const followsOwner = myFollows.includes(OWNER_KEY) || myFollows.includes(OWNER_USER.toLowerCase());
+    filtered = followsOwner ? [...filtered] : [];
     // Pre-fetched by _refreshFollowingProfilePosts() — profile posts can't be awaited synchronously here
     filtered = filtered.concat(window._followingProfilePosts || []);
     filtered.sort((a, b) => new Date(b.time||0) - new Date(a.time||0));
@@ -11486,6 +12072,7 @@ function _buildFeedProfilePostCard(post) {
   const aviHtml = _aviHtml(pic, displayName, 36);
   const mediaHtml = renderMediaGrid(post.media || []);
   const verBadge = (userKey === OWNER_KEY || userKey === OWNER_USER || (typeof isUserVerified === 'function' && (isUserVerified(userKey) || isUserVerified(displayName)))) ? VERIFIED_BADGE_HTML : '';
+  const _aviShapeStyle = _aviWrapStyle(userKey, displayName);
 
   const likeKey = 'pp_like_' + userKey + '_' + pId;
   const localLikers = JSON.parse(localStorage.getItem(likeKey) || '[]');
@@ -11518,7 +12105,7 @@ function _buildFeedProfilePostCard(post) {
   return `<div class="_u-post-card-bg" id="feedppcard-${pId}">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0;" onclick="openUserProfile('${escHtml(userKey)}')">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;">${aviHtml}</div>
+        <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviShapeStyle}">${aviHtml}</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:2px;">${escHtml(displayName)}${verBadge}</div>
           <div style="font-size:11px;color:var(--text3);">${formatTime(post.time)}</div>
@@ -13252,7 +13839,6 @@ async function sendChatMessage() {
 function normalizeUserKey(k) {
   const low = (k||'').toLowerCase().replace(/[\s_]+/g,'');
   if (low === OWNER_KEY) return OWNER_KEY;
-  if ((k||'').toLowerCase() === 'kris_analysis_ltd') return OWNER_KEY;
   // Merge @money into @hardeh — both usernames resolve to the same account
   if (low === 'money') return 'hardeh';
   return k;
@@ -13293,7 +13879,7 @@ async function openUserProfile(userKey) {
   const stored = accounts[userKey] || accounts[userKey.toLowerCase()]
     // @hardeh alias: also check if 'money' is cached
     || (userKey.toLowerCase() === 'hardeh' ? (accounts['money'] || _cache['acct_money']) : null);
-  const isKrisAccount = userKey === OWNER_USER || userKey === 'kris analysis ltd' || userKey === OWNER_KEY;
+  const isKrisAccount = userKey === OWNER_USER || userKey === OWNER_KEY;
   if (!stored && !isKrisAccount) {
     const byDisplay = _cache['acct_by_display'] || {};
     const foundByDisplay = byDisplay[userKey.toLowerCase()];
@@ -13344,7 +13930,7 @@ async function openUserProfile(userKey) {
   flTargetUser = userKey;
   const storedAcct = accounts[userKey] || accounts[userKey.toLowerCase()];
   const displayName = cleanName((storedAcct && typeof storedAcct === 'object' && storedAcct?.display_name || storedAcct?.displayName) ? storedAcct?.display_name || storedAcct?.displayName : userKey);
-  const isKrisAccount2 = userKey === OWNER_USER || userKey === 'kris analysis ltd' || userKey === OWNER_KEY;
+  const isKrisAccount2 = userKey === OWNER_USER || userKey === OWNER_KEY;
   const pic = picFor(userKey) || picFor(displayName) || (isKrisAccount2 ? ownerPic() : null);
   const bio = getUserBioSync(userKey) || getUserBioSync(displayName.toLowerCase()) || '';
   // Refresh follow state from Supabase before rendering the Follow button —
@@ -13370,10 +13956,12 @@ async function openUserProfile(userKey) {
   if (isThisVerified) {
     aviEl.classList.add('avi-premium');
     aviEl.style.removeProperty('border-radius');
+    aviEl.style.removeProperty('border');
+    aviEl.style.removeProperty('box-shadow');
   } else {
     aviEl.classList.remove('avi-premium');
-    aviEl.style.border = '2.5px solid var(--gold)';
-    aviEl.style.boxShadow = '0 0 0 4px rgba(245,197,24,0.12)';
+    aviEl.style.removeProperty('border');
+    aviEl.style.removeProperty('box-shadow');
   }
 
   const nameEl = document.getElementById('uprofileName');
@@ -13704,7 +14292,7 @@ async function renderUprofilePosts(userKey, displayName, isFollowing) {
       const commentsList = (p.comments||[]).map(c => {
         const likeCount2 = (c.likes||[]).length;
         const liked2 = currentUser && (c.likes||[]).includes(currentUser);
-        const isKrisCmt2 = c.user === OWNER_USER || (c.user||'').toLowerCase() === 'kris analysis ltd';
+        const isKrisCmt2 = c.user === OWNER_USER;
         const cPic2 = isKrisCmt2 ? ownerPic() : (picFor(c.user) || picFor((c.user||'').toLowerCase().replace(/\s+/g,'_')) || null);
         const cAvi2 = _aviHtml(cPic2, c.user, 30);
         const isMyComment2 = currentUser && c.user && currentUser.toLowerCase() === (c.user||'').toLowerCase();
@@ -13749,9 +14337,9 @@ async function renderUprofilePosts(userKey, displayName, isFollowing) {
 
       return `<div class="_u-post-card-bg" id="ppcard-${p.id}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <div style="width:30px;height:30px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;">${aviHtml}</div>
+          <div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(userKey, displayName)}">${aviHtml}</div>
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:2px;">${escHtml(displayName)}${((userKey === OWNER_KEY || userKey === OWNER_USER || userKey === 'kris analysis ltd') || (typeof isUserVerified === 'function' && (isUserVerified(userKey) || isUserVerified(displayName)))) ? VERIFIED_BADGE_HTML : ''}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:2px;">${escHtml(displayName)}${((userKey === OWNER_KEY || userKey === OWNER_USER) || (typeof isUserVerified === 'function' && (isUserVerified(userKey) || isUserVerified(displayName)))) ? VERIFIED_BADGE_HTML : ''}</div>
             <div style="font-size:11px;color:var(--text3);">${formatTime(p.time)}</div>
           </div>
           ${_adminDelBtn}
@@ -14950,7 +15538,7 @@ function openAddAccountSheet() {
     const freshPic = (typeof picFor === 'function' ? (picFor(a.key) || picFor(a.display)) : null) || a.pic || null;
     const aviInner = _aviHtml(freshPic, a.display, 38);
     return `<div onclick="_switchToSavedAccount('${escHtml(a.key)}','${escHtml(a.display)}')" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid ${_rowDivider};cursor:pointer;${isCurrent?'opacity:0.55;pointer-events:none;':''}">
-      <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;">${aviInner}</div>
+      <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(a.key, a.display)}">${aviInner}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:600;color:var(--text);">${escHtml(a.display)}</div>
         <div style="font-size:12px;color:var(--text3);">@${escHtml(a.key)}</div>
@@ -16362,9 +16950,9 @@ async function renderMsgsInbox() {
   const peopleSection = async () => {
     const people = await buildPeopleList();
     const items = people.slice(0, 5).map(p => {
-      const aviHtml = p.pic ? `<img src="${p.pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>` : escHtml(p.displayName.charAt(0).toUpperCase());
+      const aviHtml = p.pic ? `<img src="${p.pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>` : escHtml(p.displayName.charAt(0).toUpperCase());
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--glass-border);">
-        <div style="width:38px;height:38px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${aviHtml}</div>
+        <div style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.displayName)}${(p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : ''}</div>
         </div>
@@ -16615,7 +17203,8 @@ async function submitProfilePost() {
   const btn = document.querySelector('#profilePostSection .post-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
   const visibility = (document.getElementById('ppcVisibility') && document.getElementById('ppcVisibility').value) || 'public';
-  const newPost = { id: Date.now().toString(), text, media: [...profilePostMediaFiles], time: new Date().toISOString(), commentsOn: true, visibility };
+  const _autoTopic = (typeof detectTopicFromText === 'function') ? detectTopicFromText(text) : null;
+  const newPost = { id: Date.now().toString(), text, media: [...profilePostMediaFiles], time: new Date().toISOString(), commentsOn: true, visibility, topic: _autoTopic };
   // FIX 3: Upsert just this new post — don't overwrite existing ones
   const usernameKey = isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser).toLowerCase();
   try {
@@ -16623,6 +17212,7 @@ async function submitProfilePost() {
       id: newPost.id, username: usernameKey,
       body: newPost.text || null, media: newPost.media || [],
       visibility: newPost.visibility || 'public',
+      topic: newPost.topic || null,
       pp_comments: [], likes: [],
       timestamp: newPost.time
     }, 'id');
@@ -16656,6 +17246,7 @@ async function submitProfilePost() {
       author: displayName,
       authorKey: usernameKey,
       text: newPost.text,
+      topic: newPost.topic || null,
       media: newPost.media || [],
       time: newPost.time,
       postId: newPost.id,
@@ -16941,17 +17532,17 @@ async function submitProfilePostComment(postOwner, postId) {
   const commentsBody = document.getElementById('ppown-cb-' + postId) || (commentsSection && commentsSection.querySelector('.comments-body'));
   if (commentsSection) commentsSection.style.display = 'block'; // ensure section is open
   if (commentsBody) {
-    const isKrisCmt = currentUser === OWNER_USER || (currentUser||'').toLowerCase() === 'kris analysis ltd';
+    const isKrisCmt = currentUser === OWNER_USER;
     const cPic = isKrisCmt ? ownerPic() : (picFor(currentUser) || null);
     const cAvi = cPic
-      ? `<img src="${cPic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`
+      ? `<img src="${cPic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;"/>`
       : escHtml(currentUser.charAt(0).toUpperCase());
     const myKey2 = (localStorage.getItem('ka_username_key') || currentUser || '').toLowerCase();
     const newEl = document.createElement('div');
     newEl.id = 'ppown-c-' + newComment.id;
     newEl.style.cssText = 'display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
     newEl.innerHTML = `
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,197,24,0.15);border:1px solid rgba(245,197,24,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${cAvi}</div>
+      <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;${_aviWrapStyle(currentUser, myKey2)}">${cAvi}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:600;color:var(--text);">${escHtml(currentUser)}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.4;" id="ppown-ctxt-${newComment.id}">${renderMentions(escHtml(text))}</div>
@@ -17447,7 +18038,7 @@ function _renderProfilePostsHTML(container, userPosts, usernameKey) {
     // ── Comments list — same style as explore ──
     const commentsList = comments.map(c => {
       const cAuthor = c.user || c.author || '?';
-      const isKrisCmt = cAuthor === OWNER_USER || cAuthor.toLowerCase() === 'kris analysis ltd';
+      const isKrisCmt = cAuthor === OWNER_USER;
       const isAICmt = cAuthor.toLowerCase() === AI_BOT_KEY || c._isAI;
       const cPic = isKrisCmt ? ownerPic() : (picFor(cAuthor) || picFor((cAuthor).toLowerCase().replace(/\s+/g,'_')) || null);
       const cAvi = isAICmt
@@ -17540,7 +18131,7 @@ function _renderProfilePostsHTML(container, userPosts, usernameKey) {
 
     return `<div class="_u-post-card-bg" id="ppowncard-${p.id}">
       <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;">
-        <div style="width:34px;height:34px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;">${myAvi}</div>
+        <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(currentUser)}">${myAvi}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:3px;">${escHtml(currentUser)}${verBadge}</div>
           <div style="font-size:11px;color:var(--text3);">${formatTime(p.time)}${p.visibility==='followers'?' · <span style="opacity:0.6;font-size:9px;">&#128274;</span>':''}</div>
@@ -17809,9 +18400,9 @@ function handleMentionInput(inputEl) {
     const displayName = escHtml(c.display || c.username || '');
     const handle = escHtml('@' + (c.username || ''));
     const initials = (c.display || c.username || '?').charAt(0).toUpperCase();
-    const aviStyle = 'width:34px;height:34px;border-radius:50%;background:rgba(245,197,24,0.18);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;';
+    const aviStyle = 'width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;' + _aviWrapStyle(c.username, c.display);
     const aviInner = c.pic
-      ? `<img src="${escHtml(c.pic)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>`
+      ? `<img src="${escHtml(c.pic)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'"/>`
       : (c.isBot
           ? `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;">${_aiLogoSvg(20)}</span>`
           : initials);
@@ -17970,7 +18561,7 @@ async function openSuggestedOverlay() {
       const verBadge = (p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : '';
       const followBtn = isSelf ? '' : `<button id="sug-follow-${escHtml(p.key)}" onclick="sugOverlayToggleFollow('${escHtml(p.key)}','${escHtml(p.displayName)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? 'Following' : 'Follow'}</button>`;
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--glass-border);">
-        <div onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
+        <div onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')">
           <div style="font-size:14px;font-weight:700;color:var(--text);">${escHtml(p.displayName)}${verBadge}</div>
           <div style="font-size:12px;color:var(--text3);">@${escHtml(p.key.replace(/\s+/g,'_'))}</div>
@@ -18308,7 +18899,12 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
         // Only count elements pinned to (or near) the very top of the viewport
         if (rect.top <= 20 && rect.bottom > maxBottom) maxBottom = rect.bottom;
       }
-      return maxBottom > 0 ? Math.round(maxBottom + 10) : baseTop;
+      var result = maxBottom > 0 ? Math.round(maxBottom + 10) : baseTop;
+      // Cap how far down this is ever allowed to push a banner — the
+      // previous 130px cap still wasn't enough (confirmed against real
+      // screenshots showing it well below both nav rows), so tightened
+      // further. 80px sits right under a single nav row.
+      return Math.min(result, 80 + (window.__safeAreaTop || 0));
     } catch (e) {
       return baseTop;
     }
@@ -20883,9 +21479,9 @@ function _computeDeviceFingerprint() {
       ctx.fillStyle = '#f60';
       ctx.fillRect(0, 0, 100, 20);
       ctx.fillStyle = '#069';
-      ctx.fillText('KrisAnalysis-fp', 2, 2);
+      ctx.fillText('SocialPlus-fp', 2, 2);
       ctx.fillStyle = 'rgba(102,204,0,0.7)';
-      ctx.fillText('KrisAnalysis-fp', 4, 8);
+      ctx.fillText('SocialPlus-fp', 4, 8);
       parts.push(c.toDataURL());
     } catch(e) { parts.push('canvas-na'); }
     // WebGL renderer info — identifies GPU, survives browser switch
@@ -21678,7 +22274,7 @@ const FONT_OPTIONS = [
   { id: 'manrope',  label: 'Manrope',     sample: 'Aa', stack: "'Manrope', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" },
 ];
 function getAppFont() {
-  return localStorage.getItem('ka_font') || 'sfpro';
+  return localStorage.getItem('ka_font') || 'jakarta';
 }
 function applyFont(fontId) {
   const opt = FONT_OPTIONS.find(f => f.id === fontId) || FONT_OPTIONS[1];
@@ -22414,7 +23010,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { if (typeof renderMessagesPageContent === 'function') renderMessagesPageContent(); } catch(e) {}
       try { if (typeof renderExploreSuggested === 'function') renderExploreSuggested(); } catch(e) {}
       try { if (typeof renderExploreChannels === 'function') renderExploreChannels(); } catch(e) {}
-      try { if (typeof _populateMsgsStoriesBar === 'function') _populateMsgsStoriesBar(); } catch(e) {}
       // Full Channels list page (getAllChannels + getMySubscribedChannels)
       // was never in this warm-up list — it's a different page from the
       // small Connect-page channels preview above, and its own cache
@@ -22469,63 +23064,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   _maybeShowSignInForGuest();
 
-  // ── OWNER USERNAME MIGRATION: kris_analysis_ltd → krisanalysis (one-shot, silent) ──
-  // This runs exactly once per device. Once the flag is set it never runs again.
-  // Regular users' username changes are handled by the normal account update flow — NOT here.
-  (async function migrateOwnerUsername() {
-    const OLD_KEY = 'kris_analysis_ltd';
-    const NEW_KEY = OWNER_KEY;
-    const MIGRATION_FLAG = 'ka_owner_rename_v3'; // bumped so stale v2 devices re-run once
-    if (localStorage.getItem(MIGRATION_FLAG)) return; // ← truly done, never touch again
-
-    // First check: does the old key still exist in DB? If not, nothing to migrate.
-    try {
-      var oldRows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(OLD_KEY));
-      if (!oldRows || !oldRows.length) {
-        // Old username already gone — just stamp the flag and exit silently
-        localStorage.setItem(MIGRATION_FLAG, '1');
-        return;
-      }
-    } catch(e) { return; } // Can't check — skip quietly, try next load
-
-    try {
-      await SB.update('accounts',      { username: NEW_KEY },     'username=eq.'    + encodeURIComponent(OLD_KEY));
-      await SB.update('profile_posts', { username: NEW_KEY },     'username=eq.'    + encodeURIComponent(OLD_KEY));
-      await SB.update('follows',       { follower: NEW_KEY },     'follower=eq.'    + encodeURIComponent(OLD_KEY));
-      await SB.update('follows',       { following: NEW_KEY },    'following=eq.'   + encodeURIComponent(OLD_KEY));
-      await SB.update('comments',      { username: NEW_KEY },     'username=eq.'    + encodeURIComponent(OLD_KEY));
-      await SB.update('reactions',     { username: NEW_KEY },     'username=eq.'    + encodeURIComponent(OLD_KEY));
-      await SB.update('notifications', { target_user: NEW_KEY },  'target_user=eq.' + encodeURIComponent(OLD_KEY));
-
-      // Fix local follow cache
-      try {
-        var follows = getFollowData();
-        var changed = false;
-        if (follows[OLD_KEY]) { follows[NEW_KEY] = follows[OLD_KEY]; delete follows[OLD_KEY]; changed = true; }
-        Object.keys(follows).forEach(function(k) {
-          var idx = follows[k].indexOf(OLD_KEY);
-          if (idx !== -1) { follows[k][idx] = NEW_KEY; changed = true; }
-        });
-        if (changed) { _cache['follows'] = follows; saveFollowData(follows).catch(function(){}); }
-      } catch(e) {}
-
-      // Fix local storage key if owner is logged in on this device
-      if (localStorage.getItem('ka_username_key') === OLD_KEY) {
-        localStorage.setItem('ka_username_key', NEW_KEY);
-      }
-
-      // Bust account cache
-      _cache['all_accounts'] = null;
-      if (_cache['acct_by_username']) {
-        _cache['acct_by_username'][NEW_KEY] = _cache['acct_by_username'][OLD_KEY];
-        delete _cache['acct_by_username'][OLD_KEY];
-      }
-
-      localStorage.setItem(MIGRATION_FLAG, '1'); // ← stamp ONLY on full success
-    } catch(e) {
-      // Will retry on next load until it succeeds, then stamps and never runs again
-    }
-  })();
+  // (Old kris_analysis_ltd → owner-key one-shot migration removed — confirmed
+  // zero rows still use the old username, so it had already fully completed.)
 
   if (currentUser) {
     syncNotifsFromSupabase().catch(() => {});
@@ -22770,7 +23310,7 @@ async function renderUserManager() {
     const verBadge = isVerified ? `<span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>` : '';
     return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
-        <div style="width:44px;height:44px;${isVerified ? 'border-radius:10px;border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(245,197,24,0.15),0 0 10px rgba(245,197,24,0.3);' : 'border-radius:50%;border:1.5px solid rgba(245,197,24,0.2);'}background:rgba(245,197,24,0.1);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
+        <div style="width:44px;height:44px;${isVerified ? 'border-radius:10px;border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(245,197,24,0.15),0 0 10px rgba(245,197,24,0.3);' : (premTier ? 'border-radius:10px;border:1.5px solid var(--glass-border);' : 'border-radius:50%;border:1.5px solid rgba(245,197,24,0.2);')}background:rgba(245,197,24,0.1);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
           ${_aviHtml(a.profile_pic, a.display_name, 44)}
         </div>
         <div style="flex:1;min-width:0;">
@@ -24006,39 +24546,32 @@ closeChat = function() {
 
 <!-- ═══ MESSAGES PAGE ═══ -->
 <div id="messagesPageOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;">
-  <!-- Topbar - clean dark with properly centred title -->
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
-    <div style="display:flex;align-items:center;padding:16px 18px 10px;position:relative;">
-      <!-- Back button removed — Messages is a bottom-tab page now, leave via tab switch or hardware/gesture back. -->
-      <div style="display:flex;align-items:center;gap:8px;flex:1;"></div>
-      <!-- Centre: title — absolutely centred so it doesn't move with button counts -->
-      <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);pointer-events:none;">Messages</div>
-      <!-- Right: group + search buttons -->
-      <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
-        <button onclick="openCreateGroupChat()" style="width:34px;height:34px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gold);" title="New Group Chat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </button>
-        <button onclick="document.getElementById('msgSearchWrap').style.display=document.getElementById('msgSearchWrap').style.display==='none'?'block':'none';document.getElementById('msgSearchInput').focus();" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </button>
-      </div>
+  <!-- Topbar — title moved to the right (X-style), stories row removed,
+       shrinks on scroll: the #messagesPageContent scroll listener toggles
+       body.msgs-header-compact (see JS below), which this CSS reacts to. -->
+  <div class="subpage-topbar msgs-topbar" id="msgsTopbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;transition:padding 0.2s ease;">
+    <div class="msgs-topbar-row" style="display:flex;align-items:center;justify-content:flex-end;padding:16px 18px 10px;position:relative;gap:14px;transition:padding 0.2s ease;">
+      <!-- Title now sits on the right, immediately before the action buttons -->
+      <div class="msgs-title" style="font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);margin-right:auto;transition:font-size 0.2s ease;">Messages</div>
+      <!-- Filter trigger slides up into this row once scrolled (compact state) -->
+      <button id="msgsFilterTriggerCompact" onclick="_openMsgsFilterTray()" style="display:none;font-family:var(--font);font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;align-items:center;gap:6px;flex-shrink:0;">
+        <span id="msgsFilterTriggerCompactLabel">Recent</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button onclick="openCreateGroupChat()" style="width:34px;height:34px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gold);flex-shrink:0;" title="New Group Chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+      <button onclick="document.getElementById('msgSearchWrap').style.display=document.getElementById('msgSearchWrap').style.display==='none'?'block':'none';document.getElementById('msgSearchInput').focus();" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
     </div>
     <!-- Search bar (hidden by default) -->
     <div id="msgSearchWrap" style="display:none;padding:0 18px 10px;">
       <input id="msgSearchInput" placeholder="Search messages…" oninput="filterMsgSearch(this.value)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
     </div>
-    <!-- Stories / Status bar (horizontal scroll) -->
-    <div style="padding:4px 0 12px;">
-      <div id="msgsStoriesBar" style="display:flex;gap:14px;overflow-x:auto;padding:0 18px;scrollbar-width:none;-ms-overflow-style:none;">
-        <!-- Populated dynamically by _populateMsgsStoriesBar() -->
-      </div>
-    </div>
-    <!-- Chat-list filter: was three always-visible pills (Recent/Personal/
-         Group Chats) crammed in a row; now a single trigger that opens a
-         bottom tray, so the row doesn't compete for space and there's
-         nothing to cramp or wrap on a narrow screen. The divider sits
-         directly under this row, same as before. -->
-    <div style="padding:10px 18px 12px;display:flex;border-bottom:1px solid rgba(255,255,255,0.07);">
+    <!-- Chat-list filter row — collapses/hides once scrolled, since the
+         compact trigger above takes over at that point. -->
+    <div class="msgs-filter-row" id="msgsFilterRow" style="padding:10px 18px 12px;display:flex;border-bottom:1px solid rgba(255,255,255,0.07);overflow:hidden;transition:max-height 0.2s ease,opacity 0.2s ease,padding 0.2s ease;max-height:60px;opacity:1;">
       <button id="msgsFilterTrigger" onclick="_openMsgsFilterTray()" style="font-family:var(--font);font-size:13px;font-weight:700;padding:8px 16px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;display:inline-flex;align-items:center;gap:7px;">
         <span id="msgsFilterTriggerLabel">Recent</span>
         <span id="msgsFilterTriggerCount" class="_msgs-filter-count" style="display:none;background:rgba(0,0,0,0.25);color:#000;"></span>
@@ -24648,6 +25181,28 @@ async function renderExploreResults() {
     // (the real feed lives in the module-level `posts` variable), which is
     // why post search used to always come back empty — fixed here.
     let postResults = [];
+    // Hashtag search: query with or without a leading # matches posts that
+    // actually contain that hashtag (not just posts whose body happens to
+    // contain the word elsewhere) — kept as a separate pass so results are
+    // exact rather than a substring coincidence.
+    const _qTag = qLow.replace(/^#/, '');
+    let hashtagResults = [];
+    try {
+      if (_qTag) {
+        const feedPosts2 = (typeof posts !== 'undefined' && Array.isArray(posts)) ? posts : [];
+        const profilePosts2 = (typeof window._forYouProfilePosts !== 'undefined' && Array.isArray(window._forYouProfilePosts)) ? window._forYouProfilePosts : [];
+        const combined2 = feedPosts2.concat(profilePosts2);
+        const seenTag = new Set();
+        hashtagResults = combined2.filter(p => {
+          if (!p || seenTag.has(p.id)) return false;
+          const txt = p.text || p.body || '';
+          const tags = (typeof extractHashtags === 'function') ? extractHashtags(txt).map(t => t.toLowerCase()) : [];
+          const hit = tags.indexOf(_qTag) !== -1;
+          if (hit) seenTag.add(p.id);
+          return hit;
+        }).slice(0, 10);
+      }
+    } catch(e) {}
     try {
       const feedPosts = (typeof posts !== 'undefined' && Array.isArray(posts)) ? posts : [];
       const profilePosts = (typeof window._forYouProfilePosts !== 'undefined' && Array.isArray(window._forYouProfilePosts)) ? window._forYouProfilePosts : [];
@@ -24744,13 +25299,31 @@ async function renderExploreResults() {
         const aviHtml = _aviHtml(p.profile_pic, p.display_name, 44);
         const verBadge = isUserVerified(p.username) || isUserVerified(p.display_name) ? ' ' + VERIFIED_BADGE_HTML : '';
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div onclick="_openUserProfileFrom('explore','${escHtml(p.username)}')" style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
+          <div onclick="_openUserProfileFrom('explore','${escHtml(p.username)}')" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(p.username, p.display_name)}">${aviHtml}</div>
           <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('explore','${escHtml(p.username)}')">
             <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:4px;">${_searchHL(p.display_name, q)}${verBadge}</div>
             <div style="font-size:12px;color:var(--text3);">@${_searchHL(p.username, q)}</div>
             ${p.bio ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${_searchHL(p.bio.slice(0,60), q)}</div>` : ''}
           </div>
           <button onclick="exploreToggleFollow('${escHtml(p.username)}','${escHtml(p.display_name)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? 'Following' : 'Follow'}</button>
+        </div>`;
+      }).join('');
+      html += '<div style="margin-bottom:18px;"></div>';
+    }
+
+    // Hashtag section — shown above general Posts so an exact tag match
+    // (e.g. searching "crypto" or "#crypto") surfaces the specifically
+    // hashtagged posts first, distinct from posts that merely mention the
+    // word in passing.
+    if (hashtagResults.length && showPosts) {
+      window._searchHashtagResults = hashtagResults;
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">🏷️ #${escHtml(_qTag)}</div>`;
+      html += hashtagResults.map((p, pi) => {
+        const _txt = escHtml((p.text||p.body||'').slice(0,120));
+        const _linked = (typeof renderHashtags === 'function') ? renderHashtags(_txt) : _txt;
+        return `<div onclick="_openSearchHashtagResult(${pi})" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:3px;">${escHtml(p.author || p.username || '')}</div>
+          <div style="font-size:13.5px;color:var(--text);line-height:1.4;">${_linked}</div>
         </div>`;
       }).join('');
       html += '<div style="margin-bottom:18px;"></div>';
@@ -24863,6 +25436,43 @@ function _openSearchPostResult(idx) {
     }, 350);
   }, 200);
 }
+
+function _openSearchHashtagResult(idx) {
+  const p = window._searchHashtagResults && window._searchHashtagResults[idx];
+  if (!p) return;
+  if (typeof closeExplorePage === 'function') closeExplorePage();
+  setTimeout(function() {
+    if (typeof tabSwitch === 'function') tabSwitch('home');
+    setTimeout(function() {
+      const el = document.querySelector('[data-post-id="' + p.id + '"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'background 0.3s';
+        const prevBg = el.style.background;
+        el.style.background = 'rgba(245,197,24,0.08)';
+        setTimeout(function() { el.style.background = prevBg; }, 1600);
+      }
+    }, 350);
+  }, 200);
+}
+
+// Opens the hashtag search/feed for a tapped #tag in post text (see
+// renderHashtags). Reuses the search page's own query flow so results and
+// styling stay consistent with typing the tag manually.
+function openHashtagFeed(tag) {
+  if (typeof openSearchPage === 'function') openSearchPage();
+  setTimeout(function() {
+    const input = document.getElementById('exploreSearch');
+    if (input) {
+      input.value = '#' + tag;
+      const clearBtn = document.getElementById('exploreSearchClear');
+      if (clearBtn) clearBtn.style.display = 'flex';
+      if (typeof renderExploreResults === 'function') renderExploreResults();
+      input.focus();
+    }
+  }, 150);
+}
+window.openHashtagFeed = openHashtagFeed;
 
 // ── Open AI chat pre-loaded with current search query (safe, no inline serialisation) ──
 function _openSearchInAIChat() {
@@ -25010,7 +25620,7 @@ async function _populateGroupMemberPicker() {
     const pic = a.profile_pic || null;
     const aviHtml = _aviHtml(pic, dn, 36);
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;">${aviHtml}</div>
+      <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(a.username, dn)}">${aviHtml}</div>
       <div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">${escHtml(dn)}</div>
       <div id="gm-${escHtml(a.username)}" onclick="_toggleGroupMember('${escHtml(a.username)}',this)" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;"></div>
     </div>`;
@@ -25368,7 +25978,7 @@ async function renderExplorePostsFeed() {
       const aviHtml = p.pic ? `<img src="${escHtml(p.pic)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>` : `<span style="font-size:16px;font-weight:800;color:var(--gold);">${escHtml((p.displayName||'?').charAt(0).toUpperCase())}</span>`;
       const verBadge = (p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--glass-border);">
-        <div onclick="_openUserProfileFrom('explore','${escHtml(p.key)}')" style="width:38px;height:38px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.28);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer;">${aviHtml}</div>
+        <div onclick="_openUserProfileFrom('explore','${escHtml(p.key)}')" style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;cursor:pointer;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('explore','${escHtml(p.key)}')">
           <div style="font-size:13px;font-weight:700;color:var(--text);">${escHtml(p.displayName)}${verBadge}</div>
           <div style="font-size:11px;color:var(--text3);">@${escHtml((p.key||'').replace(/\s+/g,'_'))}</div>
@@ -25724,7 +26334,7 @@ async function _exploreSubmitReply(authorKey, postId, parentCommentId) {
       thread.className = 'comment-replies-thread';
       parentEl.appendChild(thread);
     }
-    const isKrisR = currentUser === OWNER_USER || (currentUser||'').toLowerCase() === 'kris analysis ltd';
+    const isKrisR = currentUser === OWNER_USER;
     const rPic = isKrisR ? ownerPic() : (picFor(currentUser) || null);
     const rAvi = rPic
       ? `<img src="${rPic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`
@@ -25817,10 +26427,47 @@ function openMessagesPage() {
   const msgsTab = document.getElementById('tab-messages') || document.querySelector('[data-tab="messages"]');
   if (msgsTab) msgsTab.classList.add('active');
   renderMessagesPageContent();
-  _populateMsgsStoriesBar();
   if (typeof _syncMsgsFilterTrigger === 'function') _syncMsgsFilterTrigger();
   if (typeof window._syncFab === 'function') window._syncFab();
+  _wireMsgsHeaderShrink();
 }
+
+// ── Messages header shrink-on-scroll: past a small scroll threshold, the
+// filter row (Recent/Personal/Group Chats trigger) hides and a compact
+// version of it slides in next to the title, and the header's own padding
+// tightens — same "shrink to give more list space" pattern as the home nav. ──
+var _msgsHeaderShrinkWired = false;
+function _wireMsgsHeaderShrink() {
+  var scroller = document.getElementById('messagesPageContent');
+  var topbar = document.getElementById('msgsTopbar');
+  if (!scroller || !topbar) return;
+  if (_msgsHeaderShrinkWired) { _updateMsgsHeaderShrink(scroller, topbar); return; }
+  _msgsHeaderShrinkWired = true;
+  scroller.addEventListener('scroll', function() { _updateMsgsHeaderShrink(scroller, topbar); }, { passive: true });
+  _updateMsgsHeaderShrink(scroller, topbar);
+}
+function _updateMsgsHeaderShrink(scroller, topbar) {
+  var compact = scroller.scrollTop > 24;
+  topbar.classList.toggle('msgs-header-compact', compact);
+  var filterRow = document.getElementById('msgsFilterRow');
+  var compactTrigger = document.getElementById('msgsFilterTriggerCompact');
+  if (filterRow) {
+    filterRow.style.maxHeight = compact ? '0px' : '60px';
+    filterRow.style.opacity = compact ? '0' : '1';
+    filterRow.style.paddingTop = compact ? '0' : '10px';
+    filterRow.style.paddingBottom = compact ? '0' : '12px';
+    filterRow.style.borderBottomWidth = compact ? '0px' : '1px';
+  }
+  if (compactTrigger) compactTrigger.style.display = compact ? 'inline-flex' : 'none';
+}
+// Keep the compact trigger's label in sync whenever the main one changes.
+var _syncMsgsFilterTriggerOrig = window._syncMsgsFilterTrigger;
+window._syncMsgsFilterTrigger = function() {
+  if (typeof _syncMsgsFilterTriggerOrig === 'function') _syncMsgsFilterTriggerOrig();
+  var mainLabel = document.getElementById('msgsFilterTriggerLabel');
+  var compactLabel = document.getElementById('msgsFilterTriggerCompactLabel');
+  if (mainLabel && compactLabel) compactLabel.textContent = mainLabel.textContent;
+};
 
 async function _populateMsgsStoriesBar() {
   const bar = document.getElementById('msgsStoriesBar');
@@ -25863,7 +26510,7 @@ async function _populateMsgsStoriesBar() {
 
   const myPic = isOwner ? ownerPic() : (picFor(currentUser) || picFor(myKey) || null);
   const myInner = myPic ? `<img src="${myPic}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>` : (currentUser||'?').charAt(0).toUpperCase();
-  const krisAvi = ownerPic() ? `<img src="${ownerPic()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>` : 'K';
+  const krisAvi = ownerPic() ? `<img src="${ownerPic()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>` : OWNER_USER.charAt(0).toUpperCase();
 
   let peopleHtml = '';
   recentPeers.forEach(c => {
@@ -26142,8 +26789,7 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
   const peerSeen = new Set();
   const dedupdConvs = [];
   convs.forEach(c => {
-    const normPeer = (c.peer||'').replace(/[\s_]/g,'').toLowerCase() === OWNER_KEY ||
-                     (c.peer||'').toLowerCase() === 'kris analysis ltd'
+    const normPeer = (c.peer||'').replace(/[\s_]/g,'').toLowerCase() === OWNER_KEY
       ? OWNER_KEY : c.peer.toLowerCase();
     if (!peerSeen.has(normPeer)) {
       peerSeen.add(normPeer);
@@ -26227,7 +26873,7 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
         <button onclick="event.stopPropagation();mrLockRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text2);cursor:pointer;">🔒</button>`
         : '';
       return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
-        <div style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">${aviHtml}</div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;${_aviWrapStyle(peerKey, displayName)}">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
@@ -26268,7 +26914,7 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
       const peerKey = isOwnerConv ? OWNER_KEY : (stored ? stored.username : conv.peer);
       const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
       return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
-        <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,197,24,0.12);border:1.5px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
+        <div style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(peerKey, displayName)}">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
           <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
           <div class="_u-ellipsis-sm">${preview}</div>
@@ -26294,7 +26940,7 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
     html += people.slice(0, 8).map(p => {
       const aviHtml = _aviHtml(p.pic || null, p.displayName, 44);
       return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(p.displayName)}" style="display:flex;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
-        <div onclick="_openUserProfileFrom('messages','${escHtml(p.key)}')" style="width:44px;height:44px;border-radius:50%;background:rgba(245,197,24,0.15);border:1.5px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;">${aviHtml}</div>
+        <div onclick="_openUserProfileFrom('messages','${escHtml(p.key)}')" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('messages','${escHtml(p.key)}')">
           <div style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(p.displayName)}${(p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : ''}</div>
         </div>
@@ -26954,7 +27600,7 @@ function _buildKrisSuggestionsBlockHtml(blockId, trackId, dotsId) {
   return {
     cards: suggCards,
     html: `<div id="${blockId}" class="kris-suggestions-block" style="padding:4px 0 2px;margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--gold,#F5C518);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Kris's Suggestions</div>
+      <div style="font-size:11px;font-weight:700;color:var(--gold,#F5C518);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Suggestions</div>
       <div class="tip-cards-container">
         <div class="tip-cards-track${single ? ' single-card' : ''}" id="${trackId}">
           ${suggCards.join('')}
@@ -27411,7 +28057,7 @@ async function _syncPinnedToSupabase(ids) {
   try {
     await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'pinned_posts', value: JSON.stringify(ids) })
     });
   } catch(e) {}
@@ -27420,7 +28066,7 @@ async function _syncPinnedToSupabase(ids) {
 async function _loadPinnedFromSupabase() {
   try {
     const resp = await fetch(SB_URL + '/rest/v1/app_config?key=eq.pinned_posts&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (!resp.ok) return;
     const rows = await resp.json();
@@ -27716,7 +28362,7 @@ var _pumConfig = null; // { version, url, body }
 async function _fetchUpdateConfig() {
   try {
     const r = await fetch(SB_URL + '/rest/v1/app_config?key=eq.latest_update&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (!r.ok) return null;
     const rows = await r.json();
@@ -27822,12 +28468,10 @@ async function doPumPush() {
     const payload = { version: ver, url: url, body: body, pushed_at: new Date().toISOString() };
     const r = await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
+      headers: _sbRawHeaders({
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
+      }),
       body: JSON.stringify({ key: 'latest_update', value: payload })
     });
     if (r.ok || r.status === 200 || r.status === 201) {
@@ -27847,7 +28491,7 @@ function doPumClear() {
     try {
       await fetch(SB_URL + '/rest/v1/app_config?key=eq.latest_update', {
         method: 'DELETE',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+        headers: _sbRawHeaders()
       });
       showToast('Update cleared. Dynamic Island will no longer show.', 'success');
       closePumModal();
@@ -27871,7 +28515,7 @@ window.handlePumApkSelect = async function(input) {
     var fileName = 'predict_' + Date.now() + '.apk';
     var uploadResp = await fetch(SB_URL + '/storage/v1/object/apks/' + fileName, {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/vnd.android.package-archive' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/vnd.android.package-archive' }),
       body: file
     });
     if (uploadResp.ok) {
@@ -28704,6 +29348,12 @@ async function openProfileManageSheet() {
       Edit Personal Info
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
+    <button onclick="_openInterestsPicker()" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--text);font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:10px;text-align:left;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Interests
+      <span id="pmsInterestsCount" style="margin-left:auto;flex-shrink:0;font-size:12px;color:var(--text3);"></span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
     <button onclick="closeProfileManageSheet();setTimeout(()=>openSavedPosts(),200)" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--text);font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:10px;text-align:left;">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
       Saved Posts
@@ -28722,6 +29372,69 @@ function closeProfileManageSheet() {
   const overlay = document.getElementById('manageProfileOverlay');
   if (overlay) overlay.style.display = 'none';
 }
+
+// ── Interests — up to 5 topics from the fixed list, saved to
+// accounts.interests. Used to seed onboarding's suggested-accounts step
+// and can later inform For You personalization beyond the manual topic
+// sheet toggle. ──
+async function _openInterestsPicker() {
+  const overlay = document.getElementById('navTopicSheetOverlay');
+  const sheet = document.getElementById('navTopicSheet');
+  const list = document.getElementById('navTopicSheetList');
+  if (!overlay || !sheet || !list) return;
+  const key = _myUsernameKey ? _myUsernameKey() : (currentUser||'').toLowerCase();
+  let saved = [];
+  try {
+    const acct = (_cache['acct_by_username'] || {})[key];
+    saved = (acct && Array.isArray(acct.interests)) ? acct.interests.slice() : [];
+  } catch(e) {}
+  const titleEl = sheet.querySelector('div > div');
+  sheet.querySelector('div[style*="text-align:center"]').innerHTML =
+    '<div style="font-size:17px;font-weight:800;color:var(--text);">Your interests</div>' +
+    '<div style="font-size:12.5px;color:var(--text3);margin-top:3px;">Pick up to 5 — helps us suggest people to follow</div>';
+  function _renderList() {
+    list.innerHTML = FIXED_TOPICS.map(function(t) {
+      const checked = saved.indexOf(t) !== -1;
+      const disabled = !checked && saved.length >= 5;
+      return '<label style="display:flex;align-items:center;justify-content:space-between;padding:13px 4px;cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' + (disabled ? '0.4' : '1') + ';">'
+        + '<span style="font-size:14.5px;font-weight:600;color:var(--text);">' + t + '</span>'
+        + '<span class="nav-topic-toggle' + (checked ? ' nav-topic-toggle-on' : '') + '" data-topic="' + t.replace(/"/g,'&quot;') + '" onclick="' + (disabled ? '' : '_toggleInterestTopic(this)') + '"><span class="nav-topic-toggle-knob"></span></span>'
+        + '</label>';
+    }).join('') + '<button onclick="_saveInterests()" style="width:100%;margin-top:14px;padding:13px;border-radius:14px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:14.5px;font-weight:700;cursor:pointer;">Save</button>';
+  }
+  window._interestsPickerState = saved;
+  window._renderInterestsPickerList = _renderList;
+  _renderList();
+  closeProfileManageSheet();
+  overlay.style.display = 'flex';
+  requestAnimationFrame(function() { sheet.style.transform = 'translateY(0)'; });
+}
+window._openInterestsPicker = _openInterestsPicker;
+
+function _toggleInterestTopic(el) {
+  const topic = el.getAttribute('data-topic');
+  const saved = window._interestsPickerState || [];
+  const idx = saved.indexOf(topic);
+  if (idx === -1) { if (saved.length >= 5) return; saved.push(topic); }
+  else { saved.splice(idx, 1); }
+  window._interestsPickerState = saved;
+  if (typeof window._renderInterestsPickerList === 'function') window._renderInterestsPickerList();
+}
+window._toggleInterestTopic = _toggleInterestTopic;
+
+async function _saveInterests() {
+  const key = _myUsernameKey ? _myUsernameKey() : (currentUser||'').toLowerCase();
+  const interests = window._interestsPickerState || [];
+  try {
+    await SB.upsert('accounts', { username: key, interests: interests }, 'username');
+    if (_cache['acct_by_username'] && _cache['acct_by_username'][key]) {
+      _cache['acct_by_username'][key].interests = interests;
+    }
+    if (typeof showToast === 'function') showToast('Interests saved', 'success');
+  } catch(e) { if (typeof showToast === 'function') showToast('Could not save interests', 'error'); }
+  if (typeof _closeNavTopicSheet === 'function') _closeNavTopicSheet();
+}
+window._saveInterests = _saveInterests;
 
 // ══════════════════════════════════════════════════════════════
 // Featured Channel — a channel owner can pin one of their own channels
@@ -32938,7 +33651,7 @@ function openGroupMgmt() {
           var mAvi = (typeof _aviHtml === 'function') ? _aviHtml(mPic, mClean, 34) : escHtml(mClean.charAt(0).toUpperCase());
           var mVerBadge = (typeof isUserVerified === 'function' && isUserVerified(mClean)) ? ' <span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>' : '';
           return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
-            + '<div onclick="document.getElementById(\'groupMgmtSheet\').style.display=\'none\';setTimeout(function(){openUserProfile(\'' + escHtml(mClean) + '\');},180);" style="width:34px;height:34px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;cursor:pointer;">' + mAvi + '</div>'
+            + '<div onclick="document.getElementById(\'groupMgmtSheet\').style.display=\'none\';setTimeout(function(){openUserProfile(\'' + escHtml(mClean) + '\');},180);" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;cursor:pointer;' + _aviWrapStyle(mClean) + '">' + mAvi + '</div>'
             + '<div onclick="document.getElementById(\'groupMgmtSheet\').style.display=\'none\';setTimeout(function(){openUserProfile(\'' + escHtml(mClean) + '\');},180);" style="flex:1;font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:4px;cursor:pointer;">@' + escHtml(mClean) + mVerBadge + roleTag + '</div>'
             + actionBtn + removeBtn
             + '</div>';
@@ -33014,7 +33727,7 @@ function openGroupMgmt() {
           var aPic = (typeof picFor === 'function') ? (picFor(uk) || picFor(a.display_name) || a.profile_pic || null) : (a.profile_pic || null);
           var aAvi = (typeof _aviHtml === 'function') ? _aviHtml(aPic, a.display_name||a.username, 34) : escHtml((a.display_name||a.username).charAt(0).toUpperCase());
           return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
-            + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;">' + aAvi + '</div>'
+            + '<div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;' + _aviWrapStyle(uk, a.display_name) + '">' + aAvi + '</div>'
             + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">' + escHtml(a.display_name||a.username) + '</div><div style="font-size:11px;color:var(--text3);">@' + escHtml(uk) + '</div></div>'
             + '<button id="gcmgmt-chk-' + escHtml(uk) + '" onclick="toggleGcMgmtMember(\'' + escHtml(uk) + '\')" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;"></button>'
             + '</div>';
@@ -36815,6 +37528,205 @@ function _cancelPostProgress() {
 
 <script>
 // ════════════════════════════════════════════════════════
+// TOP NAV — avatar (opens side menu, X-style), shrink-on-scroll
+// (stays floating — only height/padding/font sizes change), and the
+// connection-status readout that temporarily replaces the logo+name.
+// ════════════════════════════════════════════════════════
+
+// ── Nav avatar: mirrors the same resolver used for the side menu's own
+// avatar card, so both stay in sync with whatever the user has set. ──
+function _refreshNavAvatar() {
+  try {
+    var imgEl = document.getElementById('navAvatarImg');
+    var initEl = document.getElementById('navAvatarInitial');
+    if (!imgEl || !initEl) return;
+    var user = currentUser || localStorage.getItem('ka_user') || null;
+    if (!user) { imgEl.style.display = 'none'; initEl.style.display = ''; initEl.textContent = '?'; return; }
+    var key = localStorage.getItem('ka_username_key') || user.toLowerCase();
+    var acct = (typeof acctByKey === 'function') ? (acctByKey(key) || acctByKey(key.replace(/_/g,' '))) : null;
+    var name = (acct && (acct.display_name || acct.username)) || user || '?';
+    // BUGFIX: this used to check acct.profile_pic directly, which is null
+    // whenever _cache['acct_by_username'] hasn't finished loading yet (a
+    // real network round-trip via getAllAccounts()) — a fixed 400ms timer
+    // isn't always enough on a slow connection, so this silently fell back
+    // to the "S" initial even when a real profile_pic exists in the DB.
+    // picFor()/ownerPic() are the established, already-correct resolvers
+    // for this (see the comment on ownerPic() above) — use those instead
+    // of re-deriving the same lookup here.
+    var pic = '';
+    if (typeof picFor === 'function') pic = picFor(key) || picFor(name) || '';
+    if (!pic && acct && acct.profile_pic) pic = acct.profile_pic;
+    if (!pic && (key === OWNER_KEY || (name||'').toLowerCase() === OWNER_USER.toLowerCase()) && typeof ownerPic === 'function') {
+      pic = ownerPic() || '';
+    }
+    if (!pic) pic = localStorage.getItem('ka_profile_pic_' + key) || '';
+    if (pic) {
+      imgEl.src = pic;
+      imgEl.style.display = 'block';
+      imgEl.onerror = function() { imgEl.style.display = 'none'; initEl.style.display = ''; initEl.textContent = (name||'?').charAt(0).toUpperCase(); };
+      initEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      initEl.style.display = '';
+      initEl.textContent = (name||'?').charAt(0).toUpperCase();
+    }
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', function() { setTimeout(_refreshNavAvatar, 400); });
+window._refreshNavAvatar = _refreshNavAvatar;
+// (Wrapper that re-ran this after getAllAccounts() resolved has been
+// removed — that wrapper was installed too late in the file to catch an
+// early boot-time call to getAllAccounts(), which is exactly the race that
+// caused the "S" fallback to stick. getAllAccounts() itself now calls
+// _refreshNavAvatar() directly at the end of its own body — see there.)
+
+// ── Shrink-on-scroll: the pill stays floating (position/width/radius are
+// untouched — see .nav-compact CSS), only its height/padding/font sizes
+// shrink past a small scroll threshold, giving more feed space without
+// the nav ever going edge-to-edge. ──
+(function() {
+  var navEl = null;
+  function _updateNavCompact() {
+    if (!navEl) navEl = document.querySelector('nav.nav');
+    if (!navEl) return;
+    var y = window.scrollY || window.pageYOffset || 0;
+    navEl.classList.toggle('nav-compact', y > 40);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    navEl = document.querySelector('nav.nav');
+    window.addEventListener('scroll', _updateNavCompact, { passive: true });
+    _updateNavCompact();
+  });
+})();
+
+// ── Feed selector (For You / Following) — For You opens the topic picker
+// sheet; Following just switches which feed is showing, no sheet. ──
+function _onNavFeedTabClick(tab) {
+  var forYouBtn = document.getElementById('navFeedTabForYou');
+  var followingBtn = document.getElementById('navFeedTabFollowing');
+  if (tab === 'foryou') {
+    // Tapping For You (when it's already the active tab) opens the topic
+    // sheet; if Following was active, the first tap just switches back.
+    var wasActive = forYouBtn && forYouBtn.classList.contains('nav-feed-tab-active');
+    if (forYouBtn) forYouBtn.classList.add('nav-feed-tab-active');
+    if (followingBtn) followingBtn.classList.remove('nav-feed-tab-active');
+    if (wasActive) { _openNavTopicSheet(); return; }
+    if (typeof setFilter === 'function') setFilter('all', null);
+  } else {
+    if (forYouBtn) forYouBtn.classList.remove('nav-feed-tab-active');
+    if (followingBtn) followingBtn.classList.add('nav-feed-tab-active');
+    if (typeof setFilter === 'function') setFilter('following', null);
+    if (typeof _refreshFollowingProfilePosts === 'function') _refreshFollowingProfilePosts();
+  }
+}
+window._onNavFeedTabClick = _onNavFeedTabClick;
+
+function _openNavTopicSheet() {
+  var overlay = document.getElementById('navTopicSheetOverlay');
+  var sheet = document.getElementById('navTopicSheet');
+  var list = document.getElementById('navTopicSheetList');
+  if (!overlay || !sheet || !list) return;
+  var titleWrap = sheet.querySelector('div[style*="text-align:center"]');
+  if (titleWrap) {
+    titleWrap.innerHTML = '<div style="font-size:17px;font-weight:800;color:var(--text);">Topics for your feed</div>'
+      + '<div style="font-size:12.5px;color:var(--text3);margin-top:3px;">Choose what shows up in For You</div>';
+  }
+  var saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ka_feed_topics') || '[]'); } catch(e) {}
+  list.innerHTML = FIXED_TOPICS.map(function(t) {
+    var checked = saved.indexOf(t) !== -1;
+    return '<label style="display:flex;align-items:center;justify-content:space-between;padding:13px 4px;cursor:pointer;">'
+      + '<span style="font-size:14.5px;font-weight:600;color:var(--text);">' + t + '</span>'
+      + '<span class="nav-topic-toggle' + (checked ? ' nav-topic-toggle-on' : '') + '" data-topic="' + t.replace(/"/g,'&quot;') + '" onclick="_toggleNavTopic(this)"><span class="nav-topic-toggle-knob"></span></span>'
+      + '</label>';
+  }).join('');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(function() { sheet.style.transform = 'translateY(0)'; });
+}
+window._openNavTopicSheet = _openNavTopicSheet;
+
+function _closeNavTopicSheet() {
+  var overlay = document.getElementById('navTopicSheetOverlay');
+  var sheet = document.getElementById('navTopicSheet');
+  if (!overlay || !sheet) return;
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(function() { overlay.style.display = 'none'; }, 280);
+}
+window._closeNavTopicSheet = _closeNavTopicSheet;
+
+function _toggleNavTopic(el) {
+  var topic = el.getAttribute('data-topic');
+  var saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ka_feed_topics') || '[]'); } catch(e) {}
+  var idx = saved.indexOf(topic);
+  if (idx === -1) { saved.push(topic); el.classList.add('nav-topic-toggle-on'); }
+  else { saved.splice(idx, 1); el.classList.remove('nav-topic-toggle-on'); }
+  try { localStorage.setItem('ka_feed_topics', JSON.stringify(saved)); } catch(e) {}
+  if (typeof renderPosts === 'function') renderPosts();
+}
+window._toggleNavTopic = _toggleNavTopic;
+
+// ── Connection-status readout: swaps the logo+name for a status line
+// while the connection is bad/reconnecting, reverts once stable. Hooks
+// into the existing _sbOnline state machine (see _syncConnectionBanner)
+// rather than duplicating detection — this just adds a second surface
+// (the nav itself) for the same signal, per Dave's request. ──
+var _navConnLastState = null; // null | 'connecting' | 'poor' | 'stable'
+function _setNavConnState(state) {
+  if (state === _navConnLastState) return;
+  _navConnLastState = state;
+  var statusEl = document.getElementById('navConnStatus');
+  var nameEl = document.getElementById('navNameWrap');
+  var logoEl = document.getElementById('navLogoWrap');
+  var labelEl = document.getElementById('navConnLabel');
+  if (!statusEl || !nameEl || !logoEl || !labelEl) return;
+  if (state === 'stable' || state === null) {
+    statusEl.style.display = 'none';
+    statusEl.classList.remove('nav-conn-offline');
+    nameEl.style.display = '';
+    logoEl.style.opacity = '1';
+  } else {
+    // Use firstChild (the text node) so the animated "…" span that follows
+    // it in the markup isn't wiped out by a textContent overwrite.
+    var textPart = state === 'poor' ? 'Poor Connection' : 'Connecting';
+    if (labelEl.firstChild && labelEl.firstChild.nodeType === 3) {
+      labelEl.firstChild.textContent = textPart;
+    } else {
+      labelEl.insertBefore(document.createTextNode(textPart), labelEl.firstChild);
+    }
+    statusEl.classList.toggle('nav-conn-offline', state === 'poor');
+    statusEl.style.display = 'inline-flex';
+    nameEl.style.display = 'none';
+    logoEl.style.opacity = '0.35';
+  }
+}
+window._setNavConnState = _setNavConnState;
+// Polls the existing _sbOnline/_sbFailStreak signals already maintained
+// elsewhere in the app (see "Connection banner" above) rather than
+// re-implementing detection — just translates that state into what the
+// nav shows. A short interval is fine here since it's a cheap boolean read.
+(function() {
+  function _pollNavConnState() {
+    try {
+      if (typeof _sbOnline === 'undefined') return;
+      if (!navigator.onLine) { _setNavConnState('poor'); return; }
+      if (!_sbOnline) {
+        var streak = (typeof _sbFailStreak !== 'undefined') ? _sbFailStreak : 0;
+        _setNavConnState(streak >= 2 ? 'poor' : 'connecting');
+        return;
+      }
+      _setNavConnState('stable');
+    } catch(e) {}
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    _pollNavConnState();
+    setInterval(_pollNavConnState, 1500);
+  });
+})();
+</script>
+
+<script>
+// ════════════════════════════════════════════════════════
 // WALLET — Plus Coins balance, earn tasks, withdrawals, Premium
 // ════════════════════════════════════════════════════════
 var _walletConfig = { coinsPerNaira: 10, withdrawalsOpen: false, premiumPriceCoins: 500, premiumEnabled: true, referralRewardCoins: 30, referralsEnabled: true, minWithdrawCoins: 100, maxWithdrawCoins: 50000, coinsPerToken: { USDT: 1000, GRAM: 200 }, transferFeePercent: 3, transferEnabled: true, minTransferCoins: 50, boostTiers: [ { id: 'b1', reactions: 10, coins: 50 }, { id: 'b2', reactions: 25, coins: 100 }, { id: 'b3', reactions: 50, coins: 180 } ], boostMaxPerPost: 3, boostEnabled: true,
@@ -36894,7 +37806,7 @@ function _mergeNewBuiltinTasks(savedTasks) {
 async function _loadWalletConfig() {
   try {
     const r = await fetch(SB_URL + '/rest/v1/app_config?key=eq.wallet_config&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (!r.ok) return;
     const rows = await r.json();
@@ -36927,7 +37839,7 @@ async function _saveWalletConfig() {
   try {
     await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'wallet_config', value: JSON.stringify(_walletConfig) })
     });
   } catch(e) { console.warn('[wallet] config save failed:', e); }
@@ -36936,7 +37848,7 @@ async function _saveWalletConfig() {
 async function _loadWalletTasksConfig() {
   try {
     const r = await fetch(SB_URL + '/rest/v1/app_config?key=eq.wallet_tasks&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (r.ok) {
       const rows = await r.json();
@@ -36960,7 +37872,7 @@ async function _saveWalletTasksConfig(tasks) {
   try {
     await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'wallet_tasks', value: JSON.stringify(tasks) })
     });
   } catch(e) { console.warn('[wallet] tasks save failed:', e); }
@@ -36991,7 +37903,7 @@ async function _loadAdsConfig(forceRefresh) {
   if (_adsCache && !forceRefresh) return _adsCache;
   try {
     const r = await fetch(SB_URL + '/rest/v1/app_config?key=eq.ads_config&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (r.ok) {
       const rows = await r.json();
@@ -37034,7 +37946,7 @@ async function _saveAdsConfig(ads) {
     const r = await SB._writeWithRetry(function() {
       return fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+        headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
         body: JSON.stringify({ key: 'ads_config', value: JSON.stringify(ads) })
       });
     }, 'save ads_config');
@@ -37424,6 +38336,170 @@ function _suggestWalletAfterSignup() {
   });
 }
 
+// ══════════════════════════════════════════════════════════
+// ONBOARDING — post-signup interests + suggested accounts. Shows the
+// fixed topic list first (max 5), then the top 15 accounts for those
+// topics ranked by follower count with a boost for verified/premium
+// accounts, per Dave's decision. Skippable at every step — this should
+// never block someone from using the app.
+// ══════════════════════════════════════════════════════════
+function _computeFollowerCounts() {
+  const follows = getFollowData();
+  const counts = {};
+  Object.keys(follows).forEach(function(followerKey) {
+    (follows[followerKey] || []).forEach(function(followedKey) {
+      counts[followedKey] = (counts[followedKey] || 0) + 1;
+    });
+  });
+  return counts;
+}
+
+async function openOnboardingInterestsStep() {
+  if (!currentUser) return;
+  let overlay = document.getElementById('onboardingInterestsOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'onboardingInterestsOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:11000;background:var(--bg);display:flex;flex-direction:column;';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div style="flex:1;overflow-y:auto;padding:calc(24px + env(safe-area-inset-top)) 20px 24px;max-width:480px;width:100%;margin:0 auto;box-sizing:border-box;">
+      <div style="text-align:center;margin-bottom:22px;">
+        <div style="font-size:20px;font-weight:800;color:var(--text);">What are you into?</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:5px;">Pick up to 5 — we'll suggest people to follow</div>
+      </div>
+      <div id="onbInterestsList" style="display:flex;flex-direction:column;gap:4px;margin-bottom:20px;"></div>
+      <button onclick="_onbGoToSuggested()" id="onbContinueBtn" style="width:100%;padding:14px;border-radius:100px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;">Continue</button>
+      <button onclick="_closeOnboardingInterests()" style="width:100%;padding:12px;margin-top:8px;background:none;border:none;color:var(--text3);font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;">Skip for now</button>
+    </div>
+  `;
+  window._onbSelected = [];
+  const list = document.getElementById('onbInterestsList');
+  function renderOnbList() {
+    list.innerHTML = FIXED_TOPICS.map(function(t) {
+      const checked = window._onbSelected.indexOf(t) !== -1;
+      const disabled = !checked && window._onbSelected.length >= 5;
+      return '<label style="display:flex;align-items:center;justify-content:space-between;padding:14px 4px;cursor:' + (disabled ? 'default' : 'pointer') + ';opacity:' + (disabled ? '0.4' : '1') + ';border-bottom:1px solid rgba(255,255,255,0.06);">'
+        + '<span style="font-size:15px;font-weight:600;color:var(--text);">' + t + '</span>'
+        + '<span class="nav-topic-toggle' + (checked ? ' nav-topic-toggle-on' : '') + '" data-topic="' + t.replace(/"/g,'&quot;') + '" onclick="' + (disabled ? '' : '_onbToggleTopic(this)') + '"><span class="nav-topic-toggle-knob"></span></span>'
+        + '</label>';
+    }).join('');
+  }
+  window._onbRenderList = renderOnbList;
+  renderOnbList();
+}
+window.openOnboardingInterestsStep = openOnboardingInterestsStep;
+
+function _onbToggleTopic(el) {
+  const topic = el.getAttribute('data-topic');
+  const sel = window._onbSelected || [];
+  const idx = sel.indexOf(topic);
+  if (idx === -1) { if (sel.length >= 5) return; sel.push(topic); }
+  else { sel.splice(idx, 1); }
+  window._onbSelected = sel;
+  if (typeof window._onbRenderList === 'function') window._onbRenderList();
+}
+window._onbToggleTopic = _onbToggleTopic;
+
+function _closeOnboardingInterests() {
+  const overlay = document.getElementById('onboardingInterestsOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+window._closeOnboardingInterests = _closeOnboardingInterests;
+
+async function _onbGoToSuggested() {
+  const selected = window._onbSelected || [];
+  // Save interests (same field the Edit Profile picker uses) if any picked —
+  // skipping entirely (no topics chosen) is fine, we just show general
+  // top accounts instead of topic-matched ones in that case.
+  if (selected.length) {
+    try {
+      const key = _myUsernameKey ? _myUsernameKey() : (currentUser||'').toLowerCase();
+      await SB.upsert('accounts', { username: key, interests: selected }, 'username');
+      if (_cache['acct_by_username'] && _cache['acct_by_username'][key]) {
+        _cache['acct_by_username'][key].interests = selected;
+      }
+    } catch(e) {}
+  }
+  await _renderOnboardingSuggested(selected);
+}
+window._onbGoToSuggested = _onbGoToSuggested;
+
+async function _renderOnboardingSuggested(selectedTopics) {
+  const overlay = document.getElementById('onboardingInterestsOverlay');
+  if (!overlay) return;
+  overlay.innerHTML = `
+    <div style="flex:1;overflow-y:auto;padding:calc(24px + env(safe-area-inset-top)) 20px 24px;max-width:480px;width:100%;margin:0 auto;box-sizing:border-box;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:20px;font-weight:800;color:var(--text);">People to follow</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:5px;">${selectedTopics.length ? 'Popular accounts in your topics' : 'Popular accounts on Social Plus'}</div>
+      </div>
+      <div id="onbSuggestedList" style="display:flex;flex-direction:column;gap:2px;margin-bottom:20px;">
+        <div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading…</div>
+      </div>
+      <button onclick="_closeOnboardingInterests()" style="width:100%;padding:14px;border-radius:100px;background:var(--gold);border:none;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;">Done</button>
+    </div>
+  `;
+  let allAccts = [];
+  try { allAccts = await getAllAccounts(); } catch(e) {}
+  const myKey = (currentUser||'').toLowerCase();
+  const followerCounts = _computeFollowerCounts();
+  // Topic-match: an account "matches" a selected topic if any of their
+  // recent posts resolve to that topic via hashtag detection, or if their
+  // own stated interests overlap. Falls back to no filter (just rank
+  // everyone) when the user picked no topics or nothing matched.
+  let candidates = allAccts.filter(function(a) {
+    const uk = (a.username||'').toLowerCase();
+    return uk && uk !== myKey && uk !== OWNER_KEY && !a.is_built_in;
+  });
+  if (selectedTopics && selectedTopics.length) {
+    const matched = candidates.filter(function(a) {
+      const acctInterests = Array.isArray(a.interests) ? a.interests : [];
+      return acctInterests.some(function(t) { return selectedTopics.indexOf(t) !== -1; });
+    });
+    if (matched.length >= 5) candidates = matched;
+  }
+  // Rank: follower count, with a flat boost for verified/premium so quality
+  // accounts surface even with fewer followers early on.
+  const ranked = candidates.map(function(a) {
+    const uk = (a.username||'').toLowerCase();
+    const followers = followerCounts[uk] || 0;
+    const isVer = (typeof isUserVerified === 'function') && (isUserVerified(a.username) || isUserVerified(a.display_name));
+    const isPrem = (typeof isPremiumUser === 'function') && isPremiumUser(uk);
+    const boost = (isVer ? 500 : 0) + (isPrem ? 200 : 0);
+    return { a: a, score: followers + boost, followers: followers, isVer: isVer, isPrem: isPrem };
+  }).sort(function(x, y) { return y.score - x.score; }).slice(0, 15);
+
+  const listEl = document.getElementById('onbSuggestedList');
+  if (!listEl) return;
+  if (!ranked.length) { listEl.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">No suggestions yet — check back later.</div>'; return; }
+  const myFollows = (getFollowData()[myKey] || []);
+  listEl.innerHTML = ranked.map(function(r) {
+    const a = r.a;
+    const uk = (a.username||'').toLowerCase();
+    const pic = a.profile_pic || null;
+    const aviHtml = (typeof _aviHtml === 'function') ? _aviHtml(pic, a.display_name || a.username, 44) : escHtml((a.display_name||a.username||'?').charAt(0).toUpperCase());
+    const isFollowing = myFollows.indexOf(uk) !== -1;
+    const badge = r.isVer ? VERIFIED_BADGE_HTML : '';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+      + '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;' + _aviWrapStyle(uk, a.display_name) + '">' + aviHtml + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:4px;">' + escHtml(a.display_name||a.username) + badge + '</div>'
+      + '<div style="font-size:12px;color:var(--text3);">@' + escHtml((a.username||'').replace(/\s+/g,'_')) + '</div>'
+      + '</div>'
+      + '<button id="onb-follow-' + escHtml(uk) + '" onclick="_onbToggleFollow(\'' + escHtml(uk) + '\',\'' + escHtml(a.display_name||a.username) + '\',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;' + (isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;') + '">' + (isFollowing ? 'Following' : 'Follow') + '</button>'
+      + '</div>';
+  }).join('');
+}
+
+function _onbToggleFollow(userKey, displayName, btn) {
+  if (typeof sugOverlayToggleFollow === 'function') { sugOverlayToggleFollow(userKey, displayName, btn); return; }
+  if (typeof exploreToggleFollow === 'function') { exploreToggleFollow(userKey, displayName, btn); return; }
+}
+window._onbToggleFollow = _onbToggleFollow;
+
 async function openWalletPage(startTab) {
   if (!currentUser) { openUserModal(); return; }
   const ov = document.getElementById('walletPageOverlay');
@@ -37809,31 +38885,34 @@ async function submitTransfer() {
   const clearBtn = document.querySelector('[onclick="_clearTransferRecipient()"]');
   if (clearBtn) clearBtn.style.pointerEvents = 'none';
   try {
-    // Write the transfer record FIRST. If this fails (e.g. table missing,
-    // network issue), we bail before touching anyone's balance — so a
-    // "Transfer failed" message is always true. Previously the debit/credit
-    // happened first and this record-write was last, so a failure here
-    // still left the sender debited and recipient credited while showing
-    // an error, risking a confused user retrying and double-sending.
-    const record = {
-      id: myKey + '_xfer_' + Date.now(),
-      sender: myKey, recipient: recipient.key,
-      amount: coins, fee: fee, recipient_received: recipientGets,
-      created_at: new Date().toISOString()
-    };
-    await SB.upsert('wallet_transfers', record, 'id');
-    // Debit sender
-    await _addWalletCoins(-coins, { silent: true });
-    // Credit recipient
-    const rRows = await SB.query('accounts', `?username=eq.${encodeURIComponent(recipient.key)}&select=plus_coins`);
-    const rBal = (rRows && rRows[0] && rRows[0].plus_coins) || 0;
-    await SB.update('accounts', { plus_coins: rBal + recipientGets }, `username=eq.${encodeURIComponent(recipient.key)}`);
-    // Credit fee to owner
-    if (fee > 0) {
-      const oRows = await SB.query('accounts', `?username=eq.${encodeURIComponent(OWNER_KEY)}&select=plus_coins`);
-      const oBal = (oRows && oRows[0] && oRows[0].plus_coins) || 0;
-      await SB.update('accounts', { plus_coins: oBal + fee }, `username=eq.${encodeURIComponent(OWNER_KEY)}`);
+    // Atomic server-side transfer: debits sender, credits recipient + owner
+    // fee, and writes the ledger row, all in one Postgres transaction via
+    // wallet_transfer_coins(). This replaces the old client-side
+    // read-balance-then-write-balance sequence, which (a) raced under
+    // concurrent transfers and (b) required the client to have direct write
+    // access to other users' plus_coins — no longer true now that accounts
+    // is locked down by RLS.
+    const rpcResp = await fetch(`${SB_URL}/rest/v1/rpc/wallet_transfer_coins`, {
+      method: 'POST',
+      headers: SB.headers,
+      body: JSON.stringify({ p_recipient: recipient.key, p_amount: coins, p_fee_percent: feePct })
+    });
+    if (!rpcResp.ok) {
+      const errBody = await rpcResp.text().catch(() => '');
+      throw new Error(errBody || `Transfer failed (${rpcResp.status})`);
     }
+    const rpcResult = await rpcResp.json();
+    // The server already applied the debit/credit atomically. Re-read our
+    // own balance (RLS allows reading our own row) and refresh the UI —
+    // don't call _addWalletCoins here, since that would write the debit a
+    // second time on top of what the function already did.
+    const freshRows = await SB.query('accounts', `?username=eq.${encodeURIComponent(myKey)}&select=plus_coins`);
+    _walletBalance = (freshRows && freshRows[0] && freshRows[0].plus_coins) || 0;
+    const balEl = document.getElementById('walletCoinBalance');
+    const cashEl = document.getElementById('walletCashEstimate');
+    if (balEl) balEl.textContent = _walletBalanceDisplay(_walletBalance.toLocaleString());
+    if (cashEl) cashEl.textContent = _walletBalanceHidden ? '••••' : ('≈ ' + _naira(_walletBalance));
+
     if (typeof addNotifForUser === 'function') {
       addNotifForUser(myKey, `🔻 Sent ${coins.toLocaleString()} coins to ${escHtml(recipient.displayName)}`, null, null, 'wallet_debit').catch(()=>{});
       addNotifForUser(recipient.key, `🪙 +${recipientGets.toLocaleString()} Plus Coins · from ${escHtml(displayNameFor(myKey))}`, null, null, 'wallet_credit').catch(()=>{});
@@ -38339,37 +39418,31 @@ function _recordReferralSignup(referrerKey, newUserKey) {
 
 async function _maybePayoutReferralReward(newUserKey) {
   try {
-    const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(newUserKey)}&select=referred_by,referral_paid`);
-    const acct = rows && rows[0];
-    if (!acct || !acct.referred_by || acct.referral_paid) return; // no referrer, or already paid
     await _loadWalletConfig();
     if (!_walletConfig.referralsEnabled) return;
     const reward = _walletConfig.referralRewardCoins || 30;
 
-    // ── Anti-looting gate ──
-    // If this referrer/invitee pair is already flagged (fingerprint match +
-    // invite link), don't credit the reward. Instead record it as a frozen
-    // pending reward for the admin to release or seize from the Security tab.
-    const pairA = acct.referred_by < newUserKey ? acct.referred_by : newUserKey;
-    const pairB = acct.referred_by < newUserKey ? newUserKey : acct.referred_by;
-    const flagRows = await SB.query('flagged_accounts', `?account_a=eq.${encodeURIComponent(pairA)}&account_b=eq.${encodeURIComponent(pairB)}&status=eq.open&select=id,reward_amount`);
-    const openFlag = flagRows && flagRows[0];
-    if (openFlag) {
-      await SB.update('flagged_accounts', { reward_amount: (openFlag.reward_amount || 0) + reward }, `id=eq.${openFlag.id}`);
-      await SB.update('accounts', { referral_paid: true }, `username=eq.${encodeURIComponent(newUserKey)}`); // don't retrigger, but coins stay frozen
-      return;
-    }
+    // All the logic that used to live here — reading referred_by/
+    // referral_paid, checking the anti-looting flag, crediting the
+    // referrer's balance — now happens atomically inside
+    // wallet_pay_referral() on the server. It has to: flagged_accounts is
+    // admin-only under RLS now, so a regular user's browser can no longer
+    // read it directly, and crediting someone else's plus_coins was never
+    // safe to do from the client in the first place.
+    const rpcResp = await fetch(`${SB_URL}/rest/v1/rpc/wallet_pay_referral`, {
+      method: 'POST',
+      headers: SB.headers,
+      body: JSON.stringify({ p_new_user: newUserKey, p_reward: reward })
+    });
+    if (!rpcResp.ok) { console.warn('[wallet] referral payout RPC failed:', await rpcResp.text().catch(()=>'')); return; }
+    const result = await rpcResp.json();
+    if (!result || !result.ok) return; // no referrer, already paid, or frozen pending review
 
-    const referrerRows = await SB.query('accounts', `?username=eq.${encodeURIComponent(acct.referred_by)}&select=plus_coins`);
-    if (!referrerRows || !referrerRows.length) return; // referrer account no longer exists
-    const referrerBal = referrerRows[0].plus_coins || 0;
-    await SB.update('accounts', { plus_coins: referrerBal + reward }, `username=eq.${encodeURIComponent(acct.referred_by)}`);
-    await SB.update('accounts', { referral_paid: true }, `username=eq.${encodeURIComponent(newUserKey)}`);
     if (typeof _logWalletEarning === 'function') {
-      _logWalletEarning(acct.referred_by, reward, 'Referral — @' + newUserKey).catch(()=>{});
+      _logWalletEarning(result.referrer, result.reward, 'Referral — @' + newUserKey).catch(()=>{});
     }
     if (typeof addNotifForUser === 'function') {
-      addNotifForUser(acct.referred_by, `🎁 Referral reward! +${reward} coins — @${newUserKey} completed their first task`, null, null, 'referral').catch(()=>{});
+      addNotifForUser(result.referrer, `🎁 Referral reward! +${result.reward} coins — @${newUserKey} completed their first task`, null, null, 'referral').catch(()=>{});
     }
   } catch(e) { console.warn('[wallet] referral payout check failed:', e); }
 }
@@ -38409,7 +39482,7 @@ async function _checkAccountForLooting(usernameKey) {
         fingerprint_hash: acct.device_fingerprint,
         invite_relation: relation,
         reward_amount: 0, reward_status: 'pending', status: 'open'
-      }, 'id');
+      }, 'account_a,account_b');
     }
   } catch(e) { console.warn('[looting check]', e); }
 }
@@ -38441,7 +39514,7 @@ async function _saScanAllForLooting() {
         await SB.upsert('flagged_accounts', {
           account_a: pairA, account_b: pairB, fingerprint_hash: fp,
           invite_relation: relation, reward_amount: 0, reward_status: 'pending', status: 'open'
-        }, 'id');
+        }, 'account_a,account_b');
         flaggedCount++;
       }
     }
@@ -38483,7 +39556,7 @@ async function _renderWalletReferralTab() {
         const rewarded = !!r.referral_paid;
         return `
           <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.22);display:flex;align-items:center;justify-content:center;color:var(--gold);overflow:hidden;flex-shrink:0;">${avi}</div>
+            <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(uKey, name)}">${avi}</div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(name)}</div>
               <div style="font-size:11px;color:var(--text3);">@${escHtml(uKey)}</div>
@@ -38561,7 +39634,7 @@ function _openTaskScreenshotUpload(task) {
       const cleanPath = key + '_' + task.id + '_' + Date.now() + '.' + (file.name.split('.').pop() || 'jpg');
       const up = await fetch(SB_URL + '/storage/v1/object/task-proofs/' + encodeURIComponent(cleanPath), {
         method: 'POST',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': file.type || 'image/jpeg' },
+        headers: _sbRawHeaders({ 'Content-Type': file.type || 'image/jpeg' }),
         body: file
       });
       if (!up.ok) throw new Error('upload failed');
@@ -38590,7 +39663,7 @@ function _openTaskScreenshotUpload(task) {
         await _addWalletCoins(task.coins, { reason: task.title, skipLedger: true }); // already logged above via wallet_task_claims
         await _maybePayoutReferralReward(key);
         await fetch(SB_URL + '/storage/v1/object/task-proofs/' + encodeURIComponent(cleanPath), {
-          method: 'DELETE', headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+          method: 'DELETE', headers: _sbRawHeaders()
         }).catch(function(){});
       } else if (typeof addNotifForUser === 'function') {
         addNotifForUser(key, `📋 Task submitted — ${task.title} · awaiting review`, null, null, 'task').catch(()=>{});
@@ -40409,7 +41482,7 @@ async function _saDeleteTaskProofImage(path) {
   try {
     await fetch(SB_URL + '/storage/v1/object/task-proofs/' + encodeURIComponent(path), {
       method: 'DELETE',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
   } catch(e) { console.warn('[super admin] proof image delete failed:', e); }
 }
@@ -40614,7 +41687,7 @@ async function _saRenderPremiumTransferRequests() {
         : ((r.sender_account_number || r.sender_account_name) ? `<div style="font-size:11.5px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--glass-border);"><span style="color:var(--text3);">Sent from:</span> ${escHtml(r.sender_account_name||'')} · ${escHtml(r.sender_account_number||'')}</div>` : '');
       return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${aviHtml}</div>
+          <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;${_aviWrapStyle(r.username)}">${aviHtml}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text);">@${escHtml(r.username||'')} <span style="font-weight:500;color:var(--text3);">· ${escHtml(tierLabel)}</span></div>
             <div style="font-size:11px;color:var(--text3);">${formatTime(r.submitted_at)} · ${isCrypto ? 'Crypto' : 'Naira'}</div>
@@ -40689,7 +41762,7 @@ function _savePartnerSites(arr) {
   try {
     fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'partner_sites', value: JSON.stringify(arr) })
     }).catch(function(){});
   } catch(e) {}
@@ -40697,7 +41770,7 @@ function _savePartnerSites(arr) {
 async function _loadPartnerSitesFromSupabase() {
   try {
     var r = await fetch(SB_URL + '/rest/v1/app_config?key=eq.partner_sites&limit=1', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      headers: _sbRawHeaders()
     });
     if (!r.ok) return;
     var rows = await r.json();
@@ -41465,7 +42538,7 @@ async function bkFetchAllRows(table) {
   let all = [], offset = 0, limit = 1000;
   while (true) {
     const res = await fetch(`${SB_URL}/rest/v1/${table}?select=*&limit=${limit}&offset=${offset}`, {
-      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+      headers: _sbRawHeaders()
     });
     if (!res.ok) {
       if (res.status === 401) throw new Error('401 — connection blocked (egress cap or paused project). Use SQL Editor Mode instead.');
@@ -41620,7 +42693,7 @@ async function bkInsertRows(table, rows) {
     try {
       const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
         method: 'POST',
-        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
+        headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' }),
         body: JSON.stringify(chunk)
       });
       if (res.ok) { inserted += chunk.length; }
@@ -42631,7 +43704,7 @@ async function doAupPush() {
   try {
     await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'latest_update', value: JSON.stringify(cfg) })
     });
   } catch(e) { showToast('Push failed. Check connection.', 'error'); return; }
@@ -42664,7 +43737,7 @@ async function doAupClear() {
   try {
     await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: 'latest_update', value: JSON.stringify({}) })
     });
     _pumConfig = null;
@@ -44471,7 +45544,7 @@ function _syncEventFromSupabase() {
   // event on any device that had ever toggled events before.
   var _idsSynced = null;
   var idsPromise = fetch(SB_URL + '/rest/v1/app_config?key=eq.active_event_ids&limit=1', {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    headers: _sbRawHeaders()
   }).then(function(r){ return r.ok ? r.json() : null; }).then(function(rows) {
     if (!rows || !Array.isArray(rows) || !rows[0]) return;
     try {
@@ -44481,7 +45554,7 @@ function _syncEventFromSupabase() {
   }).catch(function(){});
 
   fetch(SB_URL + '/rest/v1/app_config?key=eq.active_event&limit=1', {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    headers: _sbRawHeaders()
   }).then(function(r) {
     // If Supabase is rate-limited or erroring (402 etc), don't wipe the event
     if (!r.ok) { renderEventCard(); return Promise.resolve(null); }
@@ -44497,7 +45570,7 @@ function _syncEventFromSupabase() {
       // If custom announcement, also fetch its data so non-owners see it
       if (val === 'custom_announce') {
         fetch(SB_URL + '/rest/v1/app_config?key=eq.custom_announce_data&limit=1', {
-          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+          headers: _sbRawHeaders()
         }).then(function(r2){ return r2.ok ? r2.json() : null; }).then(function(rows2) {
           if (!rows2 || !rows2[0] || !rows2[0].value) return;
           try {
@@ -44753,13 +45826,13 @@ window.publishCustomAnnounce = function() {
   // Write to Supabase
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'resolution=merge-duplicates'},
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body:JSON.stringify({key:'active_event',value:'custom_announce'})
   }).catch(function(){});
   // Also save custom data to Supabase so other users see it
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'resolution=merge-duplicates'},
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body:JSON.stringify({key:'custom_announce_data',value:JSON.stringify({emoji:emoji,title:title,body:body,accent:accent})})
   }).catch(function(){});
   var m = document.getElementById('customAnnounceModal');
@@ -44786,12 +45859,12 @@ window.publishEvent = function(id) {
   // Write to Supabase — store full array as JSON
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body: JSON.stringify({ key: 'active_event', value: ids.length ? ids[0] : '' })
   }).catch(function(){});
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body: JSON.stringify({ key: 'active_event_ids', value: JSON.stringify(ids) })
   }).catch(function(){});
   closeEventManager();
@@ -44805,12 +45878,12 @@ window.unpublishEvent = function() {
   // Clear from Supabase too
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body: JSON.stringify({ key: 'active_event', value: '' })
   }).catch(function(){});
   fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
     body: JSON.stringify({ key: 'active_event_ids', value: '[]' })
   }).catch(function(){});
   closeEventManager();
@@ -44890,7 +45963,7 @@ function _flyerBase(opts) {
   + '<div class="flyer-glow"></div>'
   + '<div class="flyer-glow-bot"></div>'
   + '<div class="brand-header">'
-  + '<div class="brand-left"><div class="brand-eyebrow">Premium Sports Analysis</div><div class="brand-name">Kris <em>Analysis</em></div></div>'
+  + '<div class="brand-left"><div class="brand-eyebrow">Social Plus</div><div class="brand-name">Social <em>Plus</em></div></div>'
   + '<div class="brand-badge">Official</div>'
   + '</div>'
   + '<div class="divider"></div>'
