@@ -4463,7 +4463,10 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
     </div>
     <div style="font-size:22px;font-weight:800;letter-spacing:-0.6px;color:rgba(255,255,255,0.94);line-height:1.15;margin-bottom:6px;">How should we show your name?</div>
     <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:18px;line-height:1.4;">We pulled this from your Google account. Change it if you'd rather use something else — you can always edit it later too.</div>
-    <input class="modal-input" id="googleDisplayNameInput" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="margin-bottom:4px;"/>
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:0.4px;text-transform:uppercase;margin-bottom:6px;">Display name</div>
+    <input class="modal-input" id="googleDisplayNameInput" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="margin-bottom:14px;"/>
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:0.4px;text-transform:uppercase;margin-bottom:6px;">Username</div>
+    <input class="modal-input" id="googleUsernameInput" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:4px;"/>
     <div class="modal-error" id="googleNameError"></div>
     <button class="modal-btn" id="googleNameConfirmBtn" onclick="_confirmGoogleDisplayNameSubmit()" style="margin-top:6px;margin-bottom:0;font-size:15px;letter-spacing:0;">Continue →</button>
   </div>
@@ -4472,25 +4475,34 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
 // Holds the caller's completion callback between show + submit.
 window._googleNameConfirmCallback = null;
 
+// Same slug rule _createAccountForNewGoogleUser uses to derive a starting
+// suggestion — kept here too so the input shows a sane default immediately.
+function _slugifyGoogleUsername(s) {
+  return (s || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16) || 'user';
+}
+
 /**
- * Show the "confirm your display name" sheet after a Google OAuth session
- * lands. Call this BEFORE writing any accounts/profile row, so whatever
- * name the person confirms here is the one that gets persisted — not the
+ * Show the "confirm your display name / username" sheet after a Google
+ * OAuth session lands. Call this BEFORE writing any accounts/profile row,
+ * so whatever the person confirms here is what gets persisted — not the
  * raw Google name, and not a half-written row you'd have to patch after.
  *
  * @param {string} googleName - name from the Google profile (may be empty)
- * @param {function(string)} onConfirm - called once with the final,
- *   trimmed, non-empty name the person wants to use.
+ * @param {function({name:string, username:string})} onConfirm - called once
+ *   with the final, trimmed, validated, available name + username.
  */
 window.confirmGoogleDisplayName = function(googleName, onConfirm) {
   var input = document.getElementById('googleDisplayNameInput');
+  var userInput = document.getElementById('googleUsernameInput');
   var errEl = document.getElementById('googleNameError');
   var modal = document.getElementById('googleNameModal');
-  if (!input || !modal) { // markup missing somehow — never block sign-in
-    if (typeof onConfirm === 'function') onConfirm((googleName || '').trim());
+  if (!input || !userInput || !modal) { // markup missing somehow — never block sign-in
+    var fallbackName = (googleName || '').trim();
+    if (typeof onConfirm === 'function') onConfirm({ name: fallbackName, username: _slugifyGoogleUsername(fallbackName) });
     return;
   }
   input.value = (googleName || '').trim();
+  userInput.value = _slugifyGoogleUsername(googleName);
   errEl.textContent = '';
   window._googleNameConfirmCallback = onConfirm;
   modal.style.display = 'flex';
@@ -4498,26 +4510,52 @@ window.confirmGoogleDisplayName = function(googleName, onConfirm) {
   setTimeout(function() { input.focus(); input.select(); }, 260);
 };
 
-window._confirmGoogleDisplayNameSubmit = function() {
+window._confirmGoogleDisplayNameSubmit = async function() {
   var input = document.getElementById('googleDisplayNameInput');
+  var userInput = document.getElementById('googleUsernameInput');
   var errEl = document.getElementById('googleNameError');
   var modal = document.getElementById('googleNameModal');
+  var btn = document.getElementById('googleNameConfirmBtn');
   var name = (input.value || '').trim();
+  var uname = (userInput.value || '').trim().toLowerCase();
+
   if (!name || name.length < 2) { errEl.textContent = 'Name must be at least 2 characters.'; return; }
   if (name.length > 30) { errEl.textContent = 'Name must be 30 characters or fewer.'; return; }
+  if (!uname || uname.length < 2) { errEl.textContent = 'Username must be at least 2 characters.'; return; }
+  if (!/^[a-z0-9_]+$/.test(uname)) { errEl.textContent = 'Username can only contain letters, numbers, and underscores.'; return; }
+  if (typeof OWNER_KEY !== 'undefined' && [OWNER_KEY, 'owner'].includes(uname)) { errEl.textContent = 'That username is not available.'; return; }
+
+  errEl.textContent = 'Checking availability…';
+  if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
+  try {
+    var existing = await SB.query('accounts', '?username=eq.' + encodeURIComponent(uname));
+    if (existing && existing.length > 0) {
+      errEl.textContent = 'That username is already taken.';
+      return;
+    }
+  } catch (e) {
+    console.error('[GoogleAuth] username availability check failed:', e);
+    errEl.textContent = 'Could not check availability. Try again.';
+    return;
+  } finally {
+    if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+  }
+
   errEl.textContent = '';
   modal.style.display = 'none';
   modal.classList.remove('open');
   var cb = window._googleNameConfirmCallback;
   window._googleNameConfirmCallback = null;
-  if (typeof cb === 'function') cb(name);
+  if (typeof cb === 'function') cb({ name: name, username: uname });
 };
 
 // Enter key submits, same as the rest of the auth sheet inputs.
 document.addEventListener('DOMContentLoaded', function() {
-  var el = document.getElementById('googleDisplayNameInput');
-  if (el) el.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); window._confirmGoogleDisplayNameSubmit(); }
+  ['googleDisplayNameInput', 'googleUsernameInput'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); window._confirmGoogleDisplayNameSubmit(); }
+    });
   });
 });
 </script>
@@ -4661,13 +4699,14 @@ function _finishGoogleLogin(acct) {
 }
 
 // Creates a brand-new accounts row for a Google user with no existing
-// account match, using the name they confirmed in the display-name sheet.
-// Username is derived from the email/name and de-duped against collisions —
-// same availability check createAccount() already does for manual signup.
-async function _createAccountForNewGoogleUser(uid, googleEmail, confirmedName) {
-  var base = (confirmedName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16) || 'user';
-  var candidate = base;
+// account match, using the name AND username they confirmed/edited in the
+// display-name sheet (already validated + availability-checked there).
+async function _createAccountForNewGoogleUser(uid, googleEmail, confirmedName, confirmedUsername) {
+  var candidate = confirmedUsername || _slugifyGoogleUsername(confirmedName);
+  // Belt-and-suspenders re-check: covers the rare race where someone else
+  // claims the same username between the sheet's check and this write.
   var suffix = 0;
+  var base = candidate;
   while (true) {
     var existing = await SB.query('accounts', '?username=eq.' + encodeURIComponent(candidate));
     if (!existing || !existing.length) break;
@@ -4695,6 +4734,13 @@ async function _checkGoogleAuthRedirect() {
   var { data: { session } } = await client.auth.getSession();
   if (!session) return; // not a post-Google-redirect load, or no session yet
 
+  // A session existing here doesn't mean the app has an accounts row yet —
+  // google_signin_resolve()/claim/create is still running below. Block the
+  // generic "not logged in" init timers (openUserModal calls scattered through
+  // page-load init) from opening the login sheet on top of this flow while
+  // it resolves; cleared in every exit path (finally, below).
+  window._googleAuthInProgress = true;
+
   // Call google_signin_resolve() via PostgREST RPC, authenticated with the
   // REAL session JWT (not the anon key + spoofable header) so auth.uid()
   // is populated correctly server-side.
@@ -4719,6 +4765,7 @@ async function _checkGoogleAuthRedirect() {
       var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(result.username));
       var acct = rows && rows[0];
       if (acct) _finishGoogleLogin(acct);
+      window._googleAuthInProgress = false;
       return;
     }
 
@@ -4732,27 +4779,35 @@ async function _checkGoogleAuthRedirect() {
         } catch (e) {
           console.error('[GoogleAuth] claim failed:', e);
           showToast('Could not link that account. Try again.', 'error');
+        } finally {
+          window._googleAuthInProgress = false;
         }
       });
-      return;
+      return; // flag stays true; cleared inside the picker callback above
     }
 
     if (result.status === 'new') {
       var googleName = (session.user.user_metadata && (session.user.user_metadata.full_name || session.user.user_metadata.name)) || '';
       var googleEmail = session.user.email || '';
-      confirmGoogleDisplayName(googleName, async function(finalName) {
-        var created = await _createAccountForNewGoogleUser(session.user.id, googleEmail, finalName);
-        if (created) {
-          var rows3 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(created.username));
-          var acct3 = rows3 && rows3[0];
-          if (acct3) _finishGoogleLogin(acct3);
+      confirmGoogleDisplayName(googleName, async function(confirmed) {
+        try {
+          var created = await _createAccountForNewGoogleUser(session.user.id, googleEmail, confirmed.name, confirmed.username);
+          if (created) {
+            var rows3 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(created.username));
+            var acct3 = rows3 && rows3[0];
+            if (acct3) _finishGoogleLogin(acct3);
+          }
+        } finally {
+          window._googleAuthInProgress = false;
         }
       });
-      return;
+      return; // flag stays true; cleared inside the name-confirm callback above
     }
+    window._googleAuthInProgress = false;
   } catch (e) {
     console.error('[GoogleAuth] redirect handling failed:', e);
     showToast('Google sign-in ran into a problem. Please try again.', 'error');
+    window._googleAuthInProgress = false;
   }
 }
 
@@ -19918,6 +19973,7 @@ window.setUserUI = function() {
 
 // ── Auth modal ──
 function openUserModal() {
+  if (window._googleAuthInProgress) return; // don't stomp the Google sign-in flow (name confirm / account picker) while it's resolving
   const m = document.getElementById('userModal');
   if (!m) return;
   const modal = m.querySelector('.modal');
