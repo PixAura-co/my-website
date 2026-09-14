@@ -1444,7 +1444,9 @@ body.light-mode .tab-btn { color: rgba(0,0,0,0.4); }
 body.light-mode .tab-btn:not(.active):hover .tab-icon-wrap { background: rgba(0,0,0,0.06); }
 body.light-mode .tab-btn.active { background: none; color: rgba(0,0,0,0.85); }
 body.light-mode .tab-btn.active svg { color: rgba(0,0,0,0.85); }
-body.light-mode .tab-badge-dot { border-color: rgba(242,242,247,0.96); }
+._msgs-row-unread { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;border-radius:100px;background:var(--gold);color:#000;font-size:10px;font-weight:800;line-height:1;flex-shrink:0; }
+body.light-mode ._msgs-row-unread { background:var(--gold);color:#000; }
+.tab-badge-dot { border-color: rgba(242,242,247,0.96); }
 
 body.light-mode .tip-card { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.12); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
 body.light-mode .suggest-section-block { background: #ffffff !important; border-color: rgba(0,0,0,0.09) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
@@ -3988,6 +3990,29 @@ function showPWAInstallBanner() {
   // iOS install prompt is now only shown when user taps "Install App" in side menu
 })();
 </script>
+
+<style>
+.message-requests-card{display:flex;align-items:center;gap:12px;padding:15px 14px;margin-bottom:16px;border-radius:17px;background:linear-gradient(135deg,rgba(245,197,24,.10),rgba(245,197,24,.035));border:1px solid rgba(245,197,24,.24);cursor:pointer;transition:transform .16s ease,background .16s ease,border-color .16s ease;outline:none;}
+.message-requests-card:active{transform:scale(.985);background:rgba(245,197,24,.14);}
+.message-requests-card:focus-visible{box-shadow:0 0 0 2px var(--gold);}
+.message-requests-card-small{margin-bottom:10px;padding:12px 13px;}
+.message-requests-card-icon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold);background:rgba(245,197,24,.13);border:1px solid rgba(245,197,24,.20);}
+.message-requests-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:100px;background:var(--gold);color:#000;font-size:10px;font-weight:850;}
+body.light-mode .message-requests-card{background:linear-gradient(135deg,rgba(245,197,24,.14),rgba(245,197,24,.05));border-color:rgba(180,135,0,.22);}
+#messageRequestsPageContent .mr-request-card{border:1px solid var(--glass-border);background:var(--glass);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:var(--glass-shadow);}
+#messageRequestsPageContent .mr-request-top{display:flex;align-items:center;gap:11px;}
+#messageRequestsPageContent .mr-request-avi{width:48px;height:48px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#messageRequestsPageContent .mr-request-name{font-size:14px;font-weight:750;color:var(--text);line-height:1.25;}
+#messageRequestsPageContent .mr-request-meta{font-size:10.5px;color:var(--text3);margin-top:3px;}
+#messageRequestsPageContent .mr-request-preview{margin:12px 0 14px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06);font-size:12.5px;line-height:1.45;color:var(--text2);word-break:break-word;}
+body.light-mode #messageRequestsPageContent .mr-request-preview{background:rgba(0,0,0,.035);border-color:rgba(0,0,0,.06);}
+#messageRequestsPageContent .mr-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#messageRequestsPageContent .mr-request-actions button{font-family:var(--font);font-size:12px;font-weight:750;padding:10px 10px;border-radius:12px;cursor:pointer;}
+#messageRequestsPageContent .mr-primary{background:rgba(48,209,88,.13);border:1px solid rgba(48,209,88,.3);color:#30d158;}
+#messageRequestsPageContent .mr-secondary{background:rgba(255,255,255,.07);border:1px solid var(--glass-border);color:var(--text2);}
+#messageRequestsPageContent .mr-danger{background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.24);color:var(--red);}
+#messageRequestsPageContent .mr-wide{grid-column:1/-1;}
+</style>
 </head>
 <body>
 
@@ -4423,6 +4448,38 @@ function showPWAInstallBanner() {
 </div>
 <style>
 @keyframes authSheetIn { from { transform:translateY(48px);opacity:0; } to { transform:translateY(0);opacity:1; } }
+/* Google onboarding is a full-page auth step, not a bottom sheet. */
+#googleNameModal {
+  position:fixed !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100dvh !important;
+  min-height:100vh !important;
+  padding:0 !important;
+  align-items:stretch !important;
+  justify-content:stretch !important;
+  background:var(--bg) !important;
+  z-index:50000 !important;
+}
+#googleNameModal > .modal {
+  width:100% !important;
+  max-width:none !important;
+  min-height:100dvh !important;
+  height:100% !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  border:0 !important;
+  box-shadow:none !important;
+  background:var(--bg) !important;
+  box-sizing:border-box !important;
+  padding:calc(28px + env(safe-area-inset-top, 0px)) 22px calc(26px + env(safe-area-inset-bottom, 0px)) !important;
+  animation:googleFullPageIn 0.24s ease-out !important;
+  overflow-y:auto !important;
+  display:flex !important;
+  flex-direction:column !important;
+}
+#googleNameModal > .modal > div:first-child { display:none !important; }
+@keyframes googleFullPageIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 #userModal { overflow:hidden; }
 #userModal .modal::before { background:linear-gradient(90deg,transparent,rgba(245,197,24,0.55),rgba(255,255,255,0.22),rgba(245,197,24,0.55),transparent); }
 body.light-mode #userModal { background:linear-gradient(180deg,#e8eaf0 0%,#f0f2f7 100%) !important; }
@@ -13242,6 +13299,8 @@ async function _markConversationRead(peerKey) {
   if (!currentUser || !peerKey) { _dbgPaint('markRead bailed — no currentUser/peerKey', '#e91e63'); return; }
   const myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser||'').toLowerCase();
   const key = getChatKey(currentUser, peerKey);
+  // Local read boundary is authoritative for the inbox while Supabase catches up.
+  try { localStorage.setItem('ka_dm_lastSeen_' + key, String(Date.now())); } catch(e) {}
   if (_markReadInFlight[key]) { _dbgPaint('markRead already in flight for ' + key, '#ff9800'); return; }
   _markReadInFlight[key] = true;
   try {
@@ -14434,11 +14493,11 @@ async function renderUprofilePosts(userKey, displayName, isFollowing) {
       return `<div class="_u-post-card-bg" id="ppcard-${p.id}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);overflow:hidden;flex-shrink:0;${_aviWrapStyle(userKey, displayName)}">${aviHtml}</div>
-          <div>
+          <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:2px;">${escHtml(displayName)}${((userKey === OWNER_KEY || userKey === OWNER_USER) || (typeof isUserVerified === 'function' && (isUserVerified(userKey) || isUserVerified(displayName)))) ? VERIFIED_BADGE_HTML : ''}</div>
             <div style="font-size:11px;color:var(--text3);">${formatTime(p.time)}</div>
           </div>
-          ${_adminDelBtn}
+          ${_adminDelBtn ? `<div style="flex-shrink:0;">${_adminDelBtn}</div>` : ''}
         </div>
         ${p.text ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;">${renderMentions(escHtml(p.text))}</div>` : ''}
         ${mediaHtml}
@@ -17107,13 +17166,10 @@ async function renderMsgsInbox() {
   let panelHtml = '';
 
   if (requestConvs.length) {
-    panelHtml += `<div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.22);border-radius:12px;padding:10px 12px;margin-bottom:10px;cursor:pointer;" onclick="closeMsgsPanel();document.getElementById('messagesPageOverlay').style.display='flex';renderMessagesPageContent();">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        <span style="font-size:13px;font-weight:700;color:var(--gold);">Message Requests</span>
-        <span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:1px 7px;border-radius:100px;">${requestConvs.length}</span>
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px;margin-left:24px;">Tap to view messages from people you don't follow</div>
+    panelHtml += `<div class="message-requests-card message-requests-card-small" onclick="closeMsgsPanel();openMessageRequestsPage();">
+      <div class="message-requests-card-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-2-2-2V6c0-1.1.9-2-2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:800;color:var(--text);">Message Requests <span class="message-requests-count">${requestConvs.length}</span></div><div style="font-size:10.5px;color:var(--text3);margin-top:2px;">Tap to review and respond</div></div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.4"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   }
 
@@ -18233,17 +18289,7 @@ function _renderProfilePostsHTML(container, userPosts, usernameKey) {
           <div style="font-size:11px;color:var(--text3);">${formatTime(p.time)}${p.visibility==='followers'?' · <span style="opacity:0.6;font-size:9px;">&#128274;</span>':''}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <button onclick="openEditProfilePostModal('${p.id}','${escHtml((typeof _myUsernameKey==='function'?_myUsernameKey():currentUser)||'')}')" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Edit post">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button onclick="toggleProfilePostComments('${p.id}')" style="width:28px;height:28px;border-radius:8px;background:${commentsOn?'rgba(10,132,255,0.10)':'rgba(48,209,88,0.10)'};border:1px solid ${commentsOn?'rgba(10,132,255,0.25)':'rgba(48,209,88,0.25)'};color:${commentsOn?'var(--blue)':'var(--green)'};cursor:pointer;display:flex;align-items:center;justify-content:center;" title="${commentsOn?'Disable comments':'Enable comments'}">
-            ${commentsOn
-              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>`
-              : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`}
-          </button>
-          <button onclick="deleteProfilePost('${p.id}')" style="width:28px;height:28px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Delete post">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          </button>
+          ${(typeof _buildPostCardActionIcons==='function') ? _buildPostCardActionIcons(p.id, (typeof _myUsernameKey==='function'?_myUsernameKey():currentUser)||'', true) : ''}
         </div>
       </div>
       ${p.text ? `<div style="font-size:14px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">${renderMentions(escHtml(p.text))}</div>` : ''}
@@ -24641,13 +24687,36 @@ closeChat = function() {
   </div>
 </div>
 
+<!-- ═══ MESSAGE REQUESTS FULL PAGE ═══ -->
+<div id="messageRequestsPageOverlay" style="position:fixed;inset:0;z-index:9650;background:var(--bg);display:none;flex-direction:column;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 18px 10px;">
+      <button onclick="closeMessageRequestsPage()" aria-label="Back" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,.07);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:18px;font-weight:800;letter-spacing:-.4px;color:var(--text);">Message Requests</div>
+        <div id="messageRequestsSubtitle" style="font-size:11px;color:var(--text3);margin-top:2px;">Review people who want to message you</div>
+      </div>
+      <button onclick="markAllMessageRequestsRead()" title="Mark all as read" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,.07);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+    <div id="messageRequestsBulkBar" style="display:flex;gap:8px;padding:0 18px 12px;overflow-x:auto;">
+      <button onclick="acceptAllMessageRequests()" style="font-family:var(--font);font-size:12px;font-weight:750;padding:8px 13px;border-radius:100px;border:1px solid rgba(48,209,88,.3);background:rgba(48,209,88,.11);color:#30d158;white-space:nowrap;cursor:pointer;">✓ Accept all</button>
+      <button onclick="deleteAllMessageRequests()" style="font-family:var(--font);font-size:12px;font-weight:750;padding:8px 13px;border-radius:100px;border:1px solid rgba(255,69,58,.25);background:rgba(255,69,58,.08);color:var(--red);white-space:nowrap;cursor:pointer;">Clear all</button>
+    </div>
+  </div>
+  <div id="messageRequestsPageContent" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;max-width:680px;width:100%;margin:0 auto;padding:18px 16px calc(100px + env(safe-area-inset-bottom,0px));box-sizing:border-box;"></div>
+</div>
+
 <!-- ═══ MESSAGES PAGE ═══ -->
 <div id="messagesPageOverlay" style="position:fixed;inset:0;z-index:9600;background:var(--bg);display:none;flex-direction:column;">
   <!-- Topbar — title moved to the right (X-style), stories row removed,
        shrinks on scroll: the #messagesPageContent scroll listener toggles
        body.msgs-header-compact (see JS below), which this CSS reacts to. -->
   <div class="subpage-topbar msgs-topbar" id="msgsTopbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;transition:padding 0.2s ease;">
-    <div class="msgs-topbar-row" style="display:flex;align-items:center;justify-content:flex-end;padding:16px 18px 10px;position:relative;gap:14px;transition:padding 0.2s ease;">
+    <div class="msgs-topbar-row" style="display:flex;align-items:center;justify-content:flex-end;padding:16px 18px 10px;position:relative;gap:10px;transition:padding 0.2s ease;">
       <!-- Title now sits on the right, immediately before the action buttons -->
       <div class="msgs-title" style="font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);margin-right:auto;transition:font-size 0.2s ease;">Messages</div>
       <!-- Filter trigger slides up into this row once scrolled (compact state) -->
@@ -24655,27 +24724,26 @@ closeChat = function() {
         <span id="msgsFilterTriggerCompactLabel">Recent</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <button onclick="openCreateGroupChat()" style="width:34px;height:34px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gold);flex-shrink:0;" title="New Group Chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </button>
-      <button onclick="document.getElementById('msgSearchWrap').style.display=document.getElementById('msgSearchWrap').style.display==='none'?'block':'none';document.getElementById('msgSearchInput').focus();" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;">
+      <button onclick="document.getElementById('msgSearchWrap').style.display=document.getElementById('msgSearchWrap').style.display==='none'?'block':'none';document.getElementById('msgSearchInput').focus();" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;" title="Search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button onclick="_openMsgsMoreMenu(this)" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;" title="More">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
       </button>
     </div>
     <!-- Search bar (hidden by default) -->
     <div id="msgSearchWrap" style="display:none;padding:0 18px 10px;">
       <input id="msgSearchInput" placeholder="Search messages…" oninput="filterMsgSearch(this.value)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;"/>
     </div>
-    <!-- Chat-list filter row — collapses/hides once scrolled, since the
-         compact trigger above takes over at that point. -->
-    <div class="msgs-filter-row" id="msgsFilterRow" style="padding:10px 18px 12px;display:flex;border-bottom:1px solid rgba(255,255,255,0.07);overflow:hidden;transition:max-height 0.2s ease,opacity 0.2s ease,padding 0.2s ease;max-height:60px;opacity:1;">
-      <button id="msgsFilterTrigger" onclick="_openMsgsFilterTray()" style="font-family:var(--font);font-size:13px;font-weight:700;padding:8px 16px;border-radius:100px;cursor:pointer;white-space:nowrap;border:1px solid var(--gold);background:var(--gold);color:#000;display:inline-flex;align-items:center;gap:7px;">
+    <!-- Legacy filter-pill row — kept off-screen (not rendered visually; the
+         list is card-based now and doesn't need a persistent tab row), but
+         still present so _setMsgsListFilter/_refreshMsgsFilterCounts (which
+         target these ids) keep working when triggered from the ⋯ sheet. -->
+    <div id="msgsFilterRow" style="display:none;">
+      <button id="msgsFilterTrigger" onclick="_openMsgsFilterTray()">
         <span id="msgsFilterTriggerLabel">Recent</span>
-        <span id="msgsFilterTriggerCount" class="_msgs-filter-count" style="display:none;background:rgba(0,0,0,0.25);color:#000;"></span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <span id="msgsFilterTriggerCount" class="_msgs-filter-count"></span>
       </button>
-      <!-- Hidden — kept so _setMsgsListFilter/_refreshMsgsFilterCounts (which
-           target these ids) don't need to change, only the visible UI does. -->
       <div style="display:none;">
         <button id="msgsFilterPill-recent" onclick="_setMsgsListFilter('recent')" class="_msgs-filter-pill _msgs-filter-pill-active">Recent<span id="msgsFilterCount-recent" class="_msgs-filter-count"></span></button>
         <button id="msgsFilterPill-personal" onclick="_setMsgsListFilter('personal')" class="_msgs-filter-pill">Personal<span id="msgsFilterCount-personal" class="_msgs-filter-count"></span></button>
@@ -26786,6 +26854,149 @@ function closeMessagesPage(resetTab = true) {
     if (homeTab) homeTab.classList.add('active');
   }
 }
+async function _getMessageRequestConversations() {
+  if (!currentUser) return [];
+  const myKey = _myUsernameKey();
+  let rows = [];
+  try {
+    const [sent, recv] = await Promise.all([
+      SB.query('messages', `?sender=eq.${encodeURIComponent(myKey)}`),
+      SB.query('messages', `?receiver=eq.${encodeURIComponent(myKey)}`)
+    ]);
+    const all = [...(sent||[]), ...(recv||[])];
+    const seen = new Set();
+    all.forEach(r => {
+      const key = r.chat_key || r.id;
+      if (!seen.has(key) && (r.messages||[]).length) { seen.add(key); rows.push(r); }
+    });
+  } catch(e) {
+    for (let i=0;i<localStorage.length;i++) {
+      const k=localStorage.key(i);
+      if(k && k.startsWith('ka_chat_') && k.includes(myKey)) {
+        try { const msgs=JSON.parse(localStorage.getItem(k)||'[]'); if(msgs.length) rows.push({id:k.replace('ka_chat_',''),messages:msgs}); } catch(_){}
+      }
+    }
+  }
+  const follows = typeof getFollowData === 'function' ? getFollowData() : {};
+  const myFollowsNorm = (follows[myKey]||[]).map(f=>(f||'').toLowerCase().replace(/[\s_]+/g,''));
+  const out=[]; const seenPeers=new Set();
+  rows.forEach(r=>{
+    const msgs=r.messages||[]; const key=r.chat_key||r.id||''; const parts=key.split('__');
+    const peer=parts.length===2 ? (parts[0]===myKey?parts[1]:parts[0]) : (r.sender===myKey?r.receiver:r.sender);
+    if(!peer || seenPeers.has(peer.toLowerCase())) return;
+    const peerNorm=peer.toLowerCase().replace(/[\s_]+/g,'');
+    const peerFollows=(follows[peer.toLowerCase()]||follows[peer]||[]).map(f=>(f||'').toLowerCase().replace(/[\s_]+/g,''));
+    let regular = peerNorm===OWNER_KEY.replace(/[\s_]+/g,'') || peerNorm===AI_BOT_KEY || myFollowsNorm.includes(peerNorm) || peerFollows.includes(myKey.replace(/[\s_]+/g,''));
+    if (typeof _mrRoles==='function') { const roles=_mrRoles(myKey,peer); if(roles){ const st=_mrState(msgs,roles.normalKey,roles.premiumKey); regular=st.status==='accepted'; } }
+    if(!regular){ seenPeers.add(peer.toLowerCase()); out.push({key,peer,msgs,last:(typeof _mrLastRealMsg==='function'?_mrLastRealMsg(msgs):msgs[msgs.length-1])}); }
+  });
+  out.sort((a,b)=>new Date((b.last||{}).time||0)-new Date((a.last||{}).time||0));
+  return out;
+}
+
+function _mrRequestDisplay(conv) {
+  const stored=acctByKey(conv.peer);
+  const displayName=(stored&&(stored.display_name||stored.displayName))||conv.peer;
+  const pic=picFor(conv.peer)||picFor(displayName)||null;
+  const unread=_dmUnreadCount(conv.msgs,_myUsernameKey());
+  const last=conv.last;
+  return {stored,displayName,pic,unread,last};
+}
+
+async function renderMessageRequestsPage() {
+  const container=document.getElementById('messageRequestsPageContent');
+  if(!container) return;
+  container.innerHTML='<div style="text-align:center;padding:44px 20px;color:var(--text3);font-size:13px;">Loading requests…</div>';
+  const reqs=await _getMessageRequestConversations();
+  const subtitle=document.getElementById('messageRequestsSubtitle');
+  if(subtitle) subtitle.textContent=reqs.length ? `${reqs.length} pending request${reqs.length===1?'':'s'} · review before replying` : 'No pending message requests';
+  const bulk=document.getElementById('messageRequestsBulkBar'); if(bulk) bulk.style.display=reqs.length?'flex':'none';
+  if(!reqs.length){
+    container.innerHTML='<div style="text-align:center;padding:72px 24px;color:var(--text3);"><div style="width:64px;height:64px;border-radius:20px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:rgba(245,197,24,.10);color:var(--gold);border:1px solid rgba(245,197,24,.18);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2-2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div><div style="font-size:16px;font-weight:750;color:var(--text);margin-bottom:7px;">All caught up</div><div style="font-size:12px;line-height:1.5;">New message requests will appear here.</div></div>';
+    return;
+  }
+  container.innerHTML=reqs.map(conv=>{
+    const d=_mrRequestDisplay(conv); const avi=_aviHtml(d.pic,d.displayName,48); const peer=conv.peer;
+    const roles=typeof _mrRoles==='function'?_mrRoles(_myUsernameKey(),peer):null;
+    const canAccept=!!(roles && !roles.viewerIsNormal);
+    const preview=d.last ? escHtml(d.last.text||'') : 'No message preview available';
+    const time=d.last&&d.last.time?formatTime(d.last.time):'';
+    const unread=d.unread?`<span class="_msgs-row-unread">${d.unread>99?'99+':d.unread}</span>`:'';
+    return `<div class="mr-request-card" data-mr-peer="${escHtml(peer)}">
+      <div class="mr-request-top">
+        <div class="mr-request-avi" style="${_aviWrapStyle(peer,d.displayName)}">${avi}</div>
+        <div style="flex:1;min-width:0;"><div class="mr-request-name">${escHtml(d.displayName)} ${isUserVerified(peer)||isUserVerified(d.displayName)?VERIFIED_BADGE_HTML:''}</div><div class="mr-request-meta">${time}${unread?` · ${unread}`:''}</div></div>
+        <button onclick="event.stopPropagation();openUserProfile('${escHtml(peer)}')" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="View profile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
+      </div>
+      <div class="mr-request-preview">${preview}</div>
+      <div class="mr-request-actions">
+        ${canAccept?`<button class="mr-primary" onclick="event.stopPropagation();mrAcceptRequest('${escHtml(peer)}');setTimeout(renderMessageRequestsPage,250)">✓ Accept</button>`:`<button class="mr-secondary" onclick="event.stopPropagation();openChatFromInbox('${escHtml(peer)}');">View conversation</button>`}
+        <button class="mr-danger" onclick="event.stopPropagation();mrDeclineRequest('${escHtml(peer)}')">Decline</button>
+        <button class="mr-secondary mr-wide" onclick="event.stopPropagation();mrBlockRequest('${escHtml(peer)}')">Block & remove request</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openMessageRequestsPage() {
+  if(!currentUser){ openUserModal(); return; }
+  const overlay=document.getElementById('messageRequestsPageOverlay'); if(!overlay) return;
+  overlay.style.display='flex'; document.body.style.overflow='hidden';
+  const mp=document.getElementById('messagesPageOverlay'); if(mp) mp.style.display='none';
+  const oldPanel=document.getElementById('msgsOverlay'); if(oldPanel) oldPanel.classList.remove('open');
+  await renderMessageRequestsPage();
+}
+function closeMessageRequestsPage(){
+  const overlay=document.getElementById('messageRequestsPageOverlay'); if(overlay) overlay.style.display='none';
+  document.body.style.overflow='';
+  if(typeof openMessagesPage==='function') setTimeout(()=>openMessagesPage(),0);
+}
+async function mrDeclineRequest(peerKey){
+  if(!peerKey) return;
+  await new Promise(resolve=>_islandConfirm('Remove this request and its conversation?',resolve,{title:'Decline request?',icon:'✕',confirmLabel:'Decline'}));
+  const key=getChatKey(currentUser,peerKey);
+  delete _chatCache[key]; try{localStorage.removeItem('ka_chat_'+key);}catch(e){}
+  try{await SB.delete('messages',`chat_key=eq.${encodeURIComponent(key)}`);}catch(e){showToast('Could not remove request — check your connection.','error');return;}
+  showToast('Message request declined.','');
+  await renderMessageRequestsPage();
+  if(typeof renderMessagesPageContent==='function') renderMessagesPageContent({forceSkeleton:false});
+}
+async function mrBlockRequest(peerKey){
+  if(!peerKey || !currentUser) return;
+  await new Promise(resolve=>_islandConfirm("They won't be able to send you messages or view your profile.",resolve,{title:'Block this user?',icon:'block',confirmLabel:'Block'}));
+  const blocked=JSON.parse(localStorage.getItem('ka_blocked_'+currentUser)||'[]');
+  if(!blocked.includes(peerKey)) blocked.push(peerKey);
+  localStorage.setItem('ka_blocked_'+currentUser,JSON.stringify(blocked));
+  const key=getChatKey(currentUser,peerKey); delete _chatCache[key]; try{localStorage.removeItem('ka_chat_'+key);}catch(e){}
+  try{await SB.delete('messages',`chat_key=eq.${encodeURIComponent(key)}`);}catch(e){}
+  showToast('User blocked and request removed.','');
+  await renderMessageRequestsPage();
+  if(typeof renderMessagesPageContent==='function') renderMessagesPageContent({forceSkeleton:false});
+}
+async function markAllMessageRequestsRead(){
+  const reqs=await _getMessageRequestConversations();
+  await Promise.all(reqs.map(c=>_markConversationRead(c.peer)));
+  showToast('All message requests marked as read.','success');
+  await renderMessageRequestsPage();
+}
+async function acceptAllMessageRequests(){
+  const reqs=await _getMessageRequestConversations();
+  const myKey=_myUsernameKey();
+  const acceptables=reqs.filter(c=>{const r=_mrRoles(myKey,c.peer);return r&&!r.viewerIsNormal;});
+  if(!acceptables.length){showToast('There are no requests you can accept here.','error');return;}
+  await Promise.all(acceptables.map(c=>mrAcceptRequest(c.peer)));
+  await renderMessageRequestsPage();
+  if(typeof renderMessagesPageContent==='function') renderMessagesPageContent({forceSkeleton:false});
+}
+async function deleteAllMessageRequests(){
+  const reqs=await _getMessageRequestConversations(); if(!reqs.length)return;
+  await new Promise(resolve=>_islandConfirm('Remove all pending message requests and their conversations?',resolve,{title:'Clear all requests?',icon:'🗑️',confirmLabel:'Clear all'}));
+  for(const c of reqs){ const key=getChatKey(currentUser,c.peer); delete _chatCache[key]; try{localStorage.removeItem('ka_chat_'+key);}catch(e){} try{await SB.delete('messages',`chat_key=eq.${encodeURIComponent(key)}`);}catch(e){} }
+  showToast('All message requests cleared.','');
+  await renderMessageRequestsPage();
+  if(typeof renderMessagesPageContent==='function') renderMessagesPageContent({forceSkeleton:false});
+}
+
 async function renderMessagesPageContent(opts) {
   opts = opts || {};
   const container = document.getElementById('messagesPageContent');
@@ -26837,6 +27048,23 @@ async function renderMessagesPageContent(opts) {
     if (!_hasCache && window._appLoadTracker) window._appLoadTracker.done('messages');
   }
 }
+function _dmUnreadCount(msgs, myKey, chatKey) {
+  var key = (myKey || '').toLowerCase();
+  var seenAt = 0;
+  if (chatKey) {
+    try { seenAt = parseInt(localStorage.getItem('ka_dm_lastSeen_' + chatKey) || '0', 10) || 0; } catch(e) {}
+  }
+  return (msgs || []).filter(function(m) {
+    if (!m || m.__mrSys) return false;
+    if ((m.sender || '').toLowerCase() === key) return false;
+    if (seenAt) {
+      var mt = new Date(m.time || 0).getTime();
+      return mt > seenAt;
+    }
+    return m.read !== true;
+  }).length;
+}
+
 async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
   const myKey = _myUsernameKey();
   const convs = [];
@@ -26945,40 +27173,18 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
   let html = '';
 
   if (requestConvs.length) {
-    html += `<div data-msg-section="requests">
-    <div style="background:rgba(245,197,24,0.06);border:1px solid rgba(245,197,24,0.18);border-radius:14px;padding:12px 14px;margin-bottom:14px;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.req-chevron').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)';">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--gold);">Message Requests <span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:1px 7px;border-radius:100px;margin-left:4px;">${requestConvs.length}</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px;">Pending — review and respond</div>
-        </div>
-        <svg class="req-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+    const unreadRequests = requestConvs.reduce((n,c) => n + _dmUnreadCount(c.msgs, myKey, c.key), 0);
+    const reqUnread = unreadRequests ? `<span class="_msgs-row-unread" style="margin-left:4px;">${unreadRequests > 99 ? '99+' : unreadRequests}</span>` : '';
+    html += `<div data-msg-section="requests" class="message-requests-card" onclick="openMessageRequestsPage()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')openMessageRequestsPage();">
+      <div class="message-requests-card-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
       </div>
-    </div>
-    <div style="display:none;margin-bottom:14px;">`;
-    html += requestConvs.map(conv => {
-      const stored = accounts[conv.peer] || accounts[(conv.peer||'').toLowerCase()];
-      const displayName = (stored && (stored.display_name || stored.displayName)) || conv.peer;
-      const pic = picFor(conv.peer) || picFor(displayName) || null;
-      const aviHtml = _aviHtml(pic, displayName, 44);
-      const preview = conv.last ? escHtml(conv.last.text.substring(0,36) + (conv.last.text.length>36?'…':'')) : '';
-      const peerKey = stored ? stored.username : conv.peer;
-      const _mrRolesRow = (typeof _mrRoles === 'function') ? _mrRoles(myKey, peerKey) : null;
-      const _mrRowBtns = (_mrRolesRow && !_mrRolesRow.viewerIsNormal)
-        ? `<button onclick="event.stopPropagation();mrAcceptRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.3);color:#30d158;cursor:pointer;">Accept</button>
-        <button onclick="event.stopPropagation();mrLockRequest('${escHtml(peerKey)}')" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text2);cursor:pointer;">🔒</button>`
-        : '';
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
-        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;${_aviWrapStyle(peerKey, displayName)}">${aviHtml}</div>
-        <div style="flex:1 1 0%;min-width:0;overflow:hidden;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}</div>
-          <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
-        </div>
-        <div style="display:flex;flex-wrap:nowrap;gap:5px;flex-shrink:0;">${_mrRowBtns}<button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;white-space:nowrap;">Delete</button></div>
-      </div>`;
-    }).join('');
-    html += `</div></div>`;
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:3px;font-size:14px;font-weight:800;color:var(--text);">Message Requests <span class="message-requests-count">${requestConvs.length}</span>${reqUnread}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">People you don't follow are waiting for your response</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
   }
 
   if (regularConvs.length < 19) {
@@ -27008,14 +27214,17 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
       }
       const aviHtml = _aviHtml(pic, displayName, 46);
       const preview = conv.last ? escHtml(conv.last.text.substring(0,36) + (conv.last.text.length>36?'…':'')) : '';
+      const unreadCount = _dmUnreadCount(conv.msgs, myKey, conv.key);
+      const unreadBadge = unreadCount ? `<span class="_msgs-row-unread">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
       const peerKey = isOwnerConv ? OWNER_KEY : (stored ? stored.username : conv.peer);
       const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5C518"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
-      return `<div data-msg-row data-msg-bucket="personal" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
+      return `<div data-msg-row data-msg-bucket="personal" data-unread="${unreadCount}" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(peerKey, displayName)}">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
           <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(displayName)}${_convBadge}</div>
           <div class="_u-ellipsis-sm">${preview}</div>
         </div>
+        <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0;">${unreadBadge}</span>
         <button onclick="event.stopPropagation();deleteConversation('${escHtml(conv.key)}').then(()=>renderMessagesPageContent())" style="font-family:var(--font);font-size:11px;padding:4px 8px;border-radius:8px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.25);color:var(--red);cursor:pointer;flex-shrink:0;white-space:nowrap;">Delete</button>
       </div>`;
     }).join('');
@@ -28071,8 +28280,31 @@ function markConnectSeen() {
 }
 
 async function refreshMsgsBadge() {
-  // Unread counter removed — always show 0 on the Messages tab.
-  _setTabBadgeCount('tab-msgs-badge', 0);
+  if (!currentUser) { _setTabBadgeCount('tab-msgs-badge', 0); return; }
+  if (_msgsBadgeChecking) return;
+  _msgsBadgeChecking = true;
+  try {
+    var myKey = (typeof _myUsernameKey === 'function') ? _myUsernameKey() : (currentUser || '').toLowerCase();
+    var personalUnread = 0;
+    try {
+      var recv = await SB.query('messages', '?receiver=eq.' + encodeURIComponent(myKey));
+      (recv || []).forEach(function(r) {
+        var msgs = r.messages || [];
+        var chatKey = r.chat_key || '';
+        try {
+          if (typeof _chatCache !== 'undefined' && _chatCache[chatKey] && _chatCache[chatKey].length) msgs = _chatCache[chatKey];
+        } catch(e) {}
+        personalUnread += _dmUnreadCount(msgs, myKey, chatKey);
+      });
+    } catch(e) {}
+    var groupUnread = 0;
+    try {
+      var groups = await _loadGroupChats();
+      (groups || []).forEach(function(g) { groupUnread += _groupUnreadCount(g); });
+    } catch(e) {}
+    _setTabBadgeCount('tab-msgs-badge', personalUnread + groupUnread);
+  } catch(e) {}
+  finally { _msgsBadgeChecking = false; }
 }
 document.addEventListener('DOMContentLoaded', function() {
   const ab = document.getElementById('navAuthBtn');
@@ -28444,7 +28676,7 @@ document.addEventListener('visibilitychange', function() {
     <div id="pum-err" style="display:none;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.3);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--red);margin-bottom:12px;"></div>
 
     <button id="pum-push-btn" onclick="doPumPush()" disabled style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#F5C518,#ffe066);border:none;color:#000;cursor:pointer;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(245,197,24,0.35);margin-bottom:10px;opacity:0.4;pointer-events:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Push Update to Everyone</button>
-    <button onclick="doPumClear()" style="width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:13px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.2);color:var(--red);cursor:pointer;margin-bottom:8px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear Update (remove banner for users)</button>
+    <button onclick="doPumClear()" style="width:100%;font-family:var(--font);font-size:13px;padding:11px;border-radius:13px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.2);color:var(--red);cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear Update (remove banner for users)</button>
     <button onclick="closePumModal()" style="width:100%;font-family:var(--font);font-size:14px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text2);cursor:pointer;">Cancel</button>
   </div>
 </div>
@@ -30708,6 +30940,12 @@ async function _onChannelReactionTap(postId, emoji, btn) {
 // ── Comment button → opens the linked group chat thread (Telegram model).
 // If no group is linked yet, tells the channel owner to link one. ──
 async function _openChannelPostComments(channelId, postId, btn) {
+  // Close the channel detail immediately. The group chat has a higher-level
+  // page transition and must not be left underneath the channel overlay while
+  // getChannel()/group membership requests are in flight. Without this, Android
+  // WebViews can appear to ignore the tap until Back dismisses the channel page.
+  if (typeof closeChannelDetail === 'function') closeChannelDetail();
+
   // Immediate feedback before any of the awaits below — without this the
   // button gave zero visual response while getChannel/loadGroupChats were
   // in flight, so a slow network made it look completely unresponsive
@@ -34081,6 +34319,16 @@ function _groupLastSeenKey(groupId) {
 }
 function _markGroupSeen(groupId) {
   try { localStorage.setItem(_groupLastSeenKey(groupId), String(Date.now())); } catch(e) {}
+  document.querySelectorAll('#messagesPageContent [data-msg-row][data-msg-bucket="groups"]').forEach(function(r) {
+    if ((r.getAttribute('onclick') || '').indexOf("openGroupChat('" + groupId + "')") !== -1) {
+      r.dataset.unread = '0';
+      var badge = r.querySelector('._msgs-row-unread');
+      if (badge) badge.remove();
+      var title = r.querySelector('div[style*="font-size:14px"]');
+      if (title) title.style.fontWeight = '600';
+    }
+  });
+  if (typeof _refreshMsgsFilterCounts === 'function') _refreshMsgsFilterCounts();
   // Invalidate the cached Groups block so the next renderMessagesPageContent
   // call skips the instant-repaint-from-cache step for it and goes straight
   // to a fresh fetch — otherwise the stale cache (still showing this
@@ -34142,7 +34390,7 @@ window.renderMessagesPageContent = async function() {
       var icon = g.avatar || '';
       var iconHtml = icon.startsWith('data:') ? '<img src="'+icon+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>' : (icon || '👥');
       var unreadCount = _groupUnreadCount(g);
-      var unreadBadge = unreadCount ? '<span style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">' + (unreadCount > 99 ? '99+' : unreadCount) + '</span>' : '';
+      var unreadBadge = unreadCount ? '<span class="_msgs-row-unread" style="background:var(--gold);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;flex-shrink:0;min-width:18px;text-align:center;">' + (unreadCount > 99 ? '99+' : unreadCount) + '</span>' : '';
       return '<div data-msg-row data-msg-bucket="groups" data-unread="' + unreadCount + '" data-name="' + escHtml(g.name) + '" onclick="openGroupChat(\''+escHtml(g.id)+'\')" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">'
         + '<div style="width:46px;height:46px;border-radius:50%;background:rgba(94,92,230,0.2);border:1.5px solid rgba(94,92,230,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">' + iconHtml + '</div>'
         + '<div style="flex:1 1 0%;min-width:0;overflow:hidden;">'
@@ -34196,9 +34444,8 @@ window.renderMessagesPageContent = async function() {
 // in the Messages list without waiting for a full re-render.
 var _origOpenGroupChatForSeen = window.openGroupChat;
 window.openGroupChat = async function(groupId) {
-  var r = await _origOpenGroupChatForSeen.apply(this, arguments);
   _markGroupSeen(groupId);
-  return r;
+  return await _origOpenGroupChatForSeen.apply(this, arguments);
 };
 
 
@@ -34244,6 +34491,14 @@ window.submitAddGroupMembers = async function() {
 var _origOpenGroupChat = window.openGroupChat;
 window.openGroupChat = async function(groupId) {
   if (!currentUser) { showToast('Sign in to use group chats.', 'error'); return; }
+
+  // IMPORTANT: this is the final openGroupChat wrapper in the file, so it is
+  // the implementation that channel Comment taps actually reach. Always close
+  // channel detail synchronously before awaiting group data; otherwise the
+  // channel overlay can remain above the group chat and only a Back press will
+  // reveal the group.
+  if (typeof closeChannelDetail === 'function') closeChannelDetail();
+
   var msgsOv = document.getElementById('messagesPageOverlay');
   if (msgsOv) msgsOv.style.display = 'none';
 
@@ -34251,7 +34506,7 @@ window.openGroupChat = async function(groupId) {
 
   // ── INSTANT OPEN: show overlay immediately using any cached data ──
   var ov = document.getElementById('groupChatOverlay');
-  ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:19600;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;';
+  ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100dvh;z-index:60000;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transform:translateZ(0);';
   document.body.style.overflow = 'hidden';
   var tb = document.getElementById('appTabbar');
   if (tb) tb.classList.add('chat-open-hidden');
@@ -34311,6 +34566,9 @@ window.openGroupChat = async function(groupId) {
       var newMemCount = (fg.members || []).length;
       _groupCache[_currentGroupId] = fg;
       if (_gcFp(newMsgs) !== _gcFp(oldMsgs)) renderGroupMessages(fg);
+      // Anything arriving while this group is actively open is being viewed,
+      // so it must not become unread when the user returns to Messages.
+      _markGroupSeen(_currentGroupId);
       if (newMemCount !== oldMemCount) {
         var gcMEl = document.getElementById('gcMembers');
         if (gcMEl) gcMEl.textContent = fg.members.length + ' members — tap to manage';
@@ -35617,7 +35875,7 @@ setTimeout(function(){ _wireDMMessages(); _startObserver(); }, 600);
     <input id="boostReactionsInput" type="number" min="0" placeholder="e.g. 50" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;font-family:var(--font);font-size:14px;color:#fff;outline:none;margin-bottom:20px;"/>
 
     <button onclick="applyBoost()" style="width:100%;font-family:var(--font);font-size:15px;font-weight:700;padding:14px;border-radius:16px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:none;color:#fff;cursor:pointer;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(167,139,250,0.35);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Apply Boost</button>
-    <button onclick="removeBoost()" style="width:100%;font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:14px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.28);color:#ff453a;cursor:pointer;margin-bottom:10px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Remove Boost</button>
+    <button onclick="removeBoost()" style="width:100%;font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:14px;background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.28);color:#ff453a;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Remove Boost</button>
     <button onclick="closeBoostModal()" style="width:100%;font-family:var(--font);font-size:14px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);cursor:pointer;">Cancel</button>
   </div>
 </div>
@@ -40555,6 +40813,7 @@ function closeSuperAdmin() {
 
 function setSuperAdminTab(tab) {
   _saTab = tab;
+  var _saOv=document.getElementById('superAdminOverlay'); if(_saOv){ var _tb=_saOv.querySelector('.subpage-topbar'); var _back=_saOv.querySelector('#saDashboardBack'); if(tab!=='overview'){ if(!_back){ _back=document.createElement('button'); _back.id='saDashboardBack'; _back.textContent='Dashboard'; _back.style.cssText='position:absolute;left:16px;bottom:12px;border:0;background:none;color:var(--gold);font:700 12px var(--font);cursor:pointer;z-index:2;'; if(_tb)_tb.appendChild(_back); } _back.onclick=function(){setSuperAdminTab('overview');}; } else if(_back){_back.remove();} }
   ['overview','wallet','tasks','ads','approvals','premium','referrals','security','channels','growth','more'].forEach(function(t) {
     var btn = document.getElementById('sa-tab-' + t);
     var panel = document.getElementById('sa-panel-' + t);
@@ -47231,6 +47490,410 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
     openChatFromInbox(viewedNorm);
   };
 
+})();
+</script>
+<style id="messages-inbox-polish-v2">
+#messagesPageContent [data-msg-row][data-msg-bucket="personal"],
+#messagesPageContent [data-msg-row][data-msg-bucket="groups"] {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  border-top-color: var(--card-border-top) !important;
+  border-radius: var(--radius-card) !important;
+  margin: 0 0 10px !important;
+  padding: 14px 15px !important;
+  box-shadow: 0 5px 22px rgba(0,0,0,.18), 0 1px 0 rgba(255,255,255,.035) inset !important;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease !important;
+}
+#messagesPageContent [data-msg-row][data-msg-bucket="personal"]:active,
+#messagesPageContent [data-msg-row][data-msg-bucket="groups"]:active {
+  transform: scale(.992);
+  background: var(--surface4) !important;
+}
+#messagesPageContent [data-msg-row][data-msg-bucket="personal"][data-unread]:not([data-unread="0"]),
+#messagesPageContent [data-msg-row][data-msg-bucket="groups"][data-unread]:not([data-unread="0"]) {
+  border-color: rgba(245,197,24,.28) !important;
+}
+body.light-mode #messagesPageContent [data-msg-row][data-msg-bucket="personal"],
+body.light-mode #messagesPageContent [data-msg-row][data-msg-bucket="groups"] {
+  background: #fff !important;
+  border-color: rgba(0,0,0,.09) !important;
+  border-top-color: rgba(0,0,0,.12) !important;
+  box-shadow: 0 3px 16px rgba(0,0,0,.06) !important;
+}
+</style>
+<script>
+(function(){
+  function _dmSeenKey(peerOrChat){
+    if(!currentUser || !peerOrChat) return '';
+    var k=String(peerOrChat);
+    if(k.indexOf('__')!==-1) return k;
+    try{return getChatKey(currentUser,k);}catch(e){return '';}
+  }
+  function _clearDMRow(peerKey){
+    var key=_dmSeenKey(peerKey); if(!key) return;
+    try{localStorage.setItem('ka_dm_lastSeen_'+key,String(Date.now()));}catch(e){}
+    document.querySelectorAll('#messagesPageContent [data-msg-row][data-msg-bucket="personal"]').forEach(function(r){
+      var oc=r.getAttribute('onclick')||'';
+      if(oc.indexOf("openChatFromInbox('")!==-1 && oc.indexOf(String(peerKey))!==-1){
+        r.dataset.unread='0';
+        var b=r.querySelector('._msgs-row-unread'); if(b)b.remove();
+        var name=r.querySelector('div[style*="font-size:14px"]'); if(name)name.style.fontWeight='600';
+      }
+    });
+    window._msgsListLastHtml=null;
+    if(typeof _refreshMsgsFilterCounts==='function')_refreshMsgsFilterCounts();
+    if(typeof _setTabBadgeCount==='function'){
+      // Recalculate from server/cache asynchronously; never leave the old count painted.
+      setTimeout(function(){try{refreshMsgsBadge();}catch(e){}},0);
+    }
+  }
+  function _clearGroupRow(groupId){
+    try{localStorage.setItem(_groupLastSeenKey(groupId),String(Date.now()));}catch(e){}
+    document.querySelectorAll('#messagesPageContent [data-msg-row][data-msg-bucket="groups"]').forEach(function(r){
+      var oc=r.getAttribute('onclick')||'';
+      if(oc.indexOf("openGroupChat('")!==-1 && oc.indexOf(String(groupId))!==-1){
+        r.dataset.unread='0';
+        var b=r.querySelector('._msgs-row-unread'); if(b)b.remove();
+        var name=r.querySelector('div[style*="font-size:14px"]'); if(name)name.style.fontWeight='600';
+      }
+    });
+    window._msgsGroupsLastHtml=null;
+    if(typeof _refreshMsgsFilterCounts==='function')_refreshMsgsFilterCounts();
+    setTimeout(function(){try{refreshMsgsBadge();}catch(e){}},0);
+  }
+  var _oldInboxOpen=window.openChatFromInbox;
+  if(typeof _oldInboxOpen==='function')window.openChatFromInbox=async function(peerKey){
+    _clearDMRow(peerKey);
+    return await _oldInboxOpen.apply(this,arguments);
+  };
+  var _oldGroupOpen=window.openGroupChat;
+  if(typeof _oldGroupOpen==='function')window.openGroupChat=async function(groupId){
+    _clearGroupRow(groupId);
+    return await _oldGroupOpen.apply(this,arguments);
+  };
+  var _oldCloseChat=window.closeChat;
+  if(typeof _oldCloseChat==='function')window.closeChat=function(){
+    var r=_oldCloseChat.apply(this,arguments);
+    setTimeout(function(){try{refreshMsgsBadge();renderMessagesPageContent({forceSkeleton:false});}catch(e){}},60);
+    return r;
+  };
+  var _oldCloseGroup=window.closeGroupChat;
+  if(typeof _oldCloseGroup==='function')window.closeGroupChat=function(){
+    var r=_oldCloseGroup.apply(this,arguments);
+    setTimeout(function(){try{refreshMsgsBadge();}catch(e){}},60);
+    return r;
+  };
+})();
+</script>
+
+<style>
+/* ===== Social Plus UX pass: action menus, message selection, admin dashboard ===== */
+.post-more-btn,.card-more-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,.055);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .15s,background .15s,border-color .15s}
+.post-more-btn:active,.card-more-btn:active{transform:scale(.94)}
+.post-context-menu-ov{position:fixed;inset:0;z-index:40050;background:rgba(0,0,0,0);display:flex;align-items:flex-end;justify-content:center;transition:background .22s ease}
+.post-context-menu-ov.open{background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.post-context-menu{position:relative;width:100%;max-width:480px;background:rgba(22,22,26,.97);border:1px solid var(--glass-border);border-bottom:none;border-radius:22px 22px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.08) inset;overflow:hidden;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px));backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%);transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);box-sizing:border-box}
+.post-context-menu-handle{width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,.2);margin:6px auto 10px}
+.post-context-menu button{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;background:none;color:var(--text);font:600 14px var(--font);text-align:left;border-radius:13px;cursor:pointer}
+.post-context-menu button:active{background:rgba(255,255,255,.08)}
+.post-context-menu button.danger{color:var(--red)}
+.post-context-menu .menu-sep{height:1px;background:var(--glass-border);margin:5px 6px}
+.post-context-menu-cancel{margin-top:4px;justify-content:center!important;font-weight:700!important;color:var(--text2)!important;background:rgba(255,255,255,.05)!important}
+body.light-mode .post-context-menu{background:rgba(255,255,255,.98)}
+body.light-mode .post-context-menu button:active{background:rgba(0,0,0,.06)}
+body.light-mode .post-context-menu-handle{background:rgba(0,0,0,.18)}
+body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
+.msg-select-bar{position:sticky;top:0;z-index:12;display:none;align-items:center;gap:9px;padding:10px 12px;margin:-2px 0 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;backdrop-filter:blur(20px)}
+.msg-select-bar.active{display:flex}
+.msg-select-bar .select-count{font-size:13px;font-weight:800;flex:1;color:var(--text)}
+.msg-select-bar button{border:0;border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.07);color:var(--text2);font:700 11px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1}
+.msg-select-bar button svg{flex-shrink:0;display:block}
+.msg-select-bar button.danger{color:var(--red);background:var(--red-bg)}
+.msg-check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--glass-border);display:none;align-items:center;justify-content:center;flex-shrink:0;background:transparent;color:#000}
+.msg-check.checked{background:var(--gold);border-color:var(--gold)}
+.msg-selecting .msg-check{display:flex}
+.msg-selecting .msgs-conv-item,.msg-selecting [data-msg-row][data-msg-bucket="personal"],.msg-selecting [data-msg-row][data-msg-bucket="groups"]{cursor:pointer}
+.msg-selecting .msgs-conv-actions{display:none}
+.msg-archive-badge{font-size:9px;font-weight:800;padding:3px 7px;border-radius:999px;background:rgba(142,142,147,.13);color:var(--text3)}
+/* Message rows/cards */
+#messagesPageContent [data-msg-row][data-msg-bucket="personal"],#messagesPageContent [data-msg-row][data-msg-bucket="groups"]{background:var(--glass);border:1px solid var(--glass-border)!important;border-radius:17px!important;padding:13px!important;margin-bottom:10px!important;box-shadow:0 3px 18px rgba(0,0,0,.12);transition:transform .15s,border-color .15s,background .15s}
+#messagesPageContent [data-msg-row][data-msg-bucket="personal"]:active,#messagesPageContent [data-msg-row][data-msg-bucket="groups"]:active{transform:scale(.992)}
+/* Never expose standalone red delete controls on post cards. */
+.profile-post-card-del,[title="Delete post"],[title="Remove post (admin)"]{display:none!important}
+/* Admin landing */
+.sa-dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.sa-dashboard-card{min-height:112px;text-align:left;background:var(--glass);border:1px solid var(--glass-border);border-radius:17px;padding:15px;cursor:pointer;font-family:var(--font);color:var(--text);transition:transform .15s,border-color .15s,background .15s;box-shadow:0 3px 18px rgba(0,0,0,.12)}
+.sa-dashboard-card:active{transform:scale(.985)}
+.sa-dashboard-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;background:rgba(245,197,24,.11);color:var(--gold)}
+.sa-dashboard-title{font-size:13px;font-weight:800}.sa-dashboard-desc{font-size:10.5px;color:var(--text3);line-height:1.35;margin-top:4px}
+.sa-dashboard-back{display:none}
+@media(max-width:380px){.sa-dashboard-grid{gap:8px}.sa-dashboard-card{padding:12px;min-height:105px}}
+</style>
+<script>
+(function(){
+  const esc = (v)=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const icon=(name)=>({
+    more:'<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>',
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+    trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
+    lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+    bell:'<path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 7h16c0-1-2-2-2-7Z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+    belloff:'<path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 7h16"/><path d="M10 19a2 2 0 0 0 4 0M4 4l16 16"/>',
+    flag:'<path d="M5 21V4"/><path d="M5 5c4-3 7 3 14 0v9c-7 3-10-3-14 0"/>',
+    block:'<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+    archive:'<path d="M4 7h16M6 7v13h12V7"/><path d="M3 4h18v3H3zM9 11h6"/>',
+    check:'<path d="m5 12 4 4L19 6"/>',
+    users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 0 1 5 2v7"/>',
+    report:'<path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/>'
+  }[name]||'');
+  const svg=(n)=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+icon(n)+'</svg>';
+
+  function closeMenu(){
+    const ov=document.getElementById('_spActionSheetOv');
+    if(!ov)return;
+    const sheet=ov.querySelector('.post-context-menu');
+    ov.classList.remove('open');
+    if(sheet)sheet.style.transform='translateY(100%)';
+    setTimeout(()=>ov.remove(),220);
+  }
+  window.closePostActionMenu=closeMenu;
+  window._openPostActionMenu=function(anchor,postId,ownerKey,isMine,source){
+    closeMenu();
+    const overlay=document.createElement('div'); overlay.id='_spActionSheetOv'; overlay.className='post-context-menu-ov';
+    overlay.onclick=(e)=>{if(e.target===overlay)closeMenu();};
+    const menu=document.createElement('div'); menu.className='post-context-menu';
+    menu.innerHTML='<div class="post-context-menu-handle"></div>';
+    const canManage=!!isMine || !!isOwner;
+    const canAdmin=!!isOwner && !isMine;
+    const postOwner=ownerKey||'';
+    let items=[];
+    if(canManage){
+      items.push([svg('edit')+'Edit post',()=>openEditProfilePostModal(postId,postOwner)]);
+      items.push([svg('globe')+'Change privacy',()=>window._postPrivacyMenu(postId,source,postOwner)]);
+      items.push([svg('bell')+(window._postNotifsMuted&&window._postNotifsMuted(postOwner)?'Enable notifications':'Mute notifications'),()=>window._togglePostNotifications(postOwner)]);
+      items.push([svg('archive')+'Save post',()=>window._savePostQuick(postId,source)]);
+      items.push([svg('flag')+(source==='profile'?'Disable comments':'Disable comments'),()=>window._togglePostComments(postId,source)]);
+      items.push(['<span style="color:var(--red)">'+svg('trash')+'Delete post</span>',()=>deleteProfilePost(postId,postOwner)]);
+    } else {
+      items.push([svg('users')+'Connect with '+esc(postOwner||'this user'),()=>window._connectFromPost(postOwner)]);
+      items.push([svg('bell')+(window._postNotifsMuted&&window._postNotifsMuted(postOwner)?'Enable notifications':'Mute notifications'),()=>window._togglePostNotifications(postOwner)]);
+      items.push([svg('flag')+'Report post',()=>window._openReportSheet({type:'post',target:postId,owner:postOwner})]);
+      items.push([svg('flag')+'Report user',()=>window._openReportSheet({type:'user',target:postOwner,owner:postOwner})]);
+      items.push(['<span style="color:var(--red)">'+svg('block')+'Block user</span>',()=>blockUser(postOwner)]);
+      if(canAdmin) items.push(['<span style="color:var(--red)">'+svg('trash')+'Remove post</span>',()=>deleteProfilePost(postId,postOwner)]);
+    }
+    items.forEach((it,i)=>{if(i===items.length-1&&String(it[0]).includes('Delete')){const sep=document.createElement('div');sep.className='menu-sep';menu.appendChild(sep)} const b=document.createElement('button');b.innerHTML=it[0];b.onclick=(e)=>{e.stopPropagation();closeMenu();Promise.resolve(it[1]()).catch(()=>{});};menu.appendChild(b);});
+    const cancelBtn=document.createElement('button');cancelBtn.className='post-context-menu-cancel';cancelBtn.textContent='Cancel';cancelBtn.onclick=(e)=>{e.stopPropagation();closeMenu();};menu.appendChild(cancelBtn);
+    overlay.appendChild(menu);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=>{overlay.classList.add('open');menu.style.transform='translateY(0)';});
+  };
+  window._buildPostCardActionIcons=function(postId,userKey,isMyPost){
+    return '<button class="post-more-btn" onclick="event.stopPropagation();_openPostActionMenu(this,\''+esc(postId)+'\',\''+esc(userKey||'')+'\','+(!!isMyPost)+',\'profile\')" title="More options" aria-label="More options">'+svg('more')+'</button>';
+  };
+
+  window._postNotifsMuted=function(key){return localStorage.getItem('sp_mute_posts_'+String(key||'').toLowerCase())==='1';};
+  window._togglePostNotifications=function(key){if(!key)return;const k='sp_mute_posts_'+String(key).toLowerCase();const on=localStorage.getItem(k)==='1';if(on)localStorage.removeItem(k);else localStorage.setItem(k,'1');showToast(on?'Post notifications enabled.':'Post notifications muted.','');};
+  window._savePostQuick=function(id,source){try{let a=JSON.parse(localStorage.getItem('sp_saved_posts')||'[]');if(!a.includes(String(id)))a.push(String(id));localStorage.setItem('sp_saved_posts',JSON.stringify(a));showToast('Post saved.','success');}catch(e){}};
+  window._connectFromPost=async function(key){if(!key)return;try{if(typeof getFollowData==='function'){const f=getFollowData();const my=(typeof _myUsernameKey==='function'?_myUsernameKey():currentUser||'').toLowerCase();const arr=f[my]||[];if(!arr.map(x=>String(x).toLowerCase()).includes(String(key).toLowerCase())&&typeof toggleFollow==='function'){await toggleFollow(key,null);}}}catch(e){} try{openUserProfile(key);}catch(e){}};
+  window._postPrivacyMenu=function(id,source,owner){
+    const old=document.getElementById('_spPrivacySheet');if(old)old.remove();
+    const d=document.createElement('div');d.id='_spPrivacySheet';d.style.cssText='position:fixed;inset:0;z-index:40060;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    d.innerHTML='<div style="width:100%;max-width:560px;background:var(--bg2,#19191d);border-radius:24px 24px 0 0;padding:20px;box-shadow:0 -12px 40px rgba(0,0,0,.35)"><div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:5px">Post privacy</div><div style="font-size:12px;color:var(--text3);margin-bottom:15px">Choose who can see this post.</div><div style="display:grid;gap:8px"><button data-v="public" style="padding:13px;border-radius:13px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);text-align:left;font:600 13px var(--font)">🌐 Public<div style="font-size:10.5px;color:var(--text3);margin-top:3px">Anyone can see it</div></button><button data-v="private" style="padding:13px;border-radius:13px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);text-align:left;font:600 13px var(--font)">🔒 Private<div style="font-size:10.5px;color:var(--text3);margin-top:3px">Only you can see it</div></button><button data-v="followers" style="padding:13px;border-radius:13px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);text-align:left;font:600 13px var(--font)">👥 Followers<div style="font-size:10.5px;color:var(--text3);margin-top:3px">Only people who follow you</div></button></div><button id="_spPrivacyClose" style="width:100%;margin-top:10px;padding:12px;border:0;border-radius:13px;background:rgba(255,255,255,.06);color:var(--text2);font:700 13px var(--font)">Cancel</button></div>';
+    document.body.appendChild(d);d.querySelector('#_spPrivacyClose').onclick=()=>d.remove();
+    d.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{const v=b.dataset.v;try{const table=source==='profile'?'profile_posts':'posts';await SB.update(table,{visibility:v},'id=eq.'+encodeURIComponent(id));showToast('Privacy updated.','success');d.remove();if(typeof renderPosts==='function')renderPosts();}catch(e){showToast('Could not update privacy.','error')}});
+  };
+  window._togglePostComments=async function(id,source){try{const table=source==='profile'?'profile_posts':'posts';const rows=await SB.query(table,'?id=eq.'+encodeURIComponent(id));const p=rows&&rows[0];const current=!(p&&(p.comments_on===false||p.commentsOn===false||p.comments_on==='false'));await SB.update(table,{comments_on:!current},'id=eq.'+encodeURIComponent(id));showToast(current?'Comments disabled.':'Comments enabled.','');if(typeof renderPosts==='function')renderPosts();}catch(e){showToast('Could not update comments.','error')}};
+
+  // Reports: stored in a dedicated local moderation queue until a reports table is available.
+  window._openReportSheet=function(meta){
+    const old=document.getElementById('_spReportSheet');if(old)old.remove();
+    const reasons=['Spam or misleading content','Harassment or bullying','Hate or hateful conduct','Threats or dangerous behavior','Impersonation','Scam or fraud','Sexual or inappropriate content','Copyright or intellectual property','Other'];
+    const d=document.createElement('div');d.id='_spReportSheet';d.style.cssText='position:fixed;inset:0;z-index:40070;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+    d.innerHTML='<div style="width:100%;max-width:600px;max-height:88vh;overflow:auto;background:var(--bg2,#19191d);border-radius:24px 24px 0 0;padding:20px;box-shadow:0 -12px 40px rgba(0,0,0,.35)"><div style="font-size:18px;font-weight:800;color:var(--text)">Report '+(meta.type==='user'?'account':'post')+'</div><div style="font-size:12px;color:var(--text3);margin:5px 0 16px">Choose the reason that best describes the violation.</div><div id="_spReportReasons" style="display:grid;gap:7px"></div><textarea id="_spReportNote" placeholder="Additional details (optional)" maxlength="500" style="width:100%;box-sizing:border-box;margin-top:12px;min-height:70px;border-radius:13px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text);padding:11px;font:13px var(--font);resize:none"></textarea><button id="_spReportSubmit" disabled style="width:100%;margin-top:10px;padding:13px;border:0;border-radius:14px;background:var(--gold);color:#000;font:800 14px var(--font);opacity:.45">Submit report</button><button id="_spReportCancel" style="width:100%;margin-top:7px;padding:11px;border:0;border-radius:13px;background:rgba(255,255,255,.06);color:var(--text2);font:700 13px var(--font)">Cancel</button></div>';
+    document.body.appendChild(d);let reason='';const box=d.querySelector('#_spReportReasons');reasons.forEach(x=>{const b=document.createElement('button');b.textContent=x;b.style.cssText='padding:12px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:var(--text);text-align:left;font:600 12.5px var(--font);cursor:pointer';b.onclick=()=>{reason=x;box.querySelectorAll('button').forEach(q=>q.style.borderColor='var(--glass-border)');b.style.borderColor='var(--gold)';const s=d.querySelector('#_spReportSubmit');s.disabled=false;s.style.opacity='1'};box.appendChild(b)});
+    d.querySelector('#_spReportCancel').onclick=()=>d.remove();d.querySelector('#_spReportSubmit').onclick=async()=>{const report={id:'r_'+Date.now(),type:meta.type,target:meta.target,reported_user:meta.owner||'',reporter:currentUser||'',reason,details:d.querySelector('#_spReportNote').value.trim(),created_at:new Date().toISOString(),status:'open'};let arr=[];try{arr=JSON.parse(localStorage.getItem('sp_admin_reports')||'[]')}catch(e){}arr.unshift(report);localStorage.setItem('sp_admin_reports',JSON.stringify(arr));try{if(typeof addNotifForUser==='function'&&typeof OWNER_KEY!=='undefined')await addNotifForUser(OWNER_KEY,'🚩 Report from @'+(currentUser||'unknown')+' — '+meta.type+' '+meta.target+' — '+reason,report.reported_user||meta.owner||null,meta.target,'report');}catch(_e){}try{if(typeof _sendDirectMessageProgrammatic==='function'&&typeof SUPPORT_KEY!=='undefined')await _sendDirectMessageProgrammatic(SUPPORT_KEY,'🚩 Report from @'+(currentUser||'unknown')+' — '+meta.type+' '+meta.target+'\nReason: '+reason+(report.details?'\nDetails: '+report.details:''));}catch(_e){}d.remove();showToast('Report submitted for review.','success');};
+  };
+
+  // Remove the visible profile Block User button; blocking lives in the profile/post action menu now.
+  const hideProfileBlock=()=>{const b=document.getElementById('uprofileBlockBtn');if(b)b.remove();};
+  hideProfileBlock();
+  new MutationObserver(hideProfileBlock).observe(document.body,{childList:true,subtree:true});
+
+  // Message selection + archive system.
+  const selected=new Set();let selecting=false;
+  const archiveKey=()=> 'sp_archived_chats_'+((typeof _myUsernameKey==='function'?_myUsernameKey():currentUser)||'').toLowerCase();
+  const getArchived=()=>{try{return new Set(JSON.parse(localStorage.getItem(archiveKey())||'[]'))}catch(e){return new Set()}};
+  const saveArchived=s=>localStorage.setItem(archiveKey(),JSON.stringify([...s]));
+  window._msgSelectionStart=function(){selecting=true;selected.clear();document.getElementById('messagesPageContent')?.classList.add('msg-selecting');renderSelBar();};
+  window._msgSelectionCancel=function(){selecting=false;selected.clear();document.getElementById('messagesPageContent')?.classList.remove('msg-selecting');document.getElementById('_spMsgSelectBar')?.remove();};
+  window._msgToggleSelect=function(key){if(!selecting)return;if(selected.has(key))selected.delete(key);else selected.add(key);document.querySelectorAll('[data-msg-select-key]').forEach(r=>{const k=r.dataset.msgSelectKey;const c=r.querySelector('.msg-check');if(c)c.classList.toggle('checked',selected.has(k));});renderSelBar();};
+  window._msgArchiveSelected=function(){const a=getArchived();selected.forEach(k=>a.add(k));saveArchived(a);showToast(selected.size+' chat'+(selected.size===1?'':'s')+' archived.','success');_msgSelectionCancel();if(typeof renderMessagesPageContent==='function')renderMessagesPageContent({forceSkeleton:false});};
+  window._msgDeleteSelected=async function(){const keys=[...selected];if(!keys.length)return;await new Promise(r=>_islandConfirm('Delete '+keys.length+' selected conversation'+(keys.length===1?'':'s')+'? This cannot be undone.',r,{title:'Delete selected?',icon:'🗑️',confirmLabel:'Delete'}));for(const k of keys){try{await deleteConversation(k)}catch(e){}}_msgSelectionCancel();};
+  window._msgRestoreArchived=function(key){const a=getArchived();a.delete(key);saveArchived(a);renderMessagesPageContent({forceSkeleton:false});};
+  function renderSelBar(){let b=document.getElementById('_spMsgSelectBar');if(!b){b=document.createElement('div');b.id='_spMsgSelectBar';b.className='msg-select-bar';const c=document.getElementById('messagesPageContent');if(c)c.prepend(b)}b.classList.add('active');b.innerHTML='<span class="select-count">'+selected.size+' selected</span><button onclick="_msgArchiveSelected()">'+svg('archive')+' Archive</button><button class="danger" onclick="_msgDeleteSelected()">'+svg('trash')+' Delete</button><button onclick="_msgSelectionCancel()">Done</button>';}
+  window._decorateMessageRows=function(){const root=document.getElementById('messagesPageContent');if(!root)return;const archived=getArchived();root.querySelectorAll('[data-msg-row][data-msg-bucket="personal"],[data-msg-row][data-msg-bucket="groups"],.msgs-conv-item').forEach(row=>{if(row.dataset.spDecorated)return;row.dataset.spDecorated='1';let key=row.getAttribute('data-key')||'';if(!key){const oc=row.getAttribute('onclick')||'';let m=oc.match(/openGroupChat\('([^']+)\)/);if(m)key='group:'+m[1];m=oc.match(/openChatFromInbox\('([^']+)\)/);if(m)key=m?m[1]:key;}if(!key)return;row.dataset.msgSelectKey=key;const check=document.createElement('span');check.className='msg-check';check.innerHTML=svg('check');row.prepend(check);row.addEventListener('click',e=>{if(selecting){e.preventDefault();e.stopPropagation();window._msgToggleSelect(key)}} ,true);if(selecting)check.style.display='flex';if(archived.has(key)){row.style.display='none';}});}
+  window._refreshMessageSelectionUI=()=>{const root=document.getElementById('messagesPageContent');if(root)root.classList.toggle('msg-selecting',selecting);window._decorateMessageRows();};
+
+  // Robust unread badge: read timestamps are the source of truth; never repaint a stale count.
+  window._spRefreshMessagesBadge=async function(){if(!currentUser){_setTabBadgeCount('tab-msgs-badge',0);return}try{const my=String(typeof _myUsernameKey==='function'?_myUsernameKey():currentUser).toLowerCase();let n=0;const rows=await SB.query('messages','?receiver=eq.'+encodeURIComponent(my));(rows||[]).forEach(r=>n+=_dmUnreadCount(r.messages||[],my,r.chat_key||''));const gs=await _loadGroupChats();(gs||[]).forEach(g=>n+=_groupUnreadCount(g));_setTabBadgeCount('tab-msgs-badge',n);}catch(e){}}
+  window.refreshMsgsBadge=window._spRefreshMessagesBadge;
+
+  // Repaint/decorate after every messages render without delaying navigation.
+  const oldR=window.renderMessagesPageContent;window.renderMessagesPageContent=async function(){const r=await oldR.apply(this,arguments);requestAnimationFrame(()=>{window._refreshMessageSelectionUI();window._spRefreshMessagesBadge();});return r;};
+  const oldDM=window.openChatFromInbox;if(oldDM)window.openChatFromInbox=async function(k){try{localStorage.setItem('ka_dm_lastSeen_'+(typeof getChatKey==='function'?getChatKey(currentUser,k):k),String(Date.now()));}catch(e){}const r=await oldDM.apply(this,arguments);_spRefreshMessagesBadge();return r;};
+  const oldGC=window.openGroupChat;if(oldGC)window.openGroupChat=async function(k){try{localStorage.setItem(_groupLastSeenKey(k),String(Date.now()));}catch(e){}const r=await oldGC.apply(this,arguments);_spRefreshMessagesBadge();return r;};
+
+  // Admin report dashboard + full-page panels.
+  window._saOpenReports=async function(){
+    let ov=document.getElementById('_spAdminReports');if(ov)ov.remove();ov=document.createElement('div');ov.id='_spAdminReports';ov.style.cssText='position:fixed;inset:0;z-index:50000;background:var(--bg);display:flex;flex-direction:column';
+    ov.innerHTML='<div style="padding:calc(15px + env(safe-area-inset-top,0px)) 16px 14px;display:flex;align-items:center;border-bottom:1px solid var(--glass-border)"><button onclick="document.getElementById(\'_spAdminReports\').remove()" style="border:0;background:none;color:var(--gold);font:700 14px var(--font)">‹ Back</button><div style="flex:1;text-align:center;font-size:17px;font-weight:800;color:var(--text)">Reports</div><div style="width:45px"></div></div><div id="_spAdminReportsList" style="flex:1;overflow:auto;padding:16px"></div>';
+    document.body.appendChild(ov);const list=ov.querySelector('#_spAdminReportsList');let a=[];try{a=JSON.parse(localStorage.getItem('sp_admin_reports')||'[]')}catch(e){}
+    try{if(typeof SB!=='undefined'&&typeof OWNER_KEY!=='undefined'){const ns=await SB.query('notifications','?target_user=eq.'+encodeURIComponent(OWNER_KEY)+'&order=created_at.desc');for(const n of (ns||[])){const body=String(n.body||n.text||'');if(body.indexOf('🚩 Report from @')!==0||a.some(x=>x.remote_id===n.id))continue;const m=body.match(/^🚩 Report from @([^ ]+) — (user|post) ([^ —]+) — (.*)$/);a.push({id:'remote_'+n.id,remote_id:n.id,type:(m&&m[2]==='user')?'user':'post',target:m?m[3]:'',reported_user:n.post_owner||'',reporter:m?m[1]:'',reason:m?m[4]:body.replace(/^🚩 /,''),details:'',created_at:n.created_at||n.time,status:n.read?'read':'open'});}}}catch(e){}
+    a.sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0));
+    if(!a.length){list.innerHTML='<div style="padding:50px 15px;text-align:center;color:var(--text3)">No reports yet.</div>';return}
+    list.innerHTML=a.map(r=>'<div style="background:var(--glass);border:1px solid '+(r.status==='open'?'rgba(255,69,58,.2)':'var(--glass-border)')+';border-radius:17px;padding:15px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:10px"><b style="font-size:13px;color:var(--text)">'+esc(r.type==='user'?'Account report':'Post report')+'</b><span style="font-size:10px;color:var(--text3)">'+esc(formatTime(r.created_at))+'</span></div><div style="font-size:12px;font-weight:700;color:var(--gold);margin-top:7px">'+esc(r.reason)+'</div><div style="font-size:11.5px;color:var(--text3);margin-top:5px">Reported: @'+esc(r.reported_user||r.target||'unknown')+' · From @'+esc(r.reporter||'unknown')+'</div>'+(r.details?'<div style="font-size:12px;color:var(--text2);margin-top:9px;line-height:1.45">'+esc(r.details)+'</div>':'')+'<div style="display:flex;gap:7px;margin-top:12px"><button onclick="_spResolveReport(\''+esc(r.id)+'\',\'dismissed\')" style="flex:1;padding:9px;border:1px solid var(--glass-border);border-radius:11px;background:rgba(255,255,255,.05);color:var(--text2);font:700 11px var(--font)">Dismiss</button><button onclick="_spResolveReport(\''+esc(r.id)+'\',\'actioned\')" style="flex:1;padding:9px;border:0;border-radius:11px;background:var(--gold);color:#000;font:800 11px var(--font)">Action taken</button></div></div>').join('');
+  };
+  window._spResolveReport=async function(id,status){let a=[];try{a=JSON.parse(localStorage.getItem('sp_admin_reports')||'[]')}catch(e){}const r=a.find(x=>x.id===id);if(r){r.status=status;r.resolved_at=new Date().toISOString();localStorage.setItem('sp_admin_reports',JSON.stringify(a));}if(String(id).indexOf('remote_')===0){try{await SB.update('notifications',{read:true},'id=eq.'+encodeURIComponent(String(id).slice(7)));}catch(e){}}_saOpenReports();};
+
+  // Replace the old Super Admin tab strip with a clean 2-column dashboard on Overview.
+  const cards=[['overview','◈','Overview','Live platform summary'],['wallet','₦','Wallet','Rates & payout settings'],['tasks','✓','Tasks','Manage earning tasks'],['ads','▣','Ads','Manage promotional ads'],['approvals','✓','Approvals','Review pending actions'],['premium','◆','Premium','Plans & pricing'],['referrals','↗','Referrals','Referral rewards'],['security','◉','Security','Fraud & account flags'],['channels','◉','Channels','Channel moderation'],['growth','↗','Growth','Growth & engagement'],['more','⚙','More tools','Advanced tools'],['reports','⚑','Reports','Review user reports']];
+  function buildAdminDash(){const p=document.getElementById('sa-panel-overview');if(!p||p.dataset.spDash)return;p.dataset.spDash='1';const old=p.querySelector('[data-sp-old-quick]');if(old)old.remove();const h=document.createElement('div');h.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin:8px 0 10px">Admin control center</div><div class="sa-dashboard-grid">'+cards.map(c=>'<button class="sa-dashboard-card" onclick="'+(c[0]==='reports'?'_saOpenReports()':'setSuperAdminTab(\''+c[0]+'\')')+'"><div class="sa-dashboard-icon">'+c[1]+'</div><div class="sa-dashboard-title">'+c[2]+'</div><div class="sa-dashboard-desc">'+c[3]+'</div></button>').join('')+'</div>';p.appendChild(h);}
+  const oldOpen=window.openSuperAdmin;if(oldOpen)window.openSuperAdmin=function(){const r=oldOpen.apply(this,arguments);setTimeout(buildAdminDash,30);return r;};
+})();
+</script>
+
+<script>
+(function(){
+  /* Final UX wiring: make every feed/profile post use a real overflow menu,
+     add inbox selection controls, and expose archived chats. */
+  const mkSvg=(paths)=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
+  const morePaths='<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>';
+  const esc=(v)=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  function decoratePostCards(){
+    document.querySelectorAll('.post-card[id^="post-"],._u-post-card-bg[id^="ppcard-"],._u-post-card-bg[id^="ppowncard-"]').forEach(card=>{
+      if(card.querySelector('.post-more-btn')) return;
+      const id=(card.id||'').replace(/^(post-|ppcard-|ppowncard-)/,''); if(!id)return;
+      const isProfile=card.classList.contains('_u-post-card-bg');
+      let owner=isProfile?(card.id.indexOf('ppowncard-')===0?(typeof _myUsernameKey==='function'?_myUsernameKey():currentUser||''):''):(typeof OWNER_KEY!=='undefined'?OWNER_KEY:'');
+      const mine=isProfile && card.id.indexOf('ppowncard-')===0;
+      const host=card.querySelector('.post-right') || card.querySelector('div[style*="align-items:flex-start"] > div:last-child') || card.firstElementChild;
+      if(!host) return;
+      const b=document.createElement('button');b.className='post-more-btn';b.title='More options';b.setAttribute('aria-label','More options');b.innerHTML=mkSvg(morePaths);
+      b.onclick=(e)=>{e.stopPropagation();if(typeof _openPostActionMenu==='function')_openPostActionMenu(b,id,owner,mine,isProfile?'profile':'feed');};
+      host.appendChild(b);
+    });
+  }
+  const mo=new MutationObserver(()=>requestAnimationFrame(decoratePostCards));
+  mo.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',decoratePostCards);
+
+  function messageArchiveSet(){const k='sp_archived_chats_'+((typeof _myUsernameKey==='function'?_myUsernameKey():currentUser)||'').toLowerCase();try{return new Set(JSON.parse(localStorage.getItem(k)||'[]'))}catch(e){return new Set()}}
+  function decorateMessages(){
+    const root=document.getElementById('messagesPageContent');const top=document.getElementById('msgsTopbar');if(!root||!top)return;
+    if(root.dataset.spRowsDecorated==='1')return;root.dataset.spRowsDecorated='1';
+  }
+  // ── "⋯" sheet for the Messages topbar — replaces the old cluster of
+  // separate icon buttons (new group, select, archived) with a single
+  // entry point, in the same iOS-style bottom sheet used elsewhere. ──
+  window._openMsgsMoreMenu=function(anchor){
+    if(typeof window.closePostActionMenu==='function')window.closePostActionMenu();
+    const overlay=document.createElement('div'); overlay.id='_spActionSheetOv'; overlay.className='post-context-menu-ov';
+    overlay.onclick=(e)=>{if(e.target===overlay)_closeMsgsMoreMenu();};
+    const menu=document.createElement('div'); menu.className='post-context-menu';
+    menu.innerHTML='<div class="post-context-menu-handle"></div>';
+    const items=[
+      [mkSvg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>')+'New group chat',()=>openCreateGroupChat()],
+      [mkSvg('<path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="3"/>')+'Select conversations',()=>_msgSelectionStart()],
+      [mkSvg('<polyline points="6 9 12 15 18 9"/>')+'Filter list',()=>_openMsgsFilterTray()],
+      [mkSvg('<path d="M4 7h16M6 7v13h12V7"/><path d="M3 4h18v3H3zM9 11h6"/>')+'Archived chats',()=>showArchivedChats()]
+    ];
+    items.forEach(it=>{const b=document.createElement('button');b.innerHTML=it[0];b.onclick=(e)=>{e.stopPropagation();_closeMsgsMoreMenu();Promise.resolve(it[1]()).catch(()=>{});};menu.appendChild(b);});
+    const cancelBtn=document.createElement('button');cancelBtn.className='post-context-menu-cancel';cancelBtn.textContent='Cancel';cancelBtn.onclick=(e)=>{e.stopPropagation();_closeMsgsMoreMenu();};menu.appendChild(cancelBtn);
+    overlay.appendChild(menu);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=>{overlay.classList.add('open');menu.style.transform='translateY(0)';});
+  };
+  window._closeMsgsMoreMenu=function(){
+    const ov=document.getElementById('_spActionSheetOv');if(!ov)return;
+    const sheet=ov.querySelector('.post-context-menu');
+    ov.classList.remove('open');if(sheet)sheet.style.transform='translateY(100%)';
+    setTimeout(()=>ov.remove(),220);
+  };
+  // ── Archived chats — a proper full-page overlay (own topbar, back
+  // button, empty state) instead of a div prepended into the live inbox
+  // list. Rows are rebuilt from the same live #messagesPageContent rows
+  // (already correctly decorated with click handlers/keys) rather than
+  // hand-assembled, so archived rows behave identically to real ones —
+  // only shown here rather than DOM-cloned into a throwaway wrapper. ──
+  function buildArchivedPageShell(){
+    if(document.getElementById('archivedChatsPageOverlay'))return;
+    const ov=document.createElement('div');ov.id='archivedChatsPageOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:9620;background:var(--bg);display:none;flex-direction:column;';
+    ov.innerHTML=`
+      <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top,0px)) 18px 10px;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--glass-border);box-shadow:0 1px 0 var(--glass-border) inset;">
+        <button onclick="closeArchivedChatsPage()" aria-label="Back" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,.07);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div style="font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--text);flex:1;min-width:0;">Archived chats</div>
+      </div>
+      <div id="archivedChatsPageContent" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;max-width:620px;width:100%;margin:0 auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom,0px));box-sizing:border-box;"></div>`;
+    document.body.appendChild(ov);
+  }
+  function showArchivedChats(){
+    buildArchivedPageShell();
+    const a=messageArchiveSet();
+    const srcRoot=document.getElementById('messagesPageContent');
+    const dest=document.getElementById('archivedChatsPageContent');
+    const ov=document.getElementById('archivedChatsPageOverlay');
+    if(!srcRoot||!dest||!ov)return;
+    if(typeof window._decorateMessageRows==='function')window._decorateMessageRows();
+    const found=[];
+    a.forEach(k=>{
+      const row=[...srcRoot.querySelectorAll('[data-msg-select-key]')].find(r=>r.dataset.msgSelectKey===k);
+      if(row){
+        const c=row.cloneNode(true);c.style.display='flex';c.classList.remove('msg-selecting');
+        const chk=c.querySelector('.msg-check');if(chk)chk.remove();
+        const restoreBtn=document.createElement('button');restoreBtn.textContent='Restore';
+        restoreBtn.style.cssText='margin-left:auto;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text2);border-radius:10px;padding:7px 11px;font:700 11px var(--font);cursor:pointer;flex-shrink:0;';
+        restoreBtn.onclick=(e)=>{e.stopPropagation();e.preventDefault();_msgRestoreArchived(k);showArchivedChats();};
+        const delBtn=c.querySelector('button');if(delBtn&&delBtn!==restoreBtn)delBtn.remove();
+        c.appendChild(restoreBtn);
+        found.push(c);
+      }
+    });
+    dest.innerHTML='';
+    if(!found.length){
+      dest.innerHTML='<div style="text-align:center;padding:70px 20px;color:var(--text3);"><div style="width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'+mkSvg('<path d="M4 7h16M6 7v13h12V7"/><path d="M3 4h18v3H3zM9 11h6"/>')+'</div><div style="font-size:14px;font-weight:700;color:var(--text2);margin-bottom:5px;">No archived chats</div><div style="font-size:12.5px;">Chats you archive will show up here.</div></div>';
+    } else {
+      found.forEach(x=>dest.appendChild(x));
+    }
+    ov.style.display='flex';
+    document.body.style.overflow='hidden';
+    const mp=document.getElementById('messagesPageOverlay');if(mp)mp.style.display='none';
+  }
+  window.showArchivedChats=showArchivedChats;
+  window.closeArchivedChatsPage=function(){
+    const ov=document.getElementById('archivedChatsPageOverlay');
+    if(ov)ov.style.display='none';
+    document.body.style.overflow='';
+    if(typeof openMessagesPage==='function')setTimeout(()=>openMessagesPage(),0);
+  };
+  const mo2=new MutationObserver(()=>requestAnimationFrame(decorateMessages));mo2.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',decorateMessages);
+
+  // When the Messages tab is opened, clear only conversations actually viewed;
+  // do not manufacture an unread state from stale server snapshots.
+  window._spReconcileUnread=async function(){try{if(typeof _spRefreshMessagesBadge==='function')await _spRefreshMessagesBadge();}catch(e){}};
+
+  // Ensure reports also reach the existing support channel when possible, while
+  // retaining the admin queue for immediate local review.
+  const oldReport=window._openReportSheet;
+  window._openReportSheet=function(meta){
+    return oldReport(meta);
+  };
 })();
 </script>
 </body>
