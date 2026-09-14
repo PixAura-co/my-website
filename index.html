@@ -4455,7 +4455,7 @@ body.light-mode #userModal button[onclick*="switchToLogin"] { background:rgba(0,
      the name string, so it stays clear of your schema/RLS work.
      ═══════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="googleNameModal" style="background:#000;padding:0;align-items:stretch;justify-content:flex-end;display:none;">
-  <div class="modal" style="width:100%;max-width:none;border-radius:24px 24px 0 0;padding:28px 22px 26px;box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
+  <div class="modal" style="width:100%;max-width:100%;margin:0;border-radius:24px 24px 0 0;padding:28px 22px max(26px,env(safe-area-inset-bottom,18px));box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
     <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.16);margin:0 auto 18px;"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3c-7.6 0-14.1 4.3-17.3 10.6z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.4C29.6 36.2 26.9 37 24 37c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.9 40.6 16.4 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.5 5.4C41.6 35.7 45 30.4 45 24c0-1.4-.1-2.4-.4-3.5z"/></svg>
@@ -4528,8 +4528,13 @@ window._confirmGoogleDisplayNameSubmit = async function() {
   errEl.textContent = 'Checking availability…';
   if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
   try {
-    var existing = await SB.query('accounts', '?username=eq.' + encodeURIComponent(uname));
-    if (existing && existing.length > 0) {
+    // Plain SB.query would return zero rows here regardless of whether uname
+    // is actually taken — accounts_select_own_or_admin only lets a signed-in
+    // account see its own row, and this person has no account yet. Use the
+    // security-definer RPC instead so "available" is a real answer, not just
+    // RLS hiding everyone else's rows.
+    var available = await SB.rpc('username_available', { check_username: uname });
+    if (available === false) {
       errEl.textContent = 'That username is already taken.';
       return;
     }
@@ -4571,7 +4576,7 @@ document.addEventListener('DOMContentLoaded', function() {
      wrong one.
      ═══════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="googleAccountPickerModal" style="background:#000;padding:0;align-items:stretch;justify-content:flex-end;display:none;">
-  <div class="modal" style="width:100%;max-width:none;border-radius:24px 24px 0 0;padding:28px 22px 26px;box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
+  <div class="modal" style="width:100%;max-width:100%;margin:0;border-radius:24px 24px 0 0;padding:28px 22px max(26px,env(safe-area-inset-bottom,18px));box-sizing:border-box;animation:authSheetIn 0.32s cubic-bezier(.2,.9,.25,1);">
     <div style="width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.16);margin:0 auto 18px;"></div>
     <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px;">Signed in with Google</div>
     <div style="font-size:22px;font-weight:800;letter-spacing:-0.6px;color:rgba(255,255,255,0.94);line-height:1.15;margin-bottom:6px;">Which account is yours?</div>
@@ -4681,18 +4686,40 @@ window.startGoogleSignIn = async function() {
 // createAccount() already do at the end of a normal login/signup, so the
 // rest of the app (currentUser, ka_user, ka_username_key, setUserUI, etc.)
 // behaves identically regardless of which path got someone signed in.
-function _finishGoogleLogin(acct) {
+async function _finishGoogleLogin(acct, isNew) {
   currentUser = acct.display_name;
   isOwner = false;
   localStorage.setItem('ka_user', acct.display_name);
   localStorage.setItem('ka_username_key', acct.username);
   localStorage.removeItem('ka_owner');
+  if (!isNew && typeof _syncStreakFromSupabase === 'function') { try { await _syncStreakFromSupabase(); } catch(e) {} }
   closeUserModal();
   setUserUI();
-  showWelcomeBack(acct.display_name, acct.profile_pic || '');
+  // setUserUI() unconditionally hides these (mirrors joinAsUser/createAccount,
+  // which rely on something else to reveal them for a logged-in session) —
+  // restore them here so a signed-in Google user can actually post/react
+  // instead of finding a UI that looks logged in but has no controls.
+  const _pb = document.getElementById('postActionBtns');
+  const _cw = document.getElementById('composerWrapper');
+  if (_pb) _pb.style.display = '';
+  if (_cw) _cw.style.display = '';
+  if (isNew) {
+    showWelcomeNew(acct.display_name, acct.profile_pic || '');
+    setTimeout(() => { if (typeof _suggestWalletAfterSignup === 'function') _suggestWalletAfterSignup(); }, 2600);
+    setTimeout(() => { if (typeof openOnboardingInterestsStep === 'function') openOnboardingInterestsStep(); }, 4200);
+    // No recovery-code step: Google-only accounts have password:null, so a
+    // password-recovery code has nothing to recover.
+  } else {
+    showWelcomeBack(acct.display_name, acct.profile_pic || '');
+  }
   if (typeof autoFollowKris === 'function') autoFollowKris(acct.username);
   if (typeof window._triggerSync === 'function') window._triggerSync();
-  if (typeof registerDeviceSession === 'function') registerDeviceSession(acct.username);
+  // Await registration before starting the heartbeat — otherwise the first
+  // heartbeat tick can read device_sessions before this upsert lands, and a
+  // stale is_active:false row from an earlier session on this device force-
+  // logs the person straight back out (looks signed in, then bounces on the
+  // next tap/poll).
+  if (typeof registerDeviceSession === 'function') { try { await registerDeviceSession(acct.username); } catch(e) {} }
   if (typeof startDeviceHeartbeat === 'function') startDeviceHeartbeat();
   if (typeof loadPosts === 'function') loadPosts();
   if (typeof renderPosts === 'function') renderPosts();
@@ -4701,29 +4728,29 @@ function _finishGoogleLogin(acct) {
 // Creates a brand-new accounts row for a Google user with no existing
 // account match, using the name AND username they confirmed/edited in the
 // display-name sheet (already validated + availability-checked there).
-async function _createAccountForNewGoogleUser(uid, googleEmail, confirmedName, confirmedUsername) {
-  var candidate = confirmedUsername || _slugifyGoogleUsername(confirmedName);
-  // Belt-and-suspenders re-check: covers the rare race where someone else
-  // claims the same username between the sheet's check and this write.
-  var suffix = 0;
-  var base = candidate;
-  while (true) {
-    var existing = await SB.query('accounts', '?username=eq.' + encodeURIComponent(candidate));
-    if (!existing || !existing.length) break;
-    suffix += 1;
-    candidate = base + suffix;
+//
+// Goes through the google_signin_create() RPC (SECURITY DEFINER, real
+// auth.uid() from the session JWT) instead of a client-side SB.upsert.
+// accounts_insert_signup's RLS check requires EITHER username =
+// effective_username() OR auth_uid = auth.uid() — and a brand-new Google
+// signup can satisfy neither from the client: the anon-key upsert carries
+// no auth.uid(), and x-app-user (ka_username_key) is still empty because
+// the account doesn't exist yet. That silently failed every time, so no
+// row was ever written and every later sign-in also came back "new". The
+// RPC also returns the full row, sidestepping the same RLS gap on the
+// read that would otherwise follow.
+async function _createAccountForNewGoogleUser(callRpc, confirmedName, confirmedUsername) {
+  try {
+    var result = await callRpc('google_signin_create', {
+      new_display_name: confirmedName,
+      new_username: confirmedUsername
+    });
+    return result.account || null;
+  } catch (e) {
+    console.error('[GoogleAuth] account creation failed:', e);
+    showToast('Failed to create account. Try again.', 'error');
+    return null;
   }
-  var ok = await SB.upsert('accounts', {
-    username: candidate,
-    display_name: confirmedName,
-    auth_uid: uid,
-    email: googleEmail || '',
-    password: null, // Google-only account: no legacy password path
-    bio: '', profile_pic: '', is_built_in: false,
-    device_fingerprint: (typeof getDeviceFingerprint === 'function') ? getDeviceFingerprint() : null
-  }, 'username');
-  if (!ok) { showToast('Failed to create account. Try again.', 'error'); return null; }
-  return { username: candidate, display_name: confirmedName };
 }
 
 // Runs once on page load to catch the redirect back from Google.
@@ -4762,9 +4789,10 @@ async function _checkGoogleAuthRedirect() {
     var result = await callRpc('google_signin_resolve');
 
     if (result.status === 'linked') {
-      var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(result.username));
-      var acct = rows && rows[0];
-      if (acct) _finishGoogleLogin(acct);
+      // account comes straight from the RPC now — the follow-up SB.query
+      // this used to do was anon-key + no ka_username_key yet, so RLS
+      // silently returned zero rows here on a fresh device/localStorage.
+      if (result.account) await _finishGoogleLogin(result.account, false);
       window._googleAuthInProgress = false;
       return;
     }
@@ -4773,9 +4801,7 @@ async function _checkGoogleAuthRedirect() {
       showGoogleAccountPicker(result.candidates, async function(chosenUsername) {
         try {
           var claimResult = await callRpc('google_signin_claim', { chosen_username: chosenUsername });
-          var rows2 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(claimResult.username));
-          var acct2 = rows2 && rows2[0];
-          if (acct2) _finishGoogleLogin(acct2);
+          if (claimResult.account) await _finishGoogleLogin(claimResult.account, false);
         } catch (e) {
           console.error('[GoogleAuth] claim failed:', e);
           showToast('Could not link that account. Try again.', 'error');
@@ -4788,15 +4814,10 @@ async function _checkGoogleAuthRedirect() {
 
     if (result.status === 'new') {
       var googleName = (session.user.user_metadata && (session.user.user_metadata.full_name || session.user.user_metadata.name)) || '';
-      var googleEmail = session.user.email || '';
       confirmGoogleDisplayName(googleName, async function(confirmed) {
         try {
-          var created = await _createAccountForNewGoogleUser(session.user.id, googleEmail, confirmed.name, confirmed.username);
-          if (created) {
-            var rows3 = await SB.query('accounts', '?username=eq.' + encodeURIComponent(created.username));
-            var acct3 = rows3 && rows3[0];
-            if (acct3) _finishGoogleLogin(acct3);
-          }
+          var newAcct = await _createAccountForNewGoogleUser(callRpc, confirmed.name, confirmed.username);
+          if (newAcct) await _finishGoogleLogin(newAcct, true);
         } finally {
           window._googleAuthInProgress = false;
         }
@@ -8142,6 +8163,26 @@ async function joinAsUser() {
 
   const acct = await getAccount(val);
   if (!acct) { errEl.textContent = 'No account found. Please create one.'; return; }
+  // Google-only account (no password ever set) trying the username/password
+  // form — point them at Google sign-in instead of a confusing "incorrect
+  // password" for a password that was never created. No "set a password"
+  // settings flow exists yet — if one gets added later, acct.password will
+  // be non-null for those accounts and this branch is skipped automatically.
+  if (acct.password == null) {
+    errEl.textContent = '';
+    if (typeof window._showIsland === 'function') {
+      window._showIsland({
+        type: 'error',
+        title: 'This account uses Google',
+        sub: 'This account was created with Google and has no password.',
+        duration: 5000,
+        buttons: [{ label: 'Continue with Google', style: 'primary', onClick: function() { if (typeof startGoogleSignIn === 'function') startGoogleSignIn(); } }],
+      });
+    } else {
+      errEl.textContent = 'This account uses Google sign-in. Tap "Continue with Google" below.';
+    }
+    return;
+  }
   if ((acct.password || '').toLowerCase() !== pass.toLowerCase()) { errEl.textContent = 'Incorrect password.'; return; }
 
   currentUser = acct.display_name;
