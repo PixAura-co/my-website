@@ -10,7 +10,11 @@
       "destination": "/api/mini-app"
     },
     {
-      "source": "/((?!api/|_next/|app/|\\.well-known/|index\\.html|sw\\.js|manifest\\.json|icon-192\\.png|icon-512\\.png|og-default\\.png|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/market",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api/|_next/|app/|market|\\.well-known/|index\\.html|sw\\.js|manifest\\.json|icon-192\\.png|icon-512\\.png|og-default\\.png|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/api/channel-preview"
     }
   ],
