@@ -7423,6 +7423,7 @@ async function getAllAccounts() {
   // hoisted across the whole shared script scope — no need for a wrapper
   // installed later in the file, which was too late for early callers.
   if (typeof _refreshNavAvatar === 'function') _refreshNavAvatar();
+  if (typeof _renderWalletProfileBtn === 'function') _renderWalletProfileBtn();
   return validRows;
 }
 
@@ -18174,7 +18175,14 @@ async function openSuggestedOverlay() {
   document.body.style.overflow = 'hidden';
 
   window._sugOverlayPage = 0;
+  window._sugOverlayQuery = '';
   const PAGE_SIZE = 20;
+
+  // Reset any leftover search text from a previous visit
+  const searchInput = document.getElementById('suggestedOverlaySearch');
+  if (searchInput) searchInput.value = '';
+  const searchClear = document.getElementById('suggestedOverlaySearchClear');
+  if (searchClear) searchClear.style.display = 'none';
 
   // Show loading immediately
   const listEl = document.getElementById('suggestedOverlayList');
@@ -18243,7 +18251,7 @@ async function openSuggestedOverlay() {
         };
       });
 
-    const people = [
+    let people = [
       ...krisEntry,
       ...premiumSugEntries,
       ...ordered.map(a => ({
@@ -18255,8 +18263,25 @@ async function openSuggestedOverlay() {
       }))
     ];
 
+    // Filter by the search box, if anything is typed — matches display
+    // name or @username, same as the rest of the app's search behavior.
+    const q = (window._sugOverlayQuery || '').trim().toLowerCase();
+    if (q) {
+      people = people.filter(p =>
+        (p.displayName || '').toLowerCase().includes(q) ||
+        (p.key || '').toLowerCase().includes(q)
+      );
+    }
+
     const totalPages = Math.ceil(people.length / PAGE_SIZE);
     const pageItems = people.slice(window._sugOverlayPage * PAGE_SIZE, (window._sugOverlayPage + 1) * PAGE_SIZE);
+
+    if (!people.length) {
+      document.getElementById('suggestedOverlayList').innerHTML = q
+        ? `<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No people found for "${escHtml(q)}"</div>`
+        : `<div style="padding:40px;text-align:center;color:var(--text3);font-size:14px;">No accounts to show yet.</div>`;
+      return;
+    }
 
     const listHtml = pageItems.map(p => {
       const normKey = normalizeFollowKey(p.key);
@@ -18265,14 +18290,15 @@ async function openSuggestedOverlay() {
       const isFollowing = myFollows.includes(normKey);
       const aviHtml = _aviHtml(p.pic, p.displayName, 44);
       const verBadge = (p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : '';
+      const viewProfileBtn = `<button onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid var(--glass-border);background:rgba(255,255,255,0.06);color:var(--text2);">View Profile</button>`;
       const followBtn = isSelf ? '' : `<button id="sug-follow-${escHtml(p.key)}" onclick="sugOverlayToggleFollow('${escHtml(p.key)}','${escHtml(p.displayName)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? 'Following' : 'Follow'}</button>`;
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--glass-border);">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--glass-border);">
         <div onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')">
           <div style="font-size:14px;font-weight:700;color:var(--text);">${escHtml(p.displayName)}${verBadge}</div>
           <div style="font-size:12px;color:var(--text3);">@${escHtml(p.key.replace(/\s+/g,'_'))}</div>
         </div>
-        ${followBtn}
+        <div style="display:flex;gap:7px;flex-shrink:0;">${viewProfileBtn}${followBtn}</div>
       </div>`;
     }).join('');
 
@@ -18288,6 +18314,13 @@ async function openSuggestedOverlay() {
 
   window._sugOverlayNext = () => { window._sugOverlayPage++; renderList().catch(console.error); };
   window._sugOverlayPrev = () => { window._sugOverlayPage = Math.max(0, window._sugOverlayPage - 1); renderList().catch(console.error); };
+  // Debounced so every keystroke doesn't re-run the full filter/render pass
+  window._sugOverlaySetQuery = (v) => {
+    window._sugOverlayQuery = v;
+    window._sugOverlayPage = 0;
+    clearTimeout(window._sugOverlaySearchDebounce);
+    window._sugOverlaySearchDebounce = setTimeout(() => { renderList().catch(console.error); }, 180);
+  };
 
   renderList().catch(e => {
     console.warn('People overlay error:', e);
@@ -27072,12 +27105,19 @@ function closeNotifDetailSheet() {
 <div id="notifOverlay" style="display:none!important;"></div>
 <div id="msgsOverlay" style="display:none!important;"></div>
 <div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <div class="subpage-topbar" style="position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
-    <button onclick="closeSuggestedOverlay()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div style="font-size:17px;font-weight:700;">People</div>
-    <div style="width:60px"></div>
+  <div class="subpage-topbar" style="position:fixed;top:0;left:0;right:0;z-index:10;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button onclick="closeSuggestedOverlay()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div style="font-size:17px;font-weight:700;">People</div>
+      <div style="width:30px"></div>
+    </div>
+    <div style="position:relative;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="suggestedOverlaySearch" placeholder="Search people…" oninput="var _cb=document.getElementById('suggestedOverlaySearchClear');if(_cb)_cb.style.display=this.value?'flex':'none';window._sugOverlaySetQuery&&window._sugOverlaySetQuery(this.value);" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1px solid var(--b-std);border-radius:16px;padding:11px 40px 11px 38px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;-webkit-appearance:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(245,197,24,0.4)'" onblur="this.style.borderColor='var(--b-std)'"/>
+      <button id="suggestedOverlaySearchClear" onclick="document.getElementById('suggestedOverlaySearch').value='';this.style.display='none';window._sugOverlaySetQuery&&window._sugOverlaySetQuery('');document.getElementById('suggestedOverlaySearch').focus();" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--surface5);border:none;color:var(--text2);font-size:12px;cursor:pointer;align-items:center;justify-content:center;font-family:var(--font);line-height:1;">✕</button>
+    </div>
   </div>
-  <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(64px + env(safe-area-inset-top,0px)) 16px 100px;box-sizing:border-box;">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(118px + env(safe-area-inset-top,0px)) 16px 100px;box-sizing:border-box;">
     <div style="max-width:620px;margin:0 auto;width:100%;" id="suggestedOverlayList"></div>
   </div>
 </div>
@@ -35698,21 +35738,6 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       </button>
     </div>
 
-    <!-- Earn / Boost / Premium — now dedicated full pages, launched from cards -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
-      <button onclick="openWalletEarnPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
-        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Earn</div>
-      </button>
-      <button onclick="openWalletBoostPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Boost</div>
-      </button>
-      <button onclick="openWalletPremiumPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z"/></svg>
-        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Premium</div>
-      </button>
-    </div>
 
     <!-- Recent Activity (top 5, togglable from Wallet Settings) -->
     <div id="walletRecentActivityWrap" style="display:none;margin-bottom:20px;">
@@ -35723,71 +35748,109 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       <div id="walletRecentActivityList"></div>
     </div>
 
-    <!-- Wallet Settings -->
-    <button onclick="openWalletSettingsPage()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:20px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Wallet Settings
+    <!-- Settings card — sits right after Recent Activity on Wallet home, in addition to the Settings tab below. -->
+    <button onclick="openWalletSettingsPage()" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);margin-bottom:20px;">
+      <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);">Settings</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px;">Wallet preferences</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
     </button>
+
+  </div>
+
+  <!-- Wallet tab bar — Home / Earn / Spend / Premium / Settings. This same bar
+       is also injected into each Earn/Spend/Premium/Settings overlay page
+       (see _spWalletInjectTabbarEverywhere below) so the five screens read as
+       one set of connected tabs instead of separate pages you have to back
+       out of. -->
+  <div class="spas-tabbar" id="walletTabbar">
+    <div class="spas-tab wallet-tabbar-row active" data-wtab="home" onclick="window._spWalletGoHome()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <span>Home</span>
+    </div>
+    <div class="spas-tab wallet-tabbar-row" data-wtab="earn" onclick="openWalletEarnPage()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+      <span>Earn</span>
+    </div>
+    <div class="spas-tab wallet-tabbar-row" data-wtab="spend" onclick="openWalletBoostPage()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      <span>Spend</span>
+    </div>
+    <div class="spas-tab wallet-tabbar-row" data-wtab="premium" onclick="openWalletPremiumPage()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M5 18l-1.5-9L9 12l3-6 3 6 5.5-3L19 18"/></svg>
+      <span>Premium</span>
+    </div>
+    <div class="spas-tab wallet-tabbar-row" data-wtab="settings" onclick="openWalletSettingsPage()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </div>
   </div>
 </div>
 
-<!-- ══════════ WALLET EARN PAGE (full page) ══════════ -->
+<!-- ══════════ WALLET EARN PAGE (full page, App Market/Apple-Wallet style) ══════════ -->
 <div id="walletEarnPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeWalletEarnPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
-    </button>
-    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Earn</div>
-    <div style="width:52px;"></div>
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-circle-btn" onclick="closeWalletEarnPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div></div>
+    </div>
+    <div class="spas-largetitle">Earn</div>
   </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
-    <div class="wallet-tabbar" style="display:flex;gap:0;border-radius:100px;padding:3px;margin-bottom:14px;">
-      <button id="etab-tasks" onclick="setEarnSubTab('tasks')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Tasks</button>
-      <button id="etab-completed" onclick="setEarnSubTab('completed')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Completed</button>
+  <div class="spas-body" style="padding-bottom:100px;">
+    <div style="display:flex;gap:0;border-radius:100px;padding:3px;margin:0 16px 16px;background:rgba(120,120,128,.16);">
+      <button id="etab-tasks" onclick="setEarnSubTab('tasks')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Tasks</button>
+      <button id="etab-completed" onclick="setEarnSubTab('completed')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:700;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:var(--text3);transition:background 0.15s,color 0.15s;">Completed</button>
     </div>
-    <div id="earn-panel-tasks">
-      <div id="walletTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading tasks…</div></div>
+    <div id="earn-panel-tasks" style="padding:0 16px;">
+      <div id="walletTasksList"><div class="spas-empty" style="padding:40px 24px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" style="animation:spmkPulse 1.3s ease-in-out infinite;margin-bottom:10px;"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg><span>Loading tasks…</span></div></div>
     </div>
-    <div id="earn-panel-completed" style="display:none;">
-      <div id="walletCompletedTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
+    <div id="earn-panel-completed" style="display:none;padding:0 16px;">
+      <div id="walletCompletedTasksList"><div class="spas-empty" style="padding:40px 24px;"><span>Loading…</span></div></div>
     </div>
   </div>
 </div>
 
-<!-- ══════════ WALLET BOOST PAGE (full page) ══════════ -->
+<!-- ══════════ WALLET BOOST PAGE (full page, App Market/Apple-Wallet style) ══════════ -->
 <div id="walletBoostPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeWalletBoostPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
-    </button>
-    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Boost</div>
-    <div style="width:52px;"></div>
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-circle-btn" onclick="closeWalletBoostPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div></div>
+    </div>
+    <div class="spas-largetitle">Spend</div>
   </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
-    <div id="walletBoostClosedNote" style="display:none;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:18px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5;">
-      🔒 Boosting is temporarily disabled.
+  <div class="spas-body" style="padding-bottom:100px;">
+    <div id="walletBoostClosedNote" class="spas-empty" style="display:none;margin:0 16px;background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:22px;">
+      🔒<b>Boosting is closed</b><span>Boosting is temporarily disabled.</span>
     </div>
     <div id="walletBoostContent">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Boost a Post</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Pick one of your posts and buy extra reactions with Plus Coins.</div>
-      <div id="boostPostPicker"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading your posts…</div></div>
+      <div class="spas-sec-head" style="margin-top:6px;"><b>Boost a Post</b></div>
+      <div style="font-size:12.5px;color:var(--text3);line-height:1.5;padding:0 16px;margin:-4px 0 14px;">Pick one of your posts and buy extra reactions with Plus Coins.</div>
+      <div id="boostPostPicker" style="padding:0 16px;"><div class="spas-empty" style="padding:40px 24px;"><span>Loading your posts…</span></div></div>
     </div>
   </div>
 </div>
 
-<!-- ══════════ WALLET PREMIUM PAGE (full page) ══════════ -->
+<!-- ══════════ WALLET PREMIUM PAGE (full page, App Market/Apple-Wallet style) ══════════ -->
 <div id="walletPremiumPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeWalletPremiumPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
-    </button>
-    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Premium</div>
-    <div style="width:52px;"></div>
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-circle-btn" onclick="closeWalletPremiumPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div></div>
+    </div>
+    <div class="spas-largetitle">Premium</div>
   </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
-    <div id="walletPremiumStatusCard"></div>
-    <div id="walletPremiumPlansWrap" style="margin-top:14px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+  <div class="spas-body" style="padding-bottom:100px;">
+    <div style="padding:0 16px;">
+      <div id="walletPremiumStatusCard"></div>
+      <div id="walletPremiumPlansWrap" style="margin-top:14px;"></div>
+    </div>
+    <div class="spas-sec-head"><b>More</b></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;">
       <button onclick="openPremiumShowcasePage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>
         <div style="font-size:13px;font-weight:800;color:var(--text);">What am I getting?</div>
@@ -35802,28 +35865,32 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
   </div>
 </div>
 
-<!-- ══════════ WALLET SETTINGS PAGE (full page, mirrors App Market's first-time gate pattern) ══════════ -->
+<!-- ══════════ WALLET SETTINGS PAGE (full page, App Market/Apple-Wallet style) ══════════ -->
 <div id="walletSettingsPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeWalletSettingsPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
-    </button>
-    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Wallet Settings</div>
-    <div style="width:52px;"></div>
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-circle-btn" onclick="closeWalletSettingsPage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div></div>
+    </div>
+    <div class="spas-largetitle">Settings</div>
   </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">General</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-        <div>
-          <div style="font-size:13.5px;font-weight:700;color:var(--text);">Recent Activity</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Show the last 5 transactions on the Wallet home</div>
+  <div class="spas-body" style="padding-bottom:100px;">
+    <div class="spas-sec-head" style="margin-top:6px;"><b>General</b></div>
+    <div style="padding:0 16px;">
+      <div class="settings-icon-group" style="margin-bottom:0;">
+        <div class="settings-icon-row" style="cursor:default;">
+          <div class="settings-icon-circle" style="background:rgba(245,197,24,.14);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </div>
+          <div class="settings-icon-info">
+            <div class="settings-icon-label">Recent Activity</div>
+            <div class="settings-icon-desc">Show the last 5 transactions on the Wallet home</div>
+          </div>
+          <button id="walletRecentActivityToggle" onclick="_toggleWalletRecentActivitySetting()" style="position:relative;width:44px;height:26px;border-radius:100px;border:none;cursor:pointer;flex-shrink:0;transition:background 0.15s;">
+            <span style="position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span>
+          </button>
         </div>
       </div>
-      <button id="walletRecentActivityToggle" onclick="_toggleWalletRecentActivitySetting()" style="position:relative;width:44px;height:26px;border-radius:100px;border:none;cursor:pointer;flex-shrink:0;transition:background 0.15s;">
-        <span style="position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span>
-      </button>
     </div>
   </div>
 </div>
@@ -38624,6 +38691,16 @@ async function openWalletPage(startTab) {
   if (!ov) return;
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  // Paint immediately with whatever's cached (may be the initial-letter
+  // fallback if the accounts cache isn't warm yet), then re-paint once
+  // the real account row is guaranteed loaded — previously this only
+  // painted once, before the awaits below, so a not-yet-cached avatar
+  // was stuck on the "S" fallback for the rest of the session even
+  // after the real profile_pic loaded. getAllAccounts() itself already
+  // re-triggers the nav avatar (_refreshNavAvatar) once the real cache
+  // lands (see that function); this mirrors the same fix for the wallet.
+  _renderWalletProfileBtn();
+  if (typeof getAllAccounts === 'function') { try { await getAllAccounts(); } catch(e) {} }
   _renderWalletProfileBtn();
   await _loadWalletConfig();
   await _refreshWalletBalance();
@@ -38721,61 +38798,97 @@ function _toggleWalletRecentActivitySetting() {
 }
 
 // ── Wallet Settings page ──
+// ── Shared tab bar wiring across Wallet's 5 screens (Home/Earn/Spend/Premium/Settings) ──
+// Each full-page overlay below gets its own copy of #walletTabbar appended
+// (with a matching id suffix) so the tab row is visible and tappable no
+// matter which screen is open, instead of only existing on Wallet home.
+// Tapping a tab from inside another screen just calls that screen's own
+// open function, which is a same-overlay swap — no back-and-forth needed.
+const WALLET_TABS = ['home','earn','spend','premium','settings'];
+function _spWalletSyncTabbar(activeId) {
+  // Every tab bar on the page (original + clones) uses data-wtab instead of
+  // id on its rows, so this updates all of them in one pass with no
+  // duplicate-id lookups.
+  document.querySelectorAll('.wallet-tabbar-row[data-wtab]').forEach(function(el) {
+    el.classList.toggle('active', el.getAttribute('data-wtab') === activeId);
+  });
+}
+function _spWalletEnsureTabbarOn(overlayId) {
+  const ov = document.getElementById(overlayId);
+  if (!ov || ov.querySelector('.wallet-tabbar-clone')) return;
+  const src = document.getElementById('walletTabbar');
+  if (!src) return;
+  const clone = src.cloneNode(true);
+  clone.classList.add('wallet-tabbar-clone');
+  clone.removeAttribute('id');
+  // Tab rows use data-wtab (not id) for active-state syncing, so the clone
+  // is safe to insert as-is — no duplicate ids, and the onclick attributes
+  // (copied over by cloneNode) still fire the same open/goHome functions.
+  ov.appendChild(clone);
+}
+window._spWalletGoHome = function() {
+  ['walletEarnPageOverlay','walletBoostPageOverlay','walletPremiumPageOverlay','walletSettingsPageOverlay'].forEach(function(id) {
+    const ov = document.getElementById(id);
+    if (ov) ov.style.display = 'none';
+  });
+  document.body.style.overflow = '';
+  _spWalletSyncTabbar('home');
+  _renderWalletRecentActivity();
+};
+
 function openWalletSettingsPage() {
   const ov = document.getElementById('walletSettingsPageOverlay');
   if (!ov) return;
+  _spWalletEnsureTabbarOn('walletSettingsPageOverlay');
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   _paintWalletRecentActivityToggle();
+  _spWalletSyncTabbar('settings');
 }
 function closeWalletSettingsPage() {
-  const ov = document.getElementById('walletSettingsPageOverlay');
-  if (ov) ov.style.display = 'none';
-  document.body.style.overflow = '';
-  // Reflect a settings change immediately on the Wallet home behind it.
-  _renderWalletRecentActivity();
+  window._spWalletGoHome();
 }
 
 // ── Earn / Boost / Premium — now dedicated full pages ──
 async function openWalletEarnPage() {
   const ov = document.getElementById('walletEarnPageOverlay');
   if (!ov) return;
+  _spWalletEnsureTabbarOn('walletEarnPageOverlay');
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   setEarnSubTab('tasks');
+  _spWalletSyncTabbar('earn');
   await _loadWalletConfig();
   _renderWalletTasks();
 }
 function closeWalletEarnPage() {
-  const ov = document.getElementById('walletEarnPageOverlay');
-  if (ov) ov.style.display = 'none';
-  document.body.style.overflow = '';
+  window._spWalletGoHome();
 }
 async function openWalletBoostPage() {
   const ov = document.getElementById('walletBoostPageOverlay');
   if (!ov) return;
+  _spWalletEnsureTabbarOn('walletBoostPageOverlay');
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  _spWalletSyncTabbar('spend');
   await _loadWalletConfig();
   if (typeof _renderWalletBoostTab === 'function') _renderWalletBoostTab();
 }
 function closeWalletBoostPage() {
-  const ov = document.getElementById('walletBoostPageOverlay');
-  if (ov) ov.style.display = 'none';
-  document.body.style.overflow = '';
+  window._spWalletGoHome();
 }
 async function openWalletPremiumPage() {
   const ov = document.getElementById('walletPremiumPageOverlay');
   if (!ov) return;
+  _spWalletEnsureTabbarOn('walletPremiumPageOverlay');
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  _spWalletSyncTabbar('premium');
   await _loadWalletConfig();
   _renderWalletPremiumTab();
 }
 function closeWalletPremiumPage() {
-  const ov = document.getElementById('walletPremiumPageOverlay');
-  if (ov) ov.style.display = 'none';
-  document.body.style.overflow = '';
+  window._spWalletGoHome();
 }
 
 // ── Withdraw subpage ──
@@ -44068,7 +44181,8 @@ function _showUpdateIsland(cfg) {
     'width:calc(100vw - 32px)',
     'max-width:420px',
     'box-sizing:border-box',
-    'box-shadow: 0 12px 48px rgba(0,0,0,0.65), '', '', 'animation:islandSlideDown 0.35s cubic-bezier(0.32,0.72,0,1) both'
+    'box-shadow: 0 12px 48px rgba(0,0,0,0.65)',
+    'animation:islandSlideDown 0.35s cubic-bezier(0.32,0.72,0,1) both'
   ].join(';');
 
   island.innerHTML =
@@ -45259,10 +45373,65 @@ function _ppcAIPickVersion(idx) {
   // Push a sentinel state so back button has something to pop before leaving
   history.pushState({ _ka: 'base' }, '');
 
+  // ── Refresh should leave you where you were ─────────────────────────
+  // This app has no per-screen URL — every page is a JS-managed overlay
+  // over one base document, so a plain browser/WebView reload always
+  // re-boots straight to the base feed, no matter what was open. This
+  // records the most recently opened overlay's id (and closes it back
+  // out cleanly if the user navigates away without a fresh one opening)
+  // so boot can reopen the same screen once the app has finished its
+  // normal startup. It intentionally does NOT try to restore scroll
+  // position or in-page sub-tabs — just "which screen", which is what
+  // was actually asked for and is reliable to restore; deeper state would
+  // require each overlay to serialize its own, which isn't worth the
+  // fragility here.
+  var KA_RESTORE_KEY = 'ka_last_open_overlay';
+  window._kaRememberOpen = function(id) {
+    try { localStorage.setItem(KA_RESTORE_KEY, id); } catch(e) {}
+  };
+  window._kaForgetOpen = function(id) {
+    try {
+      if (localStorage.getItem(KA_RESTORE_KEY) === id) localStorage.removeItem(KA_RESTORE_KEY);
+    } catch(e) {}
+  };
+  // Map of overlay id -> how to reopen it with no arguments. Only overlays
+  // that make sense to land on directly after a reload (not modals over
+  // modals, not sheets that need a specific item id) are listed — falling
+  // back to the base feed for anything else is correct, not a bug.
+  var KA_RESTORE_OPENERS = {
+    walletPageOverlay:   function(){ if (typeof openWalletPage === 'function') openWalletPage(); },
+    walletEarnPageOverlay:     function(){ if (typeof openWalletEarnPage === 'function') openWalletEarnPage(); },
+    walletBoostPageOverlay:    function(){ if (typeof openWalletBoostPage === 'function') openWalletBoostPage(); },
+    walletPremiumPageOverlay:  function(){ if (typeof openWalletPremiumPage === 'function') openWalletPremiumPage(); },
+    walletSettingsPageOverlay: function(){ if (typeof openWalletSettingsPage === 'function') openWalletSettingsPage(); },
+    messagesPageOverlay: function(){ if (typeof openMessagesPage === 'function') openMessagesPage(); },
+    alertsPageOverlay:   function(){ if (typeof openAlertsPage === 'function') openAlertsPage(); },
+    notifOverlay:        function(){ if (typeof openNotifPanel === 'function') openNotifPanel(); },
+    channelsListOverlay: function(){ if (typeof openChannelsListPage === 'function') openChannelsListPage(); },
+    profileOverlay:      function(){ if (typeof openProfilePage === 'function') openProfilePage(); },
+    sideMenuPanel:       function(){ if (typeof openSideMenu === 'function') openSideMenu(); },
+    spMkGate:            function(){ if (typeof window._spV2OpenMarket === 'function') window._spV2OpenMarket(); },
+    spMarket:            function(){ if (typeof window._spV2OpenMarket === 'function') window._spV2OpenMarket(); },
+    appUpdatesPageOverlay: function(){ if (typeof openAppUpdatesPage === 'function') openAppUpdatesPage(); },
+    artifactsPageOverlay:  function(){ if (typeof openArtifactsPage === 'function') openArtifactsPage(); },
+  };
+  window.addEventListener('DOMContentLoaded', function() {
+    // Deferred well past normal boot (login/session restore, account
+    // cache warm-up) so the reopened screen has real data to show instead
+    // of racing it and rendering empty.
+    setTimeout(function() {
+      try {
+        var savedId = localStorage.getItem(KA_RESTORE_KEY);
+        if (!savedId) return;
+        var opener = KA_RESTORE_OPENERS[savedId];
+        if (opener) opener();
+      } catch(e) {}
+    }, 1500);
+  });
+
   // Every time we open an overlay we push another state.
   // On popstate (back press) we close the topmost visible layer instead of exiting.
-  function _kaIsOpen(id) {
-    var el = document.getElementById(id);
+  function _kaIsOpen(id) {    var el = document.getElementById(id);
     if (!el) return false;
     // channelDetailOverlay is a genuine drill-down page (opened from inside
     // Channels) and still stays display:flex permanently, hiding off-screen
@@ -45334,6 +45503,10 @@ function _ppcAIPickVersion(idx) {
     { check: 'manageProfileOverlay',      close: function() { if(typeof closeProfileManageSheet==='function') closeProfileManageSheet(); } },
     { check: 'artifactsPageOverlay',      close: function() { if(typeof closeArtifactsPage==='function') closeArtifactsPage(); } },
     { check: 'walletHistoryPageOverlay',  close: function() { if(typeof closeWalletHistoryPage==='function') closeWalletHistoryPage(); } },
+    { check: 'walletEarnPageOverlay',     close: function() { if(typeof closeWalletEarnPage==='function') closeWalletEarnPage(); } },
+    { check: 'walletBoostPageOverlay',    close: function() { if(typeof closeWalletBoostPage==='function') closeWalletBoostPage(); } },
+    { check: 'walletPremiumPageOverlay',  close: function() { if(typeof closeWalletPremiumPage==='function') closeWalletPremiumPage(); } },
+    { check: 'walletSettingsPageOverlay', close: function() { if(typeof closeWalletSettingsPage==='function') closeWalletSettingsPage(); } },
     { check: 'referPageOverlay',          close: function() { if(typeof closeReferPage==='function') closeReferPage(); } },
     { check: 'transferPageOverlay',       close: function() { if(typeof closeTransferPage==='function') closeTransferPage(); } },
     { check: 'withdrawPageOverlay',       close: function() { if(typeof closeWithdrawPage==='function') closeWithdrawPage(); } },
@@ -45344,7 +45517,59 @@ function _ppcAIPickVersion(idx) {
     { check: 'partnerSitesMgrOverlay',    close: function() { if(typeof closePartnerSitesManager==='function') closePartnerSitesManager(); } },
     { check: 'premiumApprovalsOverlay',   close: function() { if(typeof closePremiumApprovals==='function') closePremiumApprovals(); } },
     { check: 'verifManagerOverlay',       close: function() { if(typeof closeVerifManager==='function') closeVerifManager(); } },
+    { check: 'sideMenuPanel',             close: function() { if(typeof closeSideMenu==='function') closeSideMenu(); } },
+    // App Market's several screens (gate, home, create, run, admin, terms,
+    // profile edit) all share one close-everything function — registering
+    // that once here covers all of them, however many sub-screens App
+    // Market grows later.
+    { check: 'spMkGate',      close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMarket',      close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMarketCreate',close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMarketRun',   close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMkAdmin',     close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMkTerms',     close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
+    { check: 'spMkProfileEdit',close: function() { if(typeof window._spMkClose==='function') window._spMkClose(); } },
   ];
+  // Wrap every registered close function so ANY way a layer closes — tap
+  // on its own Back/X button, hardware back, or the generic fallback
+  // below — also clears the "reopen this on next refresh" flag. Without
+  // this, closing a page normally (not via back) would leave it marked
+  // as still-open, and the NEXT plain reload would reopen a screen the
+  // user had already left.
+  _kaLayers.forEach(function(l) {
+    var origClose = l.close;
+    l.close = function() { origClose(); window._kaForgetOpen(l.check); };
+  });
+
+  // ── Generic safety net ──────────────────────────────────────────────
+  // The list above has to be hand-maintained (each overlay's own close
+  // function does its own cleanup — animations, body scroll lock, other
+  // state — so a truly one-size-fits-all closer can't safely replace
+  // those). But a NEW overlay added later and forgotten here used to mean
+  // hardware back fell straight through to the WebView and exited the
+  // whole app instead of closing that screen — which is exactly what
+  // happened with the side menu and App Market above. This scans for any
+  // element that LOOKS like one of our overlays (fixed, full-screen,
+  // currently visible) but isn't in the list, and closes it generically
+  // by hiding it — not a full substitute for a real close function, but
+  // it guarantees back never exits the app, even for a screen someone
+  // forgets to register by name.
+  function _kaFindUnregisteredOpenOverlay() {
+    var registered = {};
+    _kaLayers.forEach(function(l) { registered[l.check] = true; });
+    var all = document.querySelectorAll('body > div[id]');
+    for (var i = all.length - 1; i >= 0; i--) {
+      var el = all[i];
+      if (registered[el.id]) continue;
+      var cs = window.getComputedStyle(el);
+      if (cs.display === 'none') continue;
+      if (cs.position !== 'fixed') continue;
+      var r = el.getBoundingClientRect();
+      var isFullScreenish = r.width >= window.innerWidth * 0.9 && r.height >= window.innerHeight * 0.6;
+      if (isFullScreenish) return el;
+    }
+    return null;
+  }
 
   // Called whenever a layer opens — push a state so back button pops it.
   // Deferred with setTimeout (not just reordered) so it runs in its own
@@ -45366,6 +45591,19 @@ function _ppcAIPickVersion(idx) {
         history.pushState({ _ka: 'base' }, '');
         return;
       }
+    }
+    // Nothing in the known list is open — before giving up and letting
+    // the WebView exit, check for any full-screen overlay that was simply
+    // never registered above (see _kaFindUnregisteredOpenOverlay). This is
+    // what stops back from closing the ENTIRE app on any screen someone
+    // forgets to add to _kaLayers by name.
+    var stray = _kaFindUnregisteredOpenOverlay();
+    if (stray) {
+      stray.style.display = 'none';
+      document.body.style.overflow = '';
+      window._kaForgetOpen(stray.id);
+      history.pushState({ _ka: 'base' }, '');
+      return;
     }
     // Nothing was open — push base state back to prevent exit
     // (user is already at root, nothing more to close)
@@ -45441,13 +45679,60 @@ function _ppcAIPickVersion(idx) {
     'openPartnerSitesManager',
     'openPremiumApprovals',
     'openVerifManager',
+    'openSideMenu',
   ].forEach(_patchOpen);
+  // App Market's several entry points all ultimately show one of the
+  // registered spMk*/spMarket* screens — patch each so hardware back has
+  // a state to pop no matter which one was used to get in.
+  ['_spV2OpenMarket','_spMkGateContinue','_spMkCreate','_spMkAdminOpen','_spMkTermsOpen','_spMkProfileEditOpen','openMarketHome','showGate']
+    .forEach(function(name){ if (typeof window[name] === 'function') _patchOpen(name); });
 
   // Also patch savedPosts open (it's done inline, add a helper)
   var _origShowSaved = window.showSavedPosts;
   if (typeof _origShowSaved === 'function') {
     window.showSavedPosts = function() { window._kaPushBack(); return _origShowSaved.apply(this, arguments); };
   }
+
+  // ── Generic safety net (push side + remember-for-refresh) ───────────
+  // Mirrors _kaFindUnregisteredOpenOverlay above but for two other halves
+  // of the problem: (1) even a correctly-closing overlay is useless to
+  // hardware back if nothing ever pushed a history state when it opened,
+  // and (2) nothing was tracking "which screen is currently open" for the
+  // refresh-restore feature (see _kaRememberOpen near the top of this
+  // file) unless every open function was hand-wired to call it. Rather
+  // than requiring every current AND future overlay's open/close pair to
+  // be manually wired for both concerns, watch the DOM for any full-screen
+  // fixed-position element becoming visible or hidden and handle both
+  // automatically. This runs in addition to, not instead of, the explicit
+  // patches above (which still run their real open logic first).
+  var _kaKnownVisible = new WeakSet();
+  function _kaScanForNewOverlay() {
+    document.querySelectorAll('body > div[id]').forEach(function(el) {
+      var cs = window.getComputedStyle(el);
+      if (cs.display === 'none') {
+        if (_kaKnownVisible.has(el)) { _kaKnownVisible.delete(el); window._kaForgetOpen(el.id); }
+        return;
+      }
+      if (cs.position !== 'fixed') return;
+      var r = el.getBoundingClientRect();
+      var isFullScreenish = r.width >= window.innerWidth * 0.9 && r.height >= window.innerHeight * 0.6;
+      if (!isFullScreenish) return;
+      if (_kaKnownVisible.has(el)) return;
+      _kaKnownVisible.add(el);
+      window._kaPushBack();
+      // Only remember it for refresh-restore if we actually know how to
+      // reopen it with no arguments (see KA_RESTORE_OPENERS) — remembering
+      // an id we can't reopen would just silently do nothing on restore.
+      if (KA_RESTORE_OPENERS[el.id]) window._kaRememberOpen(el.id);
+    });
+  }
+  var _kaObserver = new MutationObserver(function() {
+    // Debounced to the next frame — many overlays flip several inline
+    // styles in the same tick while opening.
+    if (_kaObserver._t) return;
+    _kaObserver._t = setTimeout(function() { _kaObserver._t = null; _kaScanForNewOverlay(); }, 30);
+  });
+  _kaObserver.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
 
 })();
 </script>
@@ -45517,22 +45802,63 @@ async function v2RawQuery(table,params){
   return r.json();
 }
 window._spV2LastLoadFailed=false;
+// Tracks the in-flight load so a slow-but-successful response is never
+// thrown away by a caller-side timeout race — it always lands in
+// window._spV2Apps and re-renders the market once it resolves, even if
+// the UI already moved on to a fallback state in the meantime.
+window._spV2LoadPromise=null;
+window._spV2LastLoadError=null;
 async function v2LoadApps(force){
   if(window._spV2Apps && !force)return window._spV2Apps;
-  const me=v2me();let remote=[];
-  try{
-    const [pub,mine]=await Promise.all([
-      v2RawQuery('mini_apps','?visibility=eq.public&status=eq.published&order=updated_at.desc&limit=500'),
-      me?v2RawQuery('mini_apps','?owner=eq.'+encodeURIComponent(me)+'&order=updated_at.desc&limit=100'):Promise.resolve([])
-    ]);
-    const byId=new Map();[...(pub||[]),...(mine||[])].forEach(a=>{if(a&&a.id)byId.set(String(a.id),a)});remote=[...byId.values()];
-    window._spV2LastLoadFailed=false;
-    window._spV2Apps=remote;v2SaveLocal(remote);return remote;
-  }catch(e){
-    console.warn('[App Market] remote load failed',e);
-    window._spV2LastLoadFailed=true;
-  }
-  return window._spV2Apps=v2Local();
+  // A forced call (e.g. opening the Market) must always start a fresh
+  // authoritative fetch. Previously this joined ANY in-flight promise even
+  // when force=true, so a stale/failed background prefetch (started before
+  // the Market was opened) could silently hijack the "force" load and the
+  // Market would render whatever that unrelated call resolved to — including
+  // an empty/failed result — with no error and no way to tell from the UI.
+  if(window._spV2LoadPromise && !force)return window._spV2LoadPromise;
+  const me=v2me();
+  const p=(async function(){
+    try{
+      const [pub,mine]=await Promise.all([
+        v2RawQuery('mini_apps','?visibility=eq.public&status=eq.published&order=updated_at.desc&limit=500'),
+        me?v2RawQuery('mini_apps','?owner=eq.'+encodeURIComponent(me)+'&order=updated_at.desc&limit=100'):Promise.resolve([])
+      ]);
+      const byId=new Map();[...(pub||[]),...(mine||[])].forEach(a=>{if(a&&a.id)byId.set(String(a.id),a)});
+      const remote=[...byId.values()];
+      window._spV2LastLoadFailed=false;
+      window._spV2LastLoadError=null;
+      window._spV2Apps=remote;v2SaveLocal(remote);
+      // If the market shell is still mounted, refresh it now — this is what
+      // rescues the case where the network call finished AFTER the caller's
+      // own timeout already painted an empty/fallback state.
+      if(document.getElementById('spMarket') && typeof renderMarket==='function'){
+        try{state.apps=remote;renderMarket();}catch(e){}
+      }
+      return remote;
+    }catch(e){
+      console.warn('[App Market] remote load failed',e);
+      window._spV2LastLoadFailed=true;
+      // Keep the real reason around so the loading/error UI can show
+      // something more useful than a generic "couldn't load" — a timeout,
+      // a network error, and an HTTP/Postgres error each need a different
+      // next step from the person reading it.
+      window._spV2LastLoadError=(e&&e.message)?String(e.message):String(e);
+      const fallback=v2Local();
+      window._spV2Apps=fallback;
+      // Fallback local data still counts as a failure for UI purposes if
+      // it's empty — an empty result presented as success is exactly the
+      // "loads with 0 apps, no explanation" bug this is meant to prevent.
+      if(document.getElementById('spMarket') && typeof renderMarket==='function'){
+        try{state.apps=fallback;renderMarket();}catch(e2){}
+      }
+      return fallback;
+    }finally{
+      window._spV2LoadPromise=null;
+    }
+  })();
+  window._spV2LoadPromise=p;
+  return p;
 }
 async function v2SaveApps(apps){
   try{
@@ -47340,6 +47666,9 @@ body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
 #spMarket,#spMkGate,#spMarketCreate,#spMarketRun,#spMkAdmin,#spMkTerms,#spMkProfileEdit{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
 #spMarket *,#spMkGate *,#spMarketCreate *,#spMarketRun *,#spMkAdmin *,#spMkTerms *,#spMkProfileEdit *{box-sizing:border-box;font-family:var(--font)}
 
+/* ===== Loading pulse — signals "actively working" vs a frozen/dead screen ===== */
+@keyframes spmkPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.92)}}
+
 /* ===== Shared top bar (App Store style: large title, back chevron, action) ===== */
 .spas-top{flex-shrink:0;padding:0 16px;padding-top:env(safe-area-inset-top);background:var(--bg)}
 .spas-top-row{height:44px;display:flex;align-items:center;justify-content:space-between}
@@ -47540,7 +47869,7 @@ function toast(msg,type){if(typeof showToast==='function')showToast(msg,type);}
 function notifyAdmin(text,kind){if(typeof addNotifForUser==='function')addNotifForUser('plusofficial',text,null,null,kind||'app_market');}
 function notifyUser(user,text,kind){if(typeof addNotifForUser==='function')addNotifForUser(user,text,null,null,kind||'app_market');}
 
-var state={ tab:'discover', active:'All', query:'', apps:[] };
+var state={ tab:(function(){try{return localStorage.getItem('sp_mk_last_tab')||'discover';}catch(e){return 'discover';}})(), active:'All', query:'', apps:[] };
 var create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null };
 
 function root(){return document.getElementById('spMarketRoot');}
@@ -47614,20 +47943,44 @@ async function openMarketHome(){
   // a completely black screen while Supabase is slow/unreachable.
   r.innerHTML='<div id="spMarket"></div>';
   document.body.style.overflow='hidden';
-  var host=document.getElementById('spMarket');
-  if(host){
-    host.innerHTML='<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('grid',34)+'<b>Loading App Market…</b><span>Fetching published apps</span></div>' + tabbarHtml();
-  }
+  _spMkPaintLoading();
   try{
+    // Outer safety-net timeout on top of v2RawQuery's own 8s-per-request
+    // timeout. Belt and suspenders: if v2LoadApps ever hangs for a reason
+    // its own timeout doesn't cover (e.g. a backgrounded/frozen tab pausing
+    // timers), this guarantees the loading screen still resolves to a
+    // visible error within 12s instead of spinning forever with nothing to
+    // click and no way to tell what's wrong.
     state.apps=await Promise.race([
       v2LoadApps(true),
-      new Promise(function(resolve){setTimeout(function(){resolve(v2Local());},8000);})
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out waiting for a response')),12000))
     ])||[];
+    state._marketLoadFailed=window._spV2LastLoadFailed && !state.apps.length;
   }catch(e){
     console.warn('[App Market] load failed',e);
+    window._spV2LastLoadFailed=true;
+    window._spV2LastLoadError=(e&&e.message)?String(e.message):String(e);
     state.apps=v2Local();
+    state._marketLoadFailed=!state.apps.length;
   }
   renderMarket();
+}
+// Loading skeleton shown the instant the Market opens, before any network
+// response. A subtle pulse on the icon signals "this is actively working",
+// not "this is frozen" — the earlier static version was indistinguishable
+// from a hang even when it was about to resolve fine.
+function _spMkPaintLoading(){
+  var host=document.getElementById('spMarket');
+  if(!host)return;
+  host.innerHTML='<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;"><div style="animation:spmkPulse 1.3s ease-in-out infinite">'+ico('grid',34)+'</div><b>Loading App Market…</b><span>Fetching published apps</span></div>' + tabbarHtml();
+}
+// Error screen with the real failure reason and a Retry button — replaces
+// whatever's currently in #spMarket, used both on initial open and if a
+// retry fails again.
+function _spMkPaintLoadError(msg){
+  var host=document.getElementById('spMarket');
+  if(!host)return;
+  host.innerHTML='<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('grid',34)+'<b>Couldn&#39;t load the App Market</b><span>'+esc(msg||'Check your connection and try again.')+'</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkRetryLoad()">Retry</button></div>' + tabbarHtml();
 }
 window._spMkClose=function(){
   ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkAdmin','spMkTerms','spMkProfileEdit'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
@@ -47670,10 +48023,27 @@ window._spMkShareMarket=function(){
   else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){toast('Link copied','success');}).catch(function(){});}
 };
 window._spMkBackToSocialPlus=function(){window._spMkClose();};
-window._spMkTab=function(id){state.tab=id;renderMarket();};
+window._spMkTab=function(id){state.tab=id;try{localStorage.setItem('sp_mk_last_tab',id);}catch(e){}renderMarket();};
 window._spMkRetryLoad=async function(){
-  state.apps=await v2LoadApps(true);
-  renderMarket();
+  _spMkPaintLoading();
+  try{
+    state.apps=await Promise.race([
+      v2LoadApps(true),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out waiting for a response')),12000))
+    ])||[];
+    state._marketLoadFailed=window._spV2LastLoadFailed && !state.apps.length;
+  }catch(e){
+    console.warn('[App Market] retry failed',e);
+    window._spV2LastLoadFailed=true;
+    window._spV2LastLoadError=(e&&e.message)?String(e.message):String(e);
+    state.apps=v2Local();
+    state._marketLoadFailed=!state.apps.length;
+  }
+  if(state._marketLoadFailed){
+    _spMkPaintLoadError(window._spV2LastLoadError);
+  }else{
+    renderMarket();
+  }
 };
 
 /* ================= TERMS AND CONDITIONS ================= */
@@ -47785,7 +48155,7 @@ function discoverHtml(){
     (official.length?('<div class="spas-sec-head"><b>Official</b></div><div class="spas-hscroll">'+official.map(function(a){return appTile(a);}).join('')+'</div>'):'')+
     (featured.length?('<div class="spas-sec-head"><b>Featured</b><a onclick="window._spMkTab(\'categories\')">See All</a></div><div class="spas-hscroll">'+featured.map(function(a){return appTile(a);}).join('')+'</div>'):'')+
     (topList.length?('<div class="spas-sec-head"><b>Top Apps</b></div>'+topList.map(function(a,i){return appRow(a,i+1);}).join(''))
-      :('<div class="spas-empty">'+ico('grid',34)+'<b>No apps published yet</b><span>Be the first to build one and share it with the community.</span></div>'))+
+      :(window._spV2LastLoadFailed?('<div class="spas-empty">'+ico('grid',34)+'<b>Couldn&#39;t load the App Market</b><span>'+esc(window._spV2LastLoadError||'Check your connection and try again.')+'</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkRetryLoad()">Retry</button></div>'):('<div class="spas-empty">'+ico('grid',34)+'<b>No apps published yet</b><span>Be the first to build one and share it with the community.</span></div>')))+
     '</div>';
 }
 function categoriesHtml(){
@@ -48180,8 +48550,16 @@ async function finishEdit(){
 window._spMkAdminOpen=async function(){
   if(!isAdmin())return;
   var r=root();
+  if(!r)return;
+  // A stale admin panel from a previous open (e.g. hardware-back closed the
+  // Market but not this) would otherwise sit underneath the new one at the
+  // same z-index — remove it first so there's never more than one mounted.
+  var old=document.getElementById('spMkAdmin');if(old)old.remove();
   var wrap=document.createElement('div');
   wrap.id='spMkAdmin';
+  // Paint a visible loading state immediately so a slow/failed fetch is
+  // never indistinguishable from a blank black screen.
+  wrap.innerHTML='<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkAdminClose()">'+ico('back',16)+'</button><div></div></div><div class="spas-largetitle">App Market Admin</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('shield',34)+'<b>Loading…</b></div>';
   r.appendChild(wrap);
   window._spMkAdminTab='pending';
   await renderAdmin();
@@ -48196,7 +48574,15 @@ async function renderAdmin(){
   // table. That let this panel show an app as "Live" from stale local data
   // while it was actually invisible everywhere else (Discover, My Apps),
   // since those already use the same direct-to-Supabase bypass as below.
-  var all=await v2RawQuery('mini_apps','?order=updated_at.desc&limit=500').catch(function(){return [];})||[];
+  // A failed/hung fetch here used to leave the panel on its "Loading…" state
+  // forever with no way to tell what went wrong — now it renders a visible
+  // error with a retry button instead.
+  var loadFailed=false;
+  var all=await v2RawQuery('mini_apps','?order=updated_at.desc&limit=500').catch(function(e){console.warn('[App Market Admin] load failed',e);loadFailed=true;window._spV2LastLoadError=(e&&e.message)?String(e.message):String(e);return [];})||[];
+  if(loadFailed){
+    wrap.innerHTML='<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkAdminClose()">'+ico('back',16)+'</button><div></div></div><div class="spas-largetitle">App Market Admin</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('shield',34)+'<b>Couldn&#39;t load</b><span>'+esc(window._spV2LastLoadError||'Check your connection and try again.')+'</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkAdminRefresh()">Retry</button></div>';
+    return;
+  }
   var pending=all.filter(function(a){return a.review_status==='pending';});
   var live=all.filter(function(a){return a.visibility==='public'&&!a.is_official;});
   var tab=window._spMkAdminTab||'pending';
