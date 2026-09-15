@@ -62,6 +62,52 @@ function renderApp(app, origin) {
     document.getElementById('mkBoot').style.display='none';
   });
   fetch('${origin}/api/mini-app-ping?id=${encodeURIComponent(app.id)}', {method:'POST'}).catch(function(){});
+
+  // ── Continue-with-Plus SSO broker ──────────────────────────────────────
+  // This standalone page (plusng.com.ng/app/<slug>) has no access to the
+  // main SPA's session/localStorage of its own — it's a separate
+  // server-rendered shell, not index.html. A hidden same-origin iframe
+  // pointed at the SPA's own broker route gives it that access: index.html
+  // already holds the logged-in Plus session (if any) and the
+  // 'plus-sso-request' / 'plus-sso-result' postMessage handler that ships
+  // with the mini app's "Continue with Plus" snippet. The mini app iframe
+  // (#mkFrame) posts its request up to this shell (window.parent from its
+  // point of view); this shell relays it into the hidden SPA broker, then
+  // relays the SPA's reply straight back down to #mkFrame — so from the
+  // mini app's perspective the handshake looks identical whether it's
+  // running embedded inside Social Plus or standalone here.
+  var mkFrame = document.getElementById('mkFrame');
+  var ssoBroker = document.createElement('iframe');
+  ssoBroker.src = '${origin}/market?ssoBroker=1' + (location.search || '');
+  ssoBroker.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  ssoBroker.setAttribute('aria-hidden','true');
+  document.body.appendChild(ssoBroker);
+  window.addEventListener('message', function(ev){
+    if (!ev.data) return;
+    if (ev.data.type === 'plus-sso-request' && ev.source === mkFrame.contentWindow) {
+      // Mini app asking to sign in -> forward into the SPA broker frame.
+      if (ssoBroker.contentWindow) ssoBroker.contentWindow.postMessage(ev.data, '${origin}');
+      return;
+    }
+    if (ev.data.type === 'plus-sso-signup' && ev.source === mkFrame.contentWindow) {
+      // Broker reported either no Plus session on this device, or a
+      // session that hasn't yet granted this app consent. This top-level
+      // page is the only one visible to the user, so it's the one that
+      // navigates — to sign-up if there's no session at all, or straight
+      // to the consent gate if there is one — via /market?miniapp=<slug>,
+      // which brings the visitor right back into this mini app afterward.
+      var back = new URLSearchParams(location.search);
+      var dest = '${origin}/market?miniapp=' + encodeURIComponent('${app.slug || app.id}');
+      dest += (ev.data.reason === 'consent-needed') ? '' : '&signup=1';
+      if (back.get('ref')) dest += '&ref=' + encodeURIComponent(back.get('ref'));
+      location.href = dest;
+      return;
+    }
+    if (ev.data.type === 'plus-sso-result' && ev.source === ssoBroker.contentWindow) {
+      // SPA broker replied -> forward the result down to the mini app.
+      if (mkFrame.contentWindow) mkFrame.contentWindow.postMessage(ev.data, '*');
+    }
+  });
 </script>
 </body>
 </html>`;
