@@ -21,6 +21,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://fonts.gstatic.com">
 <link rel="dns-prefetch" href="https://api.groq.com">
+<link rel="preconnect" href="https://vubxekqmhrmmdaxmnpmz.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://vubxekqmhrmmdaxmnpmz.supabase.co">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- Alternative fonts for the Appearance → Font picker. All loaded up front
@@ -223,6 +225,7 @@ img { content-visibility: auto; }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 html { scroll-behavior: auto; } /* smooth on html causes jank on mobile — use per-element if needed */
 :root {
+  --app-safe-top: env(safe-area-inset-top, 0px);
   /* ═══ CANONICAL TOKEN SET — merged from the two competing :root blocks
      that used to exist (one here, a second ~2050 lines down labeled
      "REDESIGN OVERRIDES"). That second block silently won the cascade
@@ -18571,45 +18574,23 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   `;
   document.head.appendChild(_islandStyle);
 
-  // ── Position below whatever sticky header/topbar is actually visible on ──
-  // ── the current page, instead of a raw fixed offset — so floating pills ──
-  // ── (this island, the Plus AI bubble, etc) never collide with in-page chrome. ──
+  // ── Dynamic Island position ───────────────────────────────────────────
+  // The island belongs to the very top of the app viewport. It must NOT be
+  // pushed below .nav / headers: doing that makes the notification appear
+  // halfway down the screen on mobile browsers. The viewport meta already
+  // uses viewport-fit=cover, so the browser-provided safe-area inset is the
+  // only offset we need here.
   function _computeChromeClearedTop(el, baseTop) {
     try {
-      // NOTE: was `[class*="topbar"]`, a wildcard that also matched
-      // .chat-topbar (and any future *-topbar class) — elements that live
-      // inside their own overlay, not the app's persistent top chrome.
-      // Even though .chat-overlay itself is display:none when closed (so
-      // it's excluded below), the wildcard made this list grow silently
-      // every time a new "-topbar" class was added anywhere in the app,
-      // for overlays that have nothing to do with clearing the persistent
-      // header. Listing the actual persistent-chrome selectors explicitly
-      // instead — this only counts elements meant to always be visible at
-      // the top of the current screen, not per-overlay headers.
-      var candidates = document.querySelectorAll('.profile-topbar, .uprofile-topbar, .subpage-topbar, .nav-brand, header, #_voiceIslandEl, #kaiIsland.kai-visible');
-      var maxBottom = 0;
-      for (var i = 0; i < candidates.length; i++) {
-        var node = candidates[i];
-        if (el && (node.id === el.id || el.contains(node))) continue;
-        var style = getComputedStyle(node);
-        if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) continue;
-        // A node can compute display:flex/block on itself while a hidden
-        // ancestor overlay (display:none) makes it not actually render —
-        // offsetParent is null in exactly that case (and for
-        // position:fixed elements it's always null, so allow those
-        // through explicitly rather than skipping every fixed element).
-        if (node.offsetParent === null && getComputedStyle(node).position !== 'fixed') continue;
-        var rect = node.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) continue;
-        // Only count elements pinned to (or near) the very top of the viewport
-        if (rect.top <= 20 && rect.bottom > maxBottom) maxBottom = rect.bottom;
-      }
-      var result = maxBottom > 0 ? Math.round(maxBottom + 10) : baseTop;
-      // Cap how far down this is ever allowed to push a banner — the
-      // previous 130px cap still wasn't enough (confirmed against real
-      // screenshots showing it well below both nav rows), so tightened
-      // further. 80px sits right under a single nav row.
-      return Math.min(result, 80 + (window.__safeAreaTop || 0));
+      var safeTop = parseFloat(
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--app-safe-top')
+      );
+      if (!Number.isFinite(safeTop)) safeTop = window.__safeAreaTop || 0;
+
+      // Keep a small breathing room from the top edge while respecting
+      // devices that report a notch / cutout safe area.
+      return Math.max(10, 10 + safeTop);
     } catch (e) {
       return baseTop;
     }
@@ -45234,7 +45215,7 @@ body.light-mode .sp-v2-app-top{background:rgba(250,250,250,.9);border-color:rgba
 const V2_APP_KEY='social_plus_mini_apps_v1';
 const V2_FEED_KEY='sp_fyp_profile_v1';
 const V2_AD_DEFAULTS_KEY='sp_builtin_ad_images_v1';
-const V2_CATS=['Games','Productivity','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
+const V2_CATS=['Games','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
 const V2_LIMITS={free:2,pro:10,premium:20,prestige:Infinity};
 const V2_BUILTIN_ADS=[
  {id:'premium',name:'Plus Premium',title:'Unlock more with Plus Premium',body:'Get premium features, profile artifacts and more.',bg:'linear-gradient(135deg,#111827,#3b2f0b)',accent:'#F5C518'},
@@ -47066,14 +47047,23 @@ body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
 </script>
 
 <style id="sp-market-v4-css">
-#spMarket,#spMkGate,#spMarketCreate,#spMarketRun,#spMkAdmin{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
-#spMarket *,#spMkGate *,#spMarketCreate *,#spMarketRun *,#spMkAdmin *{box-sizing:border-box;font-family:var(--font)}
+#spMarket,#spMkGate,#spMarketCreate,#spMarketRun,#spMkAdmin,#spMkTerms,#spMkProfileEdit{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
+#spMarket *,#spMkGate *,#spMarketCreate *,#spMarketRun *,#spMkAdmin *,#spMkTerms *,#spMkProfileEdit *{box-sizing:border-box;font-family:var(--font)}
 
 /* ===== Shared top bar (App Store style: large title, back chevron, action) ===== */
 .spas-top{flex-shrink:0;padding:0 16px;padding-top:env(safe-area-inset-top);background:var(--bg)}
 .spas-top-row{height:44px;display:flex;align-items:center;justify-content:space-between}
 .spas-circle-btn{width:32px;height:32px;border-radius:50%;border:0;background:rgba(120,120,128,.16);color:var(--text);display:grid;place-items:center;cursor:pointer;flex-shrink:0}
 .spas-circle-btn:active{transform:scale(.9)}
+.spas-profile-btn{width:32px;height:32px;border-radius:50%;border:0;padding:0;overflow:hidden;background:var(--glass);color:var(--text);display:grid;place-items:center;cursor:pointer;flex-shrink:0;font-size:12px;font-weight:800}
+.spas-profile-btn img{width:100%;height:100%;object-fit:cover}
+.spas-profile-btn:active{transform:scale(.9)}
+.spas-profile-pill{display:flex;align-items:center;gap:6px;height:32px;padding:0 14px 0 12px;border-radius:999px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer}
+.spas-profile-pill:active{transform:scale(.96)}
+.spmk-profile-menu{position:fixed;min-width:200px;background:rgba(30,30,34,.92);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.4);z-index:52100}
+body.light-mode .spmk-profile-menu{background:rgba(250,250,252,.95);border-color:rgba(0,0,0,.08)}
+.spmk-profile-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;color:var(--text);font-size:13.5px;font-weight:600}
+.spmk-profile-item:active{background:rgba(120,120,128,.16)}
 .spas-largetitle{font-size:32px;font-weight:800;letter-spacing:-.6px;color:var(--text);padding:2px 0 12px}
 .spas-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 
@@ -47114,7 +47104,7 @@ body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
 .spas-get-btn{flex-shrink:0;border:0;border-radius:999px;padding:7px 18px;background:rgba(120,120,128,.18);color:var(--gold);font-size:12.5px;font-weight:800;cursor:pointer;min-width:64px}
 .spas-get-btn.installed{background:transparent;color:var(--text3);border:1px solid var(--glass-border)}
 
-.spas-search-field{margin:8px 16px 6px;height:36px;border-radius:11px;background:rgba(120,120,128,.16);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--text3)}
+.spas-search-field{margin:8px 16px 18px;height:36px;border-radius:11px;background:rgba(120,120,128,.16);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--text3)}
 .spas-search-field input{border:0;outline:0;background:transparent;flex:1;font-size:15px;color:var(--text)}
 
 .spas-empty{text-align:center;padding:50px 24px;color:var(--text3)}
@@ -47211,8 +47201,8 @@ body.light-mode .spas-tabbar{background:rgba(250,250,252,.78);border-color:rgba(
 (function(){
 'use strict';
 
-var MK_CATS=['Games','Productivity','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
-var MK_CAT_COLORS={Games:'linear-gradient(135deg,#ff375f,#ff6482)',Productivity:'linear-gradient(135deg,#0a84ff,#5ac8fa)',Education:'linear-gradient(135deg,#ff9f0a,#ffd60a)',Finance:'linear-gradient(135deg,#30d158,#66e08a)',Social:'linear-gradient(135deg,#bf5af2,#e6a6ff)',Utilities:'linear-gradient(135deg,#8e8e93,#c7c7cc)',Entertainment:'linear-gradient(135deg,#ff453a,#ff7a70)',"Creator tools":'linear-gradient(135deg,#f5c518,#ffe082)',Other:'linear-gradient(135deg,#5e5ce6,#9d9bff)'};
+var MK_CATS=['Games','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
+var MK_CAT_COLORS={Games:'linear-gradient(135deg,#ff375f,#ff6482)',Education:'linear-gradient(135deg,#ff9f0a,#ffd60a)',Finance:'linear-gradient(135deg,#30d158,#66e08a)',Social:'linear-gradient(135deg,#bf5af2,#e6a6ff)',Utilities:'linear-gradient(135deg,#0a9396,#5ee6dc)',Entertainment:'linear-gradient(135deg,#ff453a,#ff7a70)',"Creator tools":'linear-gradient(135deg,#f5c518,#ffe082)',Other:'linear-gradient(135deg,#5e5ce6,#9d9bff)'};
 var MK_ICONS={
   back:'<path d="m15 18-6-6 6-6"/>', chevron:'<path d="m9 6 6 6-6 6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', close:'<path d="M18 6 6 18M6 6l12 12"/>',
@@ -47226,7 +47216,7 @@ var MK_ICONS={
   lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  settings:'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a2 2 0 1 1-4 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.8 1.8 0 0 0 2.3 12 1.8 1.8 0 0 0 3.6 9.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.8 1.8 0 0 0 9.5 5V4.8a2 2 0 1 1 4 0V5a1.8 1.8 0 0 0 3.1 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.8 1.8 0 0 0 20.7 12a1.8 1.8 0 0 0-1.3 3Z"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/>',
   share:'<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 11 7.5-4.5M8.2 13l7.5 4.5"/>',
   shield:'<path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Z"/>',
@@ -47237,31 +47227,64 @@ var MK_ICONS={
   wallet2:'<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><circle cx="17" cy="15" r="1.4"/>',
   users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2Z"/>',
+  toolbox:'<path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Z"/><path d="M8 11V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"/><path d="M3 13h4v2H3zM17 13h4v2h-4z"/><path d="M11 13h2v2h-2z"/>',
   film:'<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/>',
   brush:'<path d="M9.06 11.9 9 12a3 3 0 0 1-3 3H4v2a2 2 0 0 0 2 2h2a3 3 0 0 0 3-3l-.06-.1"/><path d="m11 12 8.5-8.5a1.5 1.5 0 1 1 2 2L13 14"/>',
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
 };
-var MK_CAT_ICON_KEY={Games:'gamepad',Productivity:'bolt',Education:'book',Finance:'wallet2',Social:'users',Utilities:'wrench',Entertainment:'film',"Creator tools":'brush',Other:'grid'};
+var MK_CAT_ICON_KEY={Games:'gamepad',Education:'book',Finance:'wallet2',Social:'users',Utilities:'toolbox',Entertainment:'film',"Creator tools":'brush',Other:'grid'};
 function ico(n,s,strokeW){s=s||18;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(strokeW||2)+'" stroke-linecap="round" stroke-linejoin="round">'+(MK_ICONS[n]||MK_ICONS.grid)+'</svg>';}
 function esc(v){return typeof escHtml==='function'?escHtml(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 function me(){return (typeof _myUsernameKey==='function'?_myUsernameKey():(window.currentUser||'')).toLowerCase();}
 function tier(){try{return (typeof getPremiumTier==='function'&&getPremiumTier(me()))||null;}catch(e){return null;}}
 var MK_LIMITS={free:2,pro:10,premium:20,prestige:Infinity};
+var MK_UPDATE_LIMITS={free:3,pro:50,premium:50,prestige:Infinity};
 function limitFor(){var t=tier();return t?(MK_LIMITS[t.tier]||2):2;}
+function updateLimitFor(){var t=tier();return t?(MK_UPDATE_LIMITS[t.tier]||50):3;}
 function canPublish(){return !!tier();}
 function isAdmin(){try{return !!window.isOwner;}catch(e){return false;}}
 function initials(name){return String(name||'A').trim().charAt(0).toUpperCase();}
 function slugify(s){return String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40)||'app';}
-function myAccount(){try{var accts=JSON.parse(localStorage.getItem('ka_accounts')||'[]');return accts.find(function(a){return (a.username||a.user||'').toLowerCase()===me();})||null;}catch(e){return null;}}
-function myAvatar(){var a=myAccount();return a?(a.pic||a.avatar||''):'';}
+function myAvatar(){try{return (typeof picFor==='function'&&picFor(window.currentUser||me()))||'';}catch(e){return '';}}
 function toast(msg,type){if(typeof showToast==='function')showToast(msg,type);}
 function notifyAdmin(text,kind){if(typeof addNotifForUser==='function')addNotifForUser('plusofficial',text,null,null,kind||'app_market');}
 function notifyUser(user,text,kind){if(typeof addNotifForUser==='function')addNotifForUser(user,text,null,null,kind||'app_market');}
 
 var state={ tab:'discover', active:'All', query:'', apps:[] };
-var create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private' };
+var create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null };
 
 function root(){return document.getElementById('spMarketRoot');}
+function profileBtnHtml(){
+  var av=myAvatar();
+  var inner=av?('<img src="'+esc(av)+'">'):esc(initials(window.currentUser));
+  return '<button class="spas-profile-btn" onclick="window._spMkToggleProfileMenu(event)">'+inner+'</button>';
+}
+function profilePillHtml(){
+  return '<button class="spas-profile-pill" onclick="window._spMkProfileEditOpen()">'+ico('users',13)+'<span>Manage profile</span></button>';
+}
+window._spMkToggleProfileMenu=function(ev){
+  if(ev)ev.stopPropagation();
+  var existing=document.getElementById('spMkProfileMenu');
+  if(existing){existing.remove();return;}
+  var btn=ev&&ev.currentTarget;
+  var host=document.getElementById('spMarket')||document.getElementById('spMkGate');
+  if(!host)return;
+  var rect=btn?btn.getBoundingClientRect():{top:44,right:window.innerWidth-16};
+  var menu=document.createElement('div');
+  menu.id='spMkProfileMenu';
+  menu.className='spmk-profile-menu';
+  menu.style.top=(rect.bottom+8)+'px';
+  menu.style.right=(window.innerWidth-rect.right)+'px';
+  var items=[
+    {icon:'settings',label:'Settings',action:"window._spMkTab('settings');window._spMkToggleProfileMenu()"},
+    {icon:'globe',label:'Back to Social Plus',action:"window._spMkClose()"}
+  ];
+  if(isAdmin())items.splice(1,0,{icon:'shield',label:'App Market Admin',action:"window._spMkToggleProfileMenu();window._spMkAdminOpen()"});
+  menu.innerHTML=items.map(function(it){return '<div class="spmk-profile-item" onclick="'+it.action+'">'+ico(it.icon,17)+'<span>'+esc(it.label)+'</span></div>';}).join('');
+  host.appendChild(menu);
+  setTimeout(function(){document.addEventListener('click',_spMkProfileMenuOutside,{once:true});},0);
+};
+function _spMkProfileMenuOutside(){var m=document.getElementById('spMkProfileMenu');if(m)m.remove();}
 
 /* ================= ACCOUNT GATE (first open) ================= */
 function gateSeenKey(){return 'sp_market_gate_seen_'+me();}
@@ -47296,13 +47319,28 @@ window._spMkGateContinue=async function(){
 /* ================= MARKET HOME (App Store shell) ================= */
 async function openMarketHome(){
   var r=root();
+  if(!r)return;
+  // Paint the App Market shell immediately. Do not leave the user staring at
+  // a completely black screen while Supabase is slow/unreachable.
   r.innerHTML='<div id="spMarket"></div>';
   document.body.style.overflow='hidden';
-  state.apps=await v2LoadApps(true)||[];
+  var host=document.getElementById('spMarket');
+  if(host){
+    host.innerHTML='<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('grid',34)+'<b>Loading App Market…</b><span>Fetching published apps</span></div>' + tabbarHtml();
+  }
+  try{
+    state.apps=await Promise.race([
+      v2LoadApps(true),
+      new Promise(function(resolve){setTimeout(function(){resolve(v2Local());},8000);})
+    ])||[];
+  }catch(e){
+    console.warn('[App Market] load failed',e);
+    state.apps=v2Local();
+  }
   renderMarket();
 }
 window._spMkClose=function(){
-  ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkAdmin'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+  ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkAdmin','spMkTerms','spMkProfileEdit'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
   document.body.style.overflow='';
 };
 function renderMarket(){
@@ -47311,13 +47349,134 @@ function renderMarket(){
   if(state.tab==='discover')host.innerHTML=discoverHtml();
   else if(state.tab==='categories')host.innerHTML=categoriesHtml();
   else if(state.tab==='library')host.innerHTML=libraryHtml();
+  else if(state.tab==='settings')host.innerHTML=settingsHtml();
   host.innerHTML+=tabbarHtml();
 }
 function tabbarHtml(){
   function t(id,icon,label){return '<div class="spas-tab '+(state.tab===id?'active':'')+'" onclick="window._spMkTab(\''+id+'\')">'+ico(icon,22,state.tab===id?2.3:2)+'<span>'+label+'</span></div>';}
-  return '<div class="spas-tabbar">'+t('discover','home','Discover')+t('categories','grid','Categories')+t('library','library','My Apps')+'</div>';
+  return '<div class="spas-tabbar">'+t('discover','home','Discover')+t('categories','grid','Categories')+t('library','library','My Apps')+t('settings','settings','Settings')+'</div>';
 }
+function settingsHtml(){
+  var av=myAvatar();
+  var rows=[
+    {icon:'users',label:'Manage profile',action:"window._spMkProfileEditOpen()"},
+    {icon:'file',label:'Terms and conditions',action:"window._spMkTermsOpen()"},
+    {icon:'shield',label:'Community guidelines',action:"window._spMkGuidelines()"},
+    {icon:'share',label:'Share App Market',action:"window._spMkShareMarket()"},
+    {icon:'globe',label:'Back to Social Plus',action:"window._spMkBackToSocialPlus()"}
+  ];
+  if(isAdmin())rows.push({icon:'crown',label:'App Market Admin',action:"window._spMkAdminOpen()"});
+  return '<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Settings</div></div>'+
+    '<div class="spas-body">'+
+    '<div class="spas-sec-head"><b>Account</b></div>'+
+    '<div class="spas-row"><div class="spas-row-icon">'+(av?('<img src="'+esc(av)+'">'):esc(initials(window.currentUser)))+'</div>'+
+    '<div class="spas-row-info"><b>'+esc(window.currentUser||me())+'</b><span>@'+esc(me())+'</span></div></div>'+
+    '<div class="spas-sec-head"><b>General</b></div>'+
+    rows.map(function(r){return '<div class="spas-row" style="cursor:pointer" onclick="'+r.action+'"><div class="spas-row-icon">'+ico(r.icon,20)+'</div><div class="spas-row-info"><b>'+esc(r.label)+'</b></div></div>';}).join('')+
+    '</div>';
+}
+window._spMkShareMarket=function(){
+  var url='https://plusng.com.ng/app-market';
+  if(navigator.share){navigator.share({title:'Social Plus App Market',url:url}).catch(function(){});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){toast('Link copied','success');}).catch(function(){});}
+};
+window._spMkGuidelines=function(){toast('Community guidelines coming soon','info');};
+window._spMkBackToSocialPlus=function(){window._spMkClose();};
 window._spMkTab=function(id){state.tab=id;renderMarket();};
+
+/* ================= TERMS AND CONDITIONS ================= */
+var MK_TERMS_SECTIONS=[
+  {h:'1. Building and publishing apps',b:'Anything you build and publish through App Market must be your own work or something you have the right to share. Apps may not contain malware, hidden data collection, deceptive functionality, or content that violates Social Plus community guidelines.'},
+  {h:'2. Project limits and updates',b:'Your plan determines how many mini apps you can have at once and how many times you can update each one. Free accounts may keep up to '+MK_LIMITS.free+' project'+(MK_LIMITS.free===1?'':'s')+' with '+MK_UPDATE_LIMITS.free+' update'+(MK_UPDATE_LIMITS.free===1?'':'s')+' per project before that project is locked; Plus Pro and Plus Premium raise both limits, and Plus Prestige removes them entirely. Limits and pricing may change as App Market evolves.'},
+  {h:'3. Free project expiry',b:'Free-tier apps run on a rolling 24-hour trial. Saving an update refreshes that window. If it lapses without an update or an upgrade, the app is locked and can no longer be opened until you update it again or upgrade your plan. Locked apps are not deleted automatically.'},
+  {h:'4. Publishing to the market',b:'Publishing makes your app visible to everyone on Social Plus. Free accounts can request publication for admin review; paid plans can publish directly. Admins may reject, remove, or request changes to any published app that violates these terms or the community guidelines.'},
+  {h:'5. Ownership and content',b:'You retain ownership of the apps you build. By publishing publicly, you grant Social Plus a license to host, display, and distribute your app within the App Market for as long as it stays published.'},
+  {h:'6. Account responsibility',b:'You are responsible for what you publish under your account. Repeated violations, abuse, or fraudulent activity may result in loss of upload privileges or removal from App Market.'},
+  {h:'7. Changes',b:'These terms may be updated as App Market grows. Continuing to use App Market after a change means you accept the updated terms.'}
+];
+window._spMkTermsOpen=function(){
+  var r=root();
+  var wrap=document.createElement('div');
+  wrap.id='spMkTerms';
+  wrap.innerHTML='<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkTermsClose()">'+ico('back',16)+'</button><div></div></div><div class="spas-largetitle">Terms &amp; Conditions</div></div>'+
+    '<div class="spas-body" style="padding:0 16px">'+
+    '<div style="font-size:11.5px;color:var(--text3);margin-bottom:18px">Last updated for App Market — governs building, publishing and updating mini apps.</div>'+
+    MK_TERMS_SECTIONS.map(function(s){return '<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px">'+esc(s.h)+'</div><div style="font-size:13px;line-height:1.6;color:var(--text2)">'+esc(s.b)+'</div></div>';}).join('')+
+    '</div>';
+  r.appendChild(wrap);
+};
+window._spMkTermsClose=function(){var el=document.getElementById('spMkTerms');if(el)el.remove();};
+
+/* ================= PROFILE MANAGEMENT ================= */
+var profileEdit={name:'',bio:'',pic:''};
+function myBio(){try{var a=acctByKey(me())||acctByKey(window.currentUser||'');return (a&&a.bio)||'';}catch(e){return '';}}
+window._spMkProfileEditOpen=function(){
+  var sh=document.getElementById('spMkProfileMenu');if(sh)sh.remove();
+  profileEdit={name:window.currentUser||me(),bio:myBio(),pic:myAvatar()};
+  var r=root();
+  var wrap=document.createElement('div');
+  wrap.id='spMkProfileEdit';
+  r.appendChild(wrap);
+  renderProfileEdit();
+};
+function renderProfileEdit(){
+  var wrap=document.getElementById('spMkProfileEdit');
+  if(!wrap)return;
+  var iconInner=profileEdit.pic?('<img src="'+esc(profileEdit.pic)+'">'):esc(initials(profileEdit.name));
+  wrap.innerHTML='<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkProfileEditClose()">'+ico('back',16)+'</button><div></div></div><div class="spas-largetitle">Manage profile</div></div>'+
+    '<div class="spas-body" style="padding:0 16px">'+
+    '<div class="spmc-icon-row"><div class="spmc-icon-preview" style="border-radius:50%">'+iconInner+'</div><button class="spmc-icon-btn" onclick="document.getElementById(\'mkProfilePicFile\').click()">'+ico('camera',14)+' Change photo</button><input id="mkProfilePicFile" type="file" accept="image/*" style="display:none" onchange="window._spMkProfilePicPick(event)"></div>'+
+    '<div class="spmc-field"><label>Display name</label><input id="spMkProfileNameInput" value="'+esc(profileEdit.name)+'" placeholder="Your name" oninput="window._spMkProfileEditSet(\'name\',this.value)"></div>'+
+    '<div class="spmc-field"><label>Bio</label><textarea id="spMkProfileBioInput" placeholder="Tell people about yourself" oninput="window._spMkProfileEditSet(\'bio\',this.value)">'+esc(profileEdit.bio)+'</textarea></div>'+
+    '<button class="spmc-next" style="margin-top:8px" onclick="window._spMkProfileEditSave()">Save changes</button>'+
+    '</div>';
+}
+window._spMkProfileEditClose=function(){var el=document.getElementById('spMkProfileEdit');if(el)el.remove();};
+window._spMkProfileEditSet=function(k,v){profileEdit[k]=v;};
+window._spMkProfilePicPick=function(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  ev.target.value='';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var size=256;
+      var c=document.createElement('canvas');c.width=size;c.height=size;
+      var ctx=c.getContext('2d');
+      var s=Math.min(img.width,img.height);
+      var sx=(img.width-s)/2, sy=(img.height-s)/2;
+      ctx.drawImage(img,sx,sy,s,s,0,0,size,size);
+      profileEdit.pic=c.toDataURL('image/jpeg',0.85);
+      renderProfileEdit();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+window._spMkProfileEditSave=async function(){
+  var name=(profileEdit.name||'').trim();
+  var bio=(profileEdit.bio||'').trim();
+  if(!name||name.length<2){toast('Display name must be at least 2 characters','error');return;}
+  var key=me();
+  try{
+    if(profileEdit.pic&&profileEdit.pic!==myAvatar()&&typeof saveProfilePic==='function'){
+      await saveProfilePic(window.currentUser||key,profileEdit.pic);
+    }
+    await SB.update('accounts',{display_name:name,bio:bio},'username=eq.'+encodeURIComponent(key));
+    if(_cache['acct_'+key]){_cache['acct_'+key].display_name=name;_cache['acct_'+key].bio=bio;}
+    if(_cache['acct_by_username']&&_cache['acct_by_username'][key]){_cache['acct_by_username'][key].display_name=name;_cache['acct_by_username'][key].bio=bio;}
+    window.currentUser=name;
+    try{localStorage.setItem('ka_user',name);}catch(e){}
+    toast('Profile updated','success');
+    window._spMkProfileEditClose();
+    renderMarket();
+  }catch(e){
+    console.warn('[App Market] profile save failed',e);
+    toast('Could not save — check your connection','error');
+  }
+};
+
 
 function pub(){return state.apps.filter(function(a){return a.visibility==='public'&&(a.status==='published');});}
 function mine(){return state.apps.filter(function(a){return String(a.owner||'').toLowerCase()===me();});}
@@ -47327,7 +47486,7 @@ function discoverHtml(){
   var official=p.filter(function(a){return a.is_official;});
   var featured=p.filter(function(a){return !a.is_official;}).slice(0,6);
   var topList=p.slice().sort(function(a,b){return (b.launches||0)-(a.launches||0);}).slice(0,8);
-  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">Discover</div></div>'+
+  return '<div class="spas-top"><div class="spas-top-row">'+profilePillHtml()+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div>'+
     '<div class="spas-body">'+
     '<div class="spas-search-field">'+ico('search',15)+'<input placeholder="Games, Utilities, Social…" value="'+esc(state.query)+'" oninput="window._spMkSearch(this.value)" onkeydown="if(event.key===\'Enter\'){window._spMkTab(\'categories\')}"></div>'+
     '<div class="spas-feature"><div class="spas-feature-eyebrow">App Market</div><div class="spas-feature-title">Build something people can use</div><button class="spas-feature-btn" onclick="window._spMkCreate()">'+ico('plus',13)+' Build a mini app</button></div>'+
@@ -47345,7 +47504,7 @@ function categoriesHtml(){
     return catOk&&qOk;
   });
   var chips=MK_CATS.map(function(c){return c;});
-  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">Categories</div></div>'+
+  return '<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Categories</div></div>'+
     '<div class="spas-body">'+
     '<div class="spas-search-field">'+ico('search',15)+'<input placeholder="Search apps" value="'+esc(state.query)+'" oninput="window._spMkSearch(this.value)"></div>'+
     '<div class="spas-cat-grid">'+chips.map(function(c){return '<div class="spas-cat" onclick="window._spMkSetActiveCat(\''+c+'\')"><div class="spas-cat-icon" style="background:'+MK_CAT_COLORS[c]+(state.active===c?';box-shadow:0 0 0 2.5px var(--gold)':'')+'">'+ico(MK_CAT_ICON_KEY[c],24,2.1)+'</div><span>'+esc(c)+'</span></div>';}).join('')+'</div>'+
@@ -47357,7 +47516,7 @@ window._spMkSetActiveCat=function(c){state.active=state.active===c?'All':c;rende
 function libraryHtml(){
   var m=mine();
   var limit=limitFor();
-  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">My Apps</div></div>'+
+  return '<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">My Apps</div></div>'+
     '<div class="spas-body">'+
     '<div class="spas-sec-head"><b>Your projects</b><span style="font-size:12px;color:var(--text3);font-weight:700">'+m.length+'/'+(limit===Infinity?'&infin;':limit)+'</span></div>'+
     (m.length?m.map(function(a){return appRow(a,null,true);}).join(''):('<div class="spas-empty">'+ico('grid',30)+'<b>You haven&#39;t built anything yet</b><span>Tap the + button to create your first mini app.</span></div>'))+
@@ -47422,12 +47581,17 @@ window._spMkManage=function(id,fromRunner){
   sheet.id='spMkManageSheet';
   sheet.style.cssText='position:fixed;inset:0;z-index:52300;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
   var statusLine=app.review_status==='pending'?'Awaiting admin review':app.review_status==='rejected'?('Rejected'+(app.review_note?(' — '+esc(app.review_note)):'')):app.review_status==='revoked'?('Removed by admin'+(app.review_note?(' — '+esc(app.review_note)):'')):app.visibility==='public'?'Published to App Market':'Private';
+  var usedUpdates=app.update_count||0;
+  var updateLimit=updateLimitFor();
+  var updatesLeft=updateLimit===Infinity?Infinity:Math.max(0,updateLimit-usedUpdates);
+  var updateLine=updateLimit===Infinity?'Unlimited updates':(updatesLeft+' update'+(updatesLeft===1?'':'s')+' left'+(canPublish()?'':' · resets when you upgrade'));
   sheet.innerHTML='<div style="width:100%;max-width:520px;margin:0 auto;background:var(--bg);border:1px solid var(--glass-border);border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))">'+
     '<div style="width:34px;height:4px;background:var(--glass-border);border-radius:3px;margin:0 auto 16px"></div>'+
     '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px">'+esc(app.name)+'</div>'+
-    '<div style="font-size:11.5px;color:var(--text3);margin-bottom:14px">'+statusLine+'</div>'+
+    '<div style="font-size:11.5px;color:var(--text3);margin-bottom:14px">'+statusLine+(isOwnerApp&&!app.is_official?(' · '+esc(updateLine)):'')+'</div>'+
     (fromRunner?'':'<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkOpen(\''+esc(id)+'\');document.getElementById(\'spMkManageSheet\').remove()">Open app</button>')+
     (isOwnerApp&&!app.is_official?(
+      (updatesLeft>0?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkEdit(\''+esc(id)+'\')">'+ico('file',14)+' Update app</button>'):('<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('lock',12)+' No updates left on your plan</div>'))+
       publishActionHtml(app)+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShare(\''+esc(id)+'\')">'+ico('share',14)+' Share link</button>'+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;background:rgba(255,69,58,.12);color:#ff453a" onclick="window._spMkDelete(\''+esc(id)+'\')">'+ico('trash',14)+' Delete app</button>'
@@ -47503,7 +47667,29 @@ window._spMkDelete=function(id){
 window._spMkCreate=function(){
   var m=mine();
   if(m.length>=limitFor()){toast('Project limit reached for your plan','error');return;}
-  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private' };
+  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null };
+  var r=root();
+  var wiz=document.createElement('div');
+  wiz.id='spMarketCreate';
+  r.appendChild(wiz);
+  renderCreate();
+};
+window._spMkEdit=function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  if(String(app.owner||'').toLowerCase()!==me())return;
+  var used=app.update_count||0;
+  var limit=updateLimitFor();
+  if(used>=limit){
+    toast('Update limit reached for your plan','error');
+    return;
+  }
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  create={
+    step:1, name:app.name||'', desc:app.description||'', cat:app.category||'Games',
+    logo:app.logo||'', mode:'file', html:app.html||'', slug:app.slug||'',
+    visibility:app.visibility||'private', editingId:app.id
+  };
   var r=root();
   var wiz=document.createElement('div');
   wiz.id='spMarketCreate';
@@ -47535,11 +47721,20 @@ function renderCreate(){
   }else if(create.step===4){
     if(!create.slug)create.slug=slugify(create.name);
     body='<h2>Choose a link</h2><p class="spmc-sub">This is where your app lives once published. Letters, numbers and dashes only.</p>'+
-      '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input value="'+esc(create.slug)+'" oninput="window._spMkSet(\'slug\',this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\'))"></div></div>';
+      '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input value="'+esc(create.slug)+'" oninput="var c=this.selectionStart,v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\');this.value=v;this.setSelectionRange(c,c);window._spMkSet(\'slug\',v)"></div></div>';
     canNext=create.slug.trim().length>0;
   }else{
     var willRequest=!canPublish();
+    var isEdit=!!create.editingId;
+    var remaining=null;
+    if(isEdit){
+      var editingApp=state.apps.find(function(a){return a.id===create.editingId;});
+      var used=editingApp?(editingApp.update_count||0):0;
+      var lim=updateLimitFor();
+      remaining=lim===Infinity?'Unlimited updates':(lim-used-1)+' update'+((lim-used-1)===1?'':'s')+' left after this';
+    }
     body='<h2>Ready to finish</h2><p class="spmc-sub">Choose who can see this app. You can change this anytime from My Apps.</p>'+
+      (isEdit?('<div style="font-size:11.5px;color:var(--text3);margin:-6px 0 14px">'+esc(remaining)+'</div>'):'')+
       '<div class="spmc-vis"><button class="'+(create.visibility==='private'?'active':'')+'" onclick="window._spMkSet(\'visibility\',\'private\')">'+ico('lock',16)+'<div><b>Keep private</b><span>Only you can open it</span></div></button>'+
       '<button class="'+(create.visibility==='public'?'active':'')+'" onclick="window._spMkSet(\'visibility\',\'public\')">'+ico('globe',16)+'<div><b>'+(willRequest?'Request App Market upload':'Publish to App Market')+'</b><span>'+(willRequest?'Sent for admin review — your app stays private until approved':'Goes live immediately, visible to everyone')+'</span></div></button></div>'+
       (willRequest?'':'');
@@ -47547,13 +47742,31 @@ function renderCreate(){
   }
   wiz.innerHTML='<div class="spmc-top"><button class="spas-circle-btn" onclick="'+(create.step>1?'window._spMkBack()':'window._spMkCloseCreate()')+'">'+ico('back',16)+'</button><div class="spmc-step">'+stepLabel()+'</div><button class="spas-circle-btn" onclick="window._spMkCloseCreate()">'+ico('close',16)+'</button></div>'+
     '<div class="spmc-body">'+body+'</div>'+
-    '<div class="spmc-bottom"><button class="spmc-next" '+(canNext?'':'disabled')+' onclick="window._spMkNext()">'+(create.step===5?'Create app':'Continue')+'</button></div>';
+    '<div class="spmc-bottom"><button class="spmc-next" '+(canNext?'':'disabled')+' onclick="window._spMkNext()">'+(create.step===5?(create.editingId?'Save changes':'Create app'):'Continue')+'</button></div>';
 }
-window._spMkSet=function(k,v){create[k]=v;renderCreate();};
+var MK_TEXT_KEYS={name:1,desc:1,slug:1};
+window._spMkSet=function(k,v){
+  create[k]=v;
+  if(MK_TEXT_KEYS[k]){
+    // Typing fields: just update state + the Next button's disabled state.
+    // Do NOT re-render the wizard body — replacing the input/textarea node
+    // on every keystroke steals focus and dismisses the keyboard.
+    var wiz=document.getElementById('spMarketCreate');
+    if(!wiz)return;
+    var canNext=true;
+    if(create.step===1)canNext=create.name.trim().length>0;
+    else if(create.step===3)canNext=create.html.trim().length>0;
+    else if(create.step===4)canNext=create.slug.trim().length>0;
+    var btn=wiz.querySelector('.spmc-next');
+    if(btn)btn.disabled=!canNext;
+    return;
+  }
+  renderCreate();
+};
 window._spMkBack=function(){if(create.step>1){create.step--;renderCreate();}};
 window._spMkNext=function(){
   if(create.step<5){create.step++;renderCreate();return;}
-  finishCreate();
+  if(create.editingId)finishEdit();else finishCreate();
 };
 window._spMkIconPick=function(ev){
   var file=ev.target.files&&ev.target.files[0];
@@ -47602,6 +47815,7 @@ async function finishCreate(){
     review_status:canGoPublic?'published':(willRequest?'pending':'none'),
     is_official:false,
     trial_expires_at:canPublish()?null:new Date(Date.now()+24*60*60*1000).toISOString(),
+    update_count:0,
     created_at:now, updated_at:now, launches:0
   };
   try{await SB.upsert('mini_apps',row,'id');}catch(e){console.warn('[App Market] create failed',e);}
@@ -47615,6 +47829,58 @@ async function finishCreate(){
   }
   renderMarket();
   window._spMkOpen(id);
+}
+async function finishEdit(){
+  var app=state.apps.find(function(a){return a.id===create.editingId;});
+  if(!app){window._spMkCloseCreate();return;}
+  var used=app.update_count||0;
+  var limit=updateLimitFor();
+  if(used>=limit){
+    toast('Update limit reached for your plan','error');
+    window._spMkCloseCreate();
+    return;
+  }
+  var now=new Date().toISOString();
+  var wantsPublic=create.visibility==='public';
+  var canGoPublic=wantsPublic&&canPublish();
+  var willRequest=wantsPublic&&!canPublish();
+  var slug=slugify(create.slug||create.name);
+  if(slug!==app.slug){
+    var existing=await SB.query('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
+    if(existing&&existing.length&&existing[0].id!==app.id)slug=slug+'-'+Math.random().toString(36).slice(2,5);
+  }
+  var newCount=used+1;
+  var patch={
+    name:create.name.trim(), description:create.desc.trim(), category:create.cat,
+    logo:create.logo||null, html:create.html, slug:slug,
+    visibility:canGoPublic?'public':(wantsPublic?app.visibility:'private'),
+    status:canGoPublic?'published':(wantsPublic?app.status:'private'),
+    review_status:canGoPublic?'published':(willRequest?'pending':app.review_status),
+    trial_expires_at:canPublish()?null:new Date(Date.now()+24*60*60*1000).toISOString(),
+    update_count:newCount,
+    updated_at:now
+  };
+  try{
+    await SB.upsert('mini_apps',Object.assign({id:app.id},patch),'id');
+  }catch(e){
+    // Most likely cause: the update_count column doesn't exist on the
+    // mini_apps table yet (needs a migration). Retry once without it so the
+    // rest of the edit still saves instead of silently failing outright.
+    console.warn('[App Market] update failed, retrying without update_count',e);
+    var fallback=Object.assign({},patch);delete fallback.update_count;
+    try{await SB.upsert('mini_apps',Object.assign({id:app.id},fallback),'id');}
+    catch(e2){console.warn('[App Market] update retry failed',e2);}
+  }
+  Object.assign(app,patch);
+  window._spMkCloseCreate();
+  if(willRequest){
+    notifyAdmin(esc(window.currentUser||me())+' requested App Market upload for "'+app.name+'"','app_market_request');
+    toast('Changes saved — upload request sent for review','success');
+  }else{
+    toast('Changes saved','success');
+  }
+  renderMarket();
+  window._spMkOpen(app.id);
 }
 
 /* ================= ADMIN PANEL ================= */
@@ -47712,6 +47978,11 @@ window._spV2OpenApp=async function(id){
   window._spMkOpen(id);
 };
 function earlyRoute(){
+  var path=location.pathname.replace(/\/+$/,'').toLowerCase();
+  if(path==='/app-market'||path==='/apps/market'||path==='/apps'){
+    window._spV2OpenMarket();
+    return;
+  }
   var s=new URLSearchParams(location.search);
   var id=s.get('miniapp');
   if(!id)return;
