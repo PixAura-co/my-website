@@ -3564,23 +3564,6 @@ body.light-mode #exploreSearchClear {
   background: rgba(0,0,0,0.10) !important;
   color: rgba(0,0,0,0.5) !important;
 }
-/* eventsPageOverlay stays dark (it shows a full-screen flyer) */
-body.light-mode #eventsPageOverlay {
-  background: #060606 !important;
-}
-body.light-mode #eventsPageOverlay > div:first-child {
-  background: rgba(30,28,36,0.95) !important;
-  border-bottom-color: rgba(255,255,255,0.08) !important;
-  box-shadow: none !important;
-}
-body.light-mode #eventsPageOverlay > div:first-child button {
-  background: rgba(255,255,255,0.08) !important;
-  border-color: rgba(255,255,255,0.12) !important;
-  color: rgba(255,255,255,0.7) !important;
-}
-body.light-mode #eventsPageOverlay > div:first-child [style*="font-weight:800"] {
-  color: #FAF6EE !important;
-}
 /* Announcement page content area */
 body.light-mode #announcementPageContent [style*="background:var(--surface2)"],
 body.light-mode #announcementPageContent [style*="background: var(--surface2)"] {
@@ -3855,8 +3838,55 @@ body.light-mode #messageRequestsPageContent .mr-request-preview{background:rgba(
 #messageRequestsPageContent .mr-danger{background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.24);color:var(--red);}
 #messageRequestsPageContent .mr-wide{grid-column:1/-1;}
 </style>
+
+<style id="spMergedMiniCss">
+/* ── Social Plus merged Mini App mode ─────────────────────────────── */
+#spMergedMiniAppRoot{position:fixed;inset:0;z-index:2147483000;display:none;flex-direction:column;background:#0b0b0d;color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+#spMergedMiniAppRoot.sp-open{display:flex}
+#spMergedMiniBar{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:10px;padding:0 12px;background:rgba(12,12,14,.94);border-bottom:1px solid rgba(255,255,255,.09);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:5}
+#spMergedMiniLogo{width:36px;height:36px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:#17171a;flex:0 0 36px}
+#spMergedMiniLogo img{width:100%;height:100%;object-fit:cover}
+#spMergedMiniName{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#spMergedMiniCategory{font-size:10px;color:#8e8e93;margin-top:2px}
+#spMergedMiniMenu{margin-left:auto;width:36px;height:36px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;font-size:22px;line-height:1}
+#spMergedMiniFrame{flex:1;width:100%;border:0;background:#fff}
+.spMergedMiniSide{position:fixed;z-index:10;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,25,.84);color:#fff;display:grid;place-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:27px;line-height:1}
+#spMergedMiniBack{left:10px}
+#spMergedMiniRight{right:10px}
+#spMergedMiniLoading{position:absolute;inset:58px 0 0;display:grid;place-items:center;background:#0b0b0d;color:#a1a1aa;font-size:14px;z-index:4}
+#spMergedMiniSheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.62);display:none;align-items:flex-end}
+#spMergedMiniSheet>div{width:100%;max-width:520px;margin:auto;background:#111114;border:1px solid rgba(255,255,255,.10);border-radius:24px 24px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+.spMergedMiniAction{width:100%;padding:13px;border-radius:13px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#fff;text-align:left;margin-top:8px;font:600 13px inherit}
+</style>
+
+
 </head>
 <body>
+
+<!-- Social Plus merged Mini App launcher. It lives in the same Vercel/GitHub file. -->
+<div id="spMergedMiniAppRoot" aria-hidden="true">
+  <div id="spMergedMiniLoading">Opening mini app…</div>
+  <div id="spMergedMiniBar">
+    <div id="spMergedMiniLogo"><img id="spMergedMiniLogoImg" alt=""></div>
+    <div style="min-width:0">
+      <div id="spMergedMiniName">Mini App</div>
+      <div id="spMergedMiniCategory">Social Plus App Market</div>
+    </div>
+    <button id="spMergedMiniMenu" aria-label="Menu">⋯</button>
+  </div>
+  <button id="spMergedMiniBack" class="spMergedMiniSide" aria-label="Back">‹</button>
+  <button id="spMergedMiniRight" class="spMergedMiniSide" aria-label="Menu">⋯</button>
+  <iframe id="spMergedMiniFrame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>
+  <div id="spMergedMiniSheet" onclick="if(event.target===this)window._spMergedCloseMiniMenu()">
+    <div>
+      <div style="font-size:18px;font-weight:800">Mini app</div>
+      <button class="spMergedMiniAction" id="spMergedMiniShare">Share app</button>
+      <button class="spMergedMiniAction" id="spMergedMiniClear">Clear app data</button>
+      <button class="spMergedMiniAction" id="spMergedMiniClose">Close</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Facebook-style Comment Overlay -->
 <div id="commentOverlay" role="dialog" aria-modal="true" aria-label="Comments">
@@ -4196,7 +4226,7 @@ body.light-mode #messageRequestsPageContent .mr-request-preview{background:rgba(
       <div style="text-align:right;margin:-6px 0 12px;">
         <span onclick="openForgotPasswordModal()" style="font-size:12.5px;color:rgba(245,197,24,0.85);cursor:pointer;font-weight:600;">Forgot password?</span>
       </div>
-      <button class="modal-btn" onclick="joinAsUser()" style="margin-bottom:12px;font-size:15px;letter-spacing:0;">Sign In →</button>
+      <button class="modal-btn" onclick="joinAsUser()" style="margin-bottom:12px;font-size:15px;letter-spacing:0;">Sign In</button>
       <button onclick="switchToSignup()" style="width:100%;background:var(--surface2);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:15px;font-weight:600;padding:14px;border-radius:16px;cursor:pointer;letter-spacing:-0.2px;transition:background 0.15s;">Create Account</button>
     </div>
 
@@ -5219,6 +5249,26 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
         </div>
         <div class="settings-icon-info"><div class="settings-icon-label">Customize Home Feed</div><div class="settings-icon-desc">Choose what shows on your Home feed</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
+    <!-- App Market -->
+    <div id="spV2MarketMenuItem" class="settings-icon-group" style="margin-bottom:10px;">
+      <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>window._spV2OpenMarket(),120)">
+        <div class="settings-icon-circle" style="background:rgba(48,209,88,0.13);border:1px solid rgba(48,209,88,0.22);color:#30D158;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"/>
+            <path d="M7 4V2h10v2"/>
+            <path d="M7 9h10M7 13h6"/>
+          </svg>
+        </div>
+        <div class="settings-icon-info">
+          <div class="settings-icon-label">App Market</div>
+          <div class="settings-icon-desc">Build, discover and launch mini apps</div>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
       </div>
     </div>
 
@@ -8826,6 +8876,7 @@ async function loadPosts() {
         views: p.views || 0,
         version: p.version || null,
         boostData: p.boost_data || null,
+        _fypRank: typeof p._fypRank === 'number' ? p._fypRank : null,
         _feedRank: typeof p._feedRank === 'number' ? p._feedRank : null,
         downloadLink: p.download_link || (p.body && p.body.includes('__APKURL__')
           ? p.body.match(/__APKURL__(.*?)__APKURL__/)?.[1] || null
@@ -11330,7 +11381,7 @@ function _doRenderPosts() {
     filtered = _combined
       .sort((a, b) => {
         if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
-        return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
+        if (typeof a.p._fypRank === 'number' || typeof b.p._fypRank === 'number') { const ar=typeof a.p._fypRank==='number'?a.p._fypRank:999999; const br=typeof b.p._fypRank==='number'?b.p._fypRank:999999; if(ar!==br)return ar-br; } return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
       })
       .map(x => x.p);
   } else if (activeFilter === 'prediction') filtered = filtered.filter(p => p.type === 'prediction' || !p.type || p.type === 'app_update' || p.type === 'feature_announcement');
@@ -11369,6 +11420,7 @@ function _doRenderPosts() {
       .filter(x => x.p.author === OWNER_USER || x.p.user === OWNER_USER || !!getPremiumTier((x.p.authorKey || x.p.user || x.p.author || '')))
       .sort((a, b) => {
         if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        if (typeof a.p._fypRank === 'number' || typeof b.p._fypRank === 'number') return (typeof a.p._fypRank === 'number' ? a.p._fypRank : 999999) - (typeof b.p._fypRank === 'number' ? b.p._fypRank : 999999);
         return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
       })
       .map(x => x.p);
@@ -11391,6 +11443,7 @@ function _doRenderPosts() {
     let forYouPool = [...mainItems, ...profileItems]
       .sort((a, b) => {
         if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+        if (typeof a.p._fypRank === 'number' || typeof b.p._fypRank === 'number') return (typeof a.p._fypRank === 'number' ? a.p._fypRank : 999999) - (typeof b.p._fypRank === 'number' ? b.p._fypRank : 999999);
         return new Date(b.p.time || b.p.timestamp || 0) - new Date(a.p.time || a.p.timestamp || 0);
       })
       .map(x => x.p);
@@ -14748,7 +14801,7 @@ function _renderProfileLink(link) {
   if (!el) return;
   if (!link) { el.style.display = 'none'; el.textContent = ''; return; }
   const linkColor = isOwner ? 'var(--gold)' : 'var(--blue)';
-  el.style.cssText = `display:block;font-size:12px;color:${linkColor};text-align:center;margin:-4px 0 10px;word-break:break-all;text-decoration:none;font-weight:${isOwner ? '600' : '400'};`;
+  el.style.cssText = `display:block;font-size:12px;color:${linkColor};text-align:left;margin:6px 0 10px;word-break:break-all;text-decoration:none;font-weight:${isOwner ? '600' : '400'};`;
   el.href = link.startsWith('http') ? link : 'https://' + link;
   const short = link.replace(/^https?:\/\//, '').replace(/\/$/, '');
   el.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:3px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' + (short.length > 36 ? short.slice(0,33) + '…' : short);
@@ -24196,11 +24249,7 @@ closeChat = function() {
     <div id="exploreTipSection" style="display:none;margin-bottom:16px;width:100%;">
       <div id="exploreTipTrack" style="width:100%;"></div>
     </div>
-
-    <!-- ── Event Card (Eid / seasonal) ── -->
-    <div id="exploreEventCard" style="display:none;margin-bottom:20px;width:100%;"></div>
-
-    <!-- Channels -->
+<!-- Channels -->
     <div style="margin-bottom:22px;" id="exploreChannelsSection">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Channels</div>
@@ -24218,38 +24267,6 @@ closeChat = function() {
   </div>
   </div><!-- end scrollable content area -->
 </div>
-
-<!-- ═══ EVENTS PAGE ═══ -->
-<div id="eventsPageOverlay" style="position:fixed;inset:0;z-index:9550;background:#060606;display:none;flex-direction:column;overflow:hidden;">
-  <!-- Topbar -->
-  <div style="flex-shrink:0;background:rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.08);padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;">
-    <div style="display:flex;align-items:center;position:relative;">
-      <div style="flex:1;">
-        <button onclick="closeEventsPage()" style="width:34px;height:34px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.7);flex-shrink:0;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-      </div>
-      <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:17px;font-weight:800;letter-spacing:-0.4px;color:#FAF6EE;pointer-events:none;">Events</div>
-      <div style="flex:1;"></div>
-    </div>
-  </div>
-  <!-- Scrollable content -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;display:flex;flex-direction:column;align-items:center;padding:24px 16px calc(40px + env(safe-area-inset-bottom,0px));gap:0;">
-    <!-- EID FLYER — embedded inline -->
-    <div style="width:100%;max-width:480px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(212,160,23,0.6);margin-bottom:14px;text-align:center;">Latest Event</div>
-      <!-- Flyer container scaled to fit mobile -->
-      <div style="width:100%;aspect-ratio:2/3;border-radius:20px;overflow:hidden;position:relative;box-shadow: 0 8px 40px rgba(212,160,23,0.2), 0 2px 12px rgba(0,0,0,0.6);">
-        <iframe id="eventsFlyer" src="" scrolling="no" style="width:600px;height:900px;border:none;transform-origin:top left;display:block;pointer-events:none;" tabindex="-1"></iframe>
-      </div>
-      <div style="margin-top:20px;text-align:center;">
-        <div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6;">From the Social Plus team 🤍</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
 <!-- ═══ ANNOUNCEMENT PAGE ═══ -->
 <div id="announcementPageOverlay" style="position:fixed;inset:0;z-index:9555;background:var(--bg);display:none;flex-direction:column;overflow:hidden;">
   <!-- Topbar -->
@@ -27434,54 +27451,11 @@ const DAILY_TIPS = [
 ];
 
 function _buildKrisSuggestionCards() {
-  // Build suggestion cards: app update + active events/announcements
   const suggCards = [];
-
-  // 1. App update card
-  const _updateCard = typeof _buildUpdateTipCard === 'function' ? _buildUpdateTipCard() : null;
-  if (_updateCard) suggCards.push(_updateCard);
-
-  // 2. Active events/announcements
-  const _activeIds = typeof _getActiveTemplateIds === 'function' ? _getActiveTemplateIds() : (localStorage.getItem('ka_active_event_ids') ? JSON.parse(localStorage.getItem('ka_active_event_ids')) : (localStorage.getItem('ka_active_event_id') ? [localStorage.getItem('ka_active_event_id')] : []));
-
-  // Static fallback map — mirrors EVENT_TEMPLATES key fields so this works even before that var is declared
-  const _STATIC_TPL_MAP = {
-    eid_el_kebir:        { emoji:'🌙', title:'Eid el-Kebir', accent:'#D4A017' },
-    mothers_day:         { emoji:'💐', title:"Happy Mother's Day", accent:'#e85d9a' },
-    valentines_day:      { emoji:'❤️', title:"Happy Valentine's Day", accent:'#e53e3e' },
-    childrens_day:       { emoji:'🎈', title:"Happy Children's Day", accent:'#38bdf8' },
-    christmas:           { emoji:'🎄', title:'Merry Christmas', accent:'#22c55e' },
-    new_year:            { emoji:'🎆', title:'Happy New Year', accent:'#a855f7' },
-    easter:              { emoji:'🐣', title:'Happy Easter', accent:'#f59e0b' },
-    africa_day:          { emoji:'🌍', title:'Happy Africa Day', accent:'#ef4444' },
-    nigeria_independence:{ emoji:'🇳🇬', title:'Happy Independence Day', accent:'#16a34a' },
-    new_season:          { emoji:'⚽', title:'New Football Season', accent:'#F5C518' },
-  };
-
-  const _evtTemplates = typeof EVENT_TEMPLATES !== 'undefined' ? EVENT_TEMPLATES : [];
-  _activeIds.forEach(function(id) {
-    // Try live EVENT_TEMPLATES first, fall back to static map, then localStorage for custom
-    var tpl = _evtTemplates.find(function(t){ return t.id === id; });
-    if (!tpl && _STATIC_TPL_MAP[id]) {
-      tpl = Object.assign({ id: id, subtitle: '' }, _STATIC_TPL_MAP[id]);
-    }
-    if (!tpl && id.startsWith('custom_announce')) {
-      tpl = {
-        id: id,
-        emoji:    localStorage.getItem('ka_custom_announce_emoji')  || '📣',
-        title:    localStorage.getItem('ka_custom_announce_title')  || 'Announcement',
-        subtitle: localStorage.getItem('ka_custom_announce_body')   || '',
-        accent:   localStorage.getItem('ka_custom_announce_accent') || '#F5C518',
-      };
-    }
-    if (!tpl) return;
-    const isAnnounce = id.startsWith('custom_announce');
-    const isRoute = !!tpl.route;
-    const clickFn = isRoute ? `window.location.href='${tpl.route}'` : (isAnnounce ? 'openAnnouncementPage()' : 'openEventsPage()');
-    const label = isRoute ? (tpl.viewLabel || 'Open') : (isAnnounce ? 'Announcement' : 'Event');
-    suggCards.push(`<div class="tip-card" onclick="${clickFn}" style="cursor:pointer;border-color:${tpl.accent}55;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:${tpl.accent};margin-bottom:5px;">${label}</div><div class="tip-card-emoji">${tpl.emoji}</div><div class="tip-card-title" style="color:${tpl.textAccent||tpl.accent};">${tpl.title}</div><div class="tip-card-body">${tpl.subtitle||''}</div></div>`);
-  });
-
+  const updateCard = typeof _buildUpdateTipCard === 'function'
+    ? _buildUpdateTipCard()
+    : null;
+  if (updateCard) suggCards.push(updateCard);
   return suggCards;
 }
 
@@ -36133,11 +36107,7 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
           <div style="color:var(--blue);margin-bottom:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div style="font-size:13px;font-weight:700;color:var(--text);">Manage Users</div>
         </button>
-        <button onclick="closeSuperAdmin();setTimeout(()=>openEventManager(),200)" style="text-align:left;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;cursor:pointer;font-family:var(--font);">
-          <div style="color:rgba(255,255,255,0.92);margin-bottom:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></div>
-          <div style="font-size:13px;font-weight:700;color:var(--text);">Event Manager</div>
-        </button>
-      </div>
+</div>
     </div>
 
     <!-- Wallet config -->
@@ -36235,6 +36205,12 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       </div>
       <button onclick="_saOpenAdEditor(null)" style="width:100%;padding:12px;border-radius:14px;background:rgba(245,197,24,0.12);border:1.5px dashed rgba(245,197,24,0.4);color:var(--gold);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">+ Add New Ad</button>
       <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:14px;">"Post" ads look like a real post (image + text) and appear roughly once every 10 posts in the Home feed, at a random spot within each 10. "Card" ads are compact and appear at the top of every channel's broadcast list — best for promoting in-app features like Premium. Premium subscribers never see either.</div>
+      <div id="spV2AdSettingsSummary" style="background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(48,209,88,.12);color:#30D158;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg></div>
+          <div style="flex:1;"><div style="font-size:13.5px;font-weight:800;color:var(--text);">Homefeed ad controls</div><div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4;">Edit a post ad to choose Top, After 3, After 5, After 10, After 15, Bottom or Random. Built-in artwork is available in the editor.</div></div>
+        </div>
+      </div>
       <div id="saAdsList"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
     </div>
 
@@ -36581,10 +36557,20 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       <option value="premium">Open Plus Premium page</option>
       <option value="earn">Open Wallet (Earn)</option>
       <option value="home">Open App Home</option>
+      <option value="app_market">Open an App Market mini app</option>
     </select>
     <div class="c-input" id="saAdCtaTypeDisplay" onclick="_saOpenAdCtaTypePicker()" style="margin-top:6px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
       <span id="saAdCtaTypeDisplayLabel">External URL</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div id="spV2AdAppMarketRow" style="display:none;">
+      <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Mini App</label>
+      <select id="spV2AdAppSelect" class="c-input" style="margin-top:6px;margin-bottom:12px;">
+        <option value="">Loading your mini apps…</option>
+      </select>
+      <div id="spV2AdAppHint" style="font-size:10.5px;color:var(--text3);line-height:1.4;margin:-4px 0 12px;">
+        Choose the mini app this ad button should open.
+      </div>
     </div>
     <div id="saAdCtaValueRow">
       <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">URL</label>
@@ -38019,6 +38005,7 @@ function _adCtaHref(ad) {
   if (ad.cta_type === 'premium') return "openWalletPage('premium')";
   if (ad.cta_type === 'earn') return "openWalletPage('earn')";
   if (ad.cta_type === 'home') return "if(typeof tabSwitch==='function')tabSwitch('home')";
+  if (ad.cta_type === 'app_market') return `if(window._spV2OpenApp&&'${escHtml(ad.cta_value||'')}')window._spV2OpenApp('${escHtml(ad.cta_value||'')}');else if(window._spV2OpenMarket)window._spV2OpenMarket();`;
   return `openInChrome('${escHtml(ad.cta_value||'')}')`;
 }
 function _buildAdPostCard(ad) {
@@ -38060,6 +38047,8 @@ async function _onAdCtaTap(adId) {
   if (ad.cta_type === 'premium' && typeof openWalletPage === 'function') openWalletPage('premium');
   else if (ad.cta_type === 'earn' && typeof openWalletPage === 'function') openWalletPage('earn');
   else if (ad.cta_type === 'home' && typeof tabSwitch === 'function') tabSwitch('home');
+  else if (ad.cta_type === 'app_market' && ad.cta_value && typeof window._spV2OpenApp === 'function') window._spV2OpenApp(ad.cta_value);
+  else if (ad.cta_type === 'app_market' && typeof window._spV2OpenMarket === 'function') window._spV2OpenMarket();
   else if (ad.cta_value) openInChrome(ad.cta_value);
 }
 // Inserts one random 'post'-format ad after a random position within each
@@ -45214,958 +45203,384 @@ function _ppcAIPickVersion(idx) {
 })();
 </script>
 
-<!-- ═══════════════════════════════════════════════════════
-     EVENTS CARD & PAGE — v2.0
-     Multi-template library · Event Manager · owner publish/unpublish · user dismiss
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════
+     SOCIAL PLUS v2 — SMART FYP + APP MARKET + AD PLACEMENT PATCH
+     Self-contained: uses existing app_config, posts, reactions, follows,
+     messages and premium tier infrastructure. New data falls back locally.
+════════════════════════════════════════════════════════════════ -->
+<style id="sp-v2-market-ad-css">
+.sp-v2-market-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;padding:14px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:transform .16s,background .16s;box-sizing:border-box}
+.sp-v2-market-card:active{transform:scale(.985);background:rgba(255,255,255,.07)}
+.sp-v2-market-logo{width:54px;height:54px;border-radius:15px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,rgba(245,197,24,.16),rgba(124,92,252,.14));border:1px solid rgba(255,255,255,.12)}
+.sp-v2-market-logo img{width:100%;height:100%;object-fit:cover}
+.sp-v2-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:10.5px;font-weight:700;color:var(--text3)}
+.sp-v2-field-label{font-size:10.5px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.55px;margin:0 0 6px}
+.sp-v2-input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.055);border:1px solid var(--glass-border);border-radius:13px;color:var(--text);font-family:var(--font);font-size:13px;padding:12px;outline:none;margin-bottom:12px}
+.sp-v2-textarea{min-height:100px;resize:vertical;line-height:1.5}
+.sp-v2-primary{width:100%;padding:13px;border:0;border-radius:14px;background:var(--gold);color:#000;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer}
+.sp-v2-secondary{padding:10px 13px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer}
+.sp-v2-fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:39000;width:52px;height:52px;border-radius:17px;border:1px solid rgba(255,255,255,.18);background:var(--gold);color:#000;box-shadow:0 10px 30px rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sp-v2-app-shell{position:fixed;inset:0;z-index:60000;background:var(--bg);display:flex;flex-direction:column}
+.sp-v2-app-top{height:58px;flex-shrink:0;display:flex;align-items:center;gap:9px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(12,12,14,.9);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.sp-v2-app-frame{flex:1;border:0;width:100%;background:#fff}
+.sp-v2-side-btn{position:fixed;z-index:60010;top:50%;width:44px;height:44px;border-radius:15px;background:rgba(22,22,25,.82);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 28px rgba(0,0,0,.35);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.sp-v2-side-btn.left{left:10px}.sp-v2-side-btn.right{right:10px}
+.sp-v2-empty{padding:44px 20px;text-align:center;color:var(--text3)}
+body.light-mode .sp-v2-app-top{background:rgba(250,250,250,.9);border-color:rgba(0,0,0,.08)}
+</style>
 <script>
-function _caeCount(el){el.nextSibling.textContent=(60-el.value.length)+' left';}
-(function() {
+(function(){
 'use strict';
-
-// ════════════════════════════════════════════════════════════
-// CELEBRATION TEMPLATE LIBRARY
-// Each entry: { id, title, subtitle, emoji, accent, bg, textAccent, flyer() }
-// flyer() returns a full HTML string rendered in the Events page iframe.
-// ════════════════════════════════════════════════════════════
-var EVENT_TEMPLATES = [
-
-// ── 1. Eid el-Kebir ──────────────────────────────────────────────────────
-{ id:'eid_el_kebir', title:"Eid el-Kebir 🌙", subtitle:"Blessed greetings from the Social Plus team",
-  emoji:'🌙', accent:'#D4A017', bg:'linear-gradient(135deg,#0F0E0B,#1A1400)',
-  textAccent:'#F5C842',
-  flyer: function() { return _flyerEid(); }
-},
-
-// ── 2. Mother's Day ──────────────────────────────────────────────────────
-{ id:'mothers_day', title:"Happy Mother's Day 💐", subtitle:"A special tribute from Social Plus",
-  emoji:'💐', accent:'#e85d9a', bg:'linear-gradient(135deg,#1a0010,#2d0020)',
-  textAccent:'#f9a8d4',
-  flyer: function() { return _flyerMothersDay(); }
-},
-
-// ── 3. Valentine's Day ───────────────────────────────────────────────────
-{ id:'valentines_day', title:"Happy Valentine's Day ❤️", subtitle:"Love & luck from Social Plus",
-  emoji:'❤️', accent:'#e53e3e', bg:'linear-gradient(135deg,#1a0000,#2d0808)',
-  textAccent:'#feb2b2',
-  flyer: function() { return _flyerValentines(); }
-},
-
-// ── 4. Children's Day ────────────────────────────────────────────────────
-{ id:'childrens_day', title:"Happy Children's Day 🎈", subtitle:"Celebrating the little ones — from Social Plus",
-  emoji:'🎈', accent:'#38bdf8', bg:'linear-gradient(135deg,#001a2d,#002040)',
-  textAccent:'#bae6fd',
-  flyer: function() { return _flyerChildrensDay(); }
-},
-
-// ── 5. Christmas ─────────────────────────────────────────────────────────
-{ id:'christmas', title:"Merry Christmas 🎄", subtitle:"Season's greetings from Social Plus",
-  emoji:'🎄', accent:'#22c55e', bg:'linear-gradient(135deg,#001a08,#0a1a00)',
-  textAccent:'#bbf7d0',
-  flyer: function() { return _flyerChristmas(); }
-},
-
-// ── 6. New Year ───────────────────────────────────────────────────────────
-{ id:'new_year', title:"Happy New Year 🎆", subtitle:"New year, new wins — from Social Plus",
-  emoji:'🎆', accent:'#a855f7', bg:'linear-gradient(135deg,#0d0020,#1a0030)',
-  textAccent:'#e9d5ff',
-  flyer: function() { return _flyerNewYear(); }
-},
-
-// ── 7. Easter ────────────────────────────────────────────────────────────
-{ id:'easter', title:"Happy Easter 🐣", subtitle:"Warm wishes from the Social Plus family",
-  emoji:'🐣', accent:'#f59e0b', bg:'linear-gradient(135deg,#1a1000,#261800)',
-  textAccent:'#fde68a',
-  flyer: function() { return _flyerEaster(); }
-},
-
-// ── 8. Africa Day ────────────────────────────────────────────────────────
-{ id:'africa_day', title:"Happy Africa Day 🌍", subtitle:"Celebrating our roots — from Social Plus",
-  emoji:'🌍', accent:'#ef4444', bg:'linear-gradient(135deg,#0d0d00,#1a0a00)',
-  textAccent:'#fca5a5',
-  flyer: function() { return _flyerAfricaDay(); }
-},
-
-// ── 9. Independence Day (Nigeria) ─────────────────────────────────────────
-{ id:'nigeria_independence', title:"Happy Independence Day 🇳🇬", subtitle:"October 1st — Nigeria stands tall. Social Plus",
-  emoji:'🇳🇬', accent:'#16a34a', bg:'linear-gradient(135deg,#001a08,#001200)',
-  textAccent:'#86efac',
-  flyer: function() { return _flyerNigeriaIndependence(); }
-},
-
-// ── 10. New Season ────────────────────────────────────────────────────────
-{ id:'new_season', title:"New Football Season ⚽", subtitle:"Let's go — predictions start now! Social Plus",
-  emoji:'⚽', accent:'#F5C518', bg:'linear-gradient(135deg,#080808,#111000)',
-  textAccent:'#fde68a',
-  flyer: function() { return _flyerNewSeason(); }
-},
-
-// ── 11. Investment Plan (routes to standalone page, not the flyer overlay) ─
-{ id:'investment_plan', title:"Investment Plan 📈", subtitle:"Get up to 100% profit — Social Plus",
-  emoji:'📈', accent:'#22c55e', bg:'linear-gradient(135deg,#001a08,#0a1a00)',
-  textAccent:'#86efac',
-  // `route` marks this card as a dedicated standalone page instead of the
-  // in-app flyer overlay. renderEventCard() checks for this property.
-  route: 'investment-plan.html',
-  viewLabel: 'View Investment Plan'
+const V2_APP_KEY='social_plus_mini_apps_v1';
+const V2_FEED_KEY='sp_fyp_profile_v1';
+const V2_AD_DEFAULTS_KEY='sp_builtin_ad_images_v1';
+const V2_CATS=['Games','Productivity','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
+const V2_LIMITS={free:2,pro:10,premium:20,prestige:Infinity};
+const V2_BUILTIN_ADS=[
+ {id:'premium',name:'Plus Premium',title:'Unlock more with Plus Premium',body:'Get premium features, profile artifacts and more.',bg:'linear-gradient(135deg,#111827,#3b2f0b)',accent:'#F5C518'},
+ {id:'market',name:'App Market',title:'Build something people can use',body:'Create and publish mini apps directly on Social Plus.',bg:'linear-gradient(135deg,#0b1220,#163b31)',accent:'#30D158'},
+ {id:'earn',name:'Earn on Social Plus',title:'Earn more. Do more.',body:'Complete tasks and turn activity into Plus Coins.',bg:'linear-gradient(135deg,#16120b,#283b16)',accent:'#A8E063'},
+ {id:'creator',name:'Creator tools',title:'Build your audience',body:'Post, create channels and grow your community.',bg:'linear-gradient(135deg,#11111a,#30204a)',accent:'#B69CFF'}
+];
+function v2esc(v){return typeof escHtml==='function'?escHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function v2me(){return (typeof _myUsernameKey==='function'?_myUsernameKey():(currentUser||'')).toLowerCase();}
+function v2Tier(){try{return (typeof getPremiumTier==='function'&&getPremiumTier(v2me()))||null}catch(e){return null}}
+function v2Limit(){const t=v2Tier();return t?V2_LIMITS[t.tier]||2:2}
+function v2CanPublish(){return !!v2Tier()}
+function v2Now(){return Date.now()}
+function v2Local(){try{return JSON.parse(localStorage.getItem(V2_APP_KEY)||'[]')}catch(e){return[]}}
+function v2SaveLocal(a){localStorage.setItem(V2_APP_KEY,JSON.stringify(a));}
+async function v2LoadApps(force){
+  if(window._spV2Apps && !force)return window._spV2Apps;
+  const me=v2me();let remote=[];
+  try{
+    const [pub,mine]=await Promise.all([
+      SB.query('mini_apps','?visibility=eq.public&status=eq.published&order=updated_at.desc&limit=500').catch(()=>[]),
+      me?SB.query('mini_apps','?owner=eq.'+encodeURIComponent(me)+'&order=updated_at.desc&limit=100').catch(()=>[]):Promise.resolve([])
+    ]);
+    const byId=new Map();[...(pub||[]),...(mine||[])].forEach(a=>{if(a&&a.id)byId.set(String(a.id),a)});remote=[...byId.values()];
+    if(remote.length){window._spV2Apps=remote;v2SaveLocal(remote);return remote;}
+  }catch(e){console.warn('[App Market] remote load failed',e)}
+  return window._spV2Apps=v2Local();
 }
-
-]; // end EVENT_TEMPLATES
-
-// ════════════════════════════════════════════════════════════
-// STORAGE & STATE
-// ════════════════════════════════════════════════════════════
-var LS_ACTIVE_EVENT   = 'ka_active_event_id';   // legacy single (kept for compat)
-var LS_ACTIVE_EVENTS  = 'ka_active_event_ids';  // new: JSON array of active IDs
-var LS_OWNER_DISABLED = 'ka_event_disabled';     // owner global disable
-var LS_USER_DISMISSED_PFX = 'ka_event_dismissed_'; // + event id = per-user dismiss key
-
-// Returns array of active template IDs
-function _getActiveTemplateIds() {
-  var stored = localStorage.getItem(LS_ACTIVE_EVENTS);
-  if (stored) { try { return JSON.parse(stored); } catch(e){} }
-  // Legacy fallback
-  var single = localStorage.getItem(LS_ACTIVE_EVENT);
-  return single ? [single] : [];
-}
-function _setActiveTemplateIds(ids) {
-  localStorage.setItem(LS_ACTIVE_EVENTS, JSON.stringify(ids));
-  // Keep legacy key pointing to first
-  if (ids.length) localStorage.setItem(LS_ACTIVE_EVENT, ids[0]);
-  else localStorage.removeItem(LS_ACTIVE_EVENT);
-}
-
-function _getActiveTemplate() {
-  var ids = _getActiveTemplateIds();
-  var id = ids[0] || null;
-  if (!id) return null;
-  // Check runtime templates first
-  var found = EVENT_TEMPLATES.find(function(t){ return t.id === id; });
-  if (found) return found;
-  // Fall back: reconstruct custom_announce from localStorage if it hasn't been added yet
-  if (id === 'custom_announce') {
-    var t = localStorage.getItem('ka_custom_announce_title');
-    var b = localStorage.getItem('ka_custom_announce_body')  || '';
-    var e = localStorage.getItem('ka_custom_announce_emoji') || '📣';
-    var a = localStorage.getItem('ka_custom_announce_accent')|| '#F5C518';
-    if (t) {
-      var tpl = { id:'custom_announce', emoji:e, title:t, subtitle:b||'From Social Plus',
-                  accent:a, textAccent:a, bg:'linear-gradient(135deg,#0d0d10,#1a1a1f)' };
-      EVENT_TEMPLATES.push(tpl);
-      return tpl;
+async function v2SaveApps(apps){
+  try{
+    const mineBefore=v2Local().filter(v2AppForOwner);const mineAfter=apps.filter(v2AppForOwner);
+    const beforeMap=new Map(mineBefore.map(a=>[a.id,a]));const afterMap=new Map(mineAfter.map(a=>[a.id,a]));
+    for(const a of mineAfter){
+      const row={id:a.id,owner:a.owner,name:a.name,description:a.description||'',category:a.category||'Other',logo:a.logo||null,html:a.html||'',visibility:a.visibility||'private',status:a.status||'private',trial_expires_at:a.trial_expires_at||null,created_at:a.created_at||new Date().toISOString(),updated_at:a.updated_at||new Date().toISOString(),launches:a.launches||0};
+      await SB.upsert('mini_apps',row,'id');
     }
-  }
-  return null;
+    for(const old of mineBefore){if(!afterMap.has(old.id))await SB.delete('mini_apps','id=eq.'+encodeURIComponent(old.id));}
+    window._spV2Apps=apps;v2SaveLocal(apps);return true;
+  }catch(e){console.warn('[App Market] remote save failed',e);v2SaveLocal(apps);window._spV2Apps=apps;return false}
 }
-
-function _getUserDismissedKey(id) { return LS_USER_DISMISSED_PFX + id; }
-
-function _eventCardShouldShow() {
-  if (localStorage.getItem(LS_OWNER_DISABLED) === 'true') return false;
-  var tpl = _getActiveTemplate();
-  if (!tpl) return false;
-  if (localStorage.getItem(_getUserDismissedKey(tpl.id)) === 'true') return false;
-  return true;
+function v2DefaultAdImage(def){
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08080a"/><stop offset="1" stop-color="${def.accent}" stop-opacity=".45"/></linearGradient></defs><rect width="1200" height="600" fill="url(#g)"/><circle cx="1020" cy="90" r="190" fill="${def.accent}" opacity=".10"/><circle cx="1080" cy="520" r="250" fill="${def.accent}" opacity=".07"/><text x="70" y="120" fill="${def.accent}" font-family="Arial,sans-serif" font-size="28" font-weight="700" letter-spacing="5">SOCIAL PLUS</text><text x="70" y="250" fill="white" font-family="Arial,sans-serif" font-size="58" font-weight="800">${def.name.replace(/&/g,'&amp;')}</text><text x="70" y="305" fill="white" opacity=".65" font-family="Arial,sans-serif" font-size="24">${def.title.replace(/&/g,'&amp;').slice(0,42)}</text><rect x="70" y="390" width="240" height="58" rx="29" fill="${def.accent}"/><text x="190" y="427" text-anchor="middle" fill="#000" font-family="Arial,sans-serif" font-size="22" font-weight="800">Explore</text></svg>`;
+ return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
 }
+function v2AddBuiltInAdUI(){
+ const wrap=document.getElementById('saAdImagePreviewWrap'); if(!wrap||document.getElementById('spV2BuiltInAds'))return;
+ const box=document.createElement('div');box.id='spV2BuiltInAds';box.style.cssText='margin:-4px 0 14px;';
+ box.innerHTML='<div style="font-size:10.5px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">Built-in images</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px;">'+V2_BUILTIN_ADS.map(d=>`<button type="button" onclick="window._spV2UseBuiltinAd('${d.id}')" style="padding:0;border-radius:11px;overflow:hidden;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);cursor:pointer;text-align:left;"><img src="${v2DefaultAdImage(d)}" style="width:100%;display:block;aspect-ratio:2/1;object-fit:cover;"><div style="padding:6px 8px;font:700 10px var(--font);color:var(--text2);">${v2esc(d.name)}</div></button>`).join('')+'</div>';
+ wrap.parentNode.insertBefore(box,wrap);
+}
+window._spV2UseBuiltinAd=function(id){const d=V2_BUILTIN_ADS.find(x=>x.id===id);if(!d)return;_saAdImageDataUrl=v2DefaultAdImage(d);_saUpdateAdImagePreview();showToast('Built-in ad image selected','success');};
+function v2AddAdPositionUI(){
+ const feed=document.getElementById('saAdPlaceFeed'); if(!feed||document.getElementById('spV2AdPositionRow'))return;
+ const row=feed.closest('label');if(!row)return;
+ const box=document.createElement('div');box.id='spV2AdPositionRow';box.style.cssText='display:none;margin:0 0 10px 26px;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);';
+ box.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Homefeed position</div><select id="spV2AdFeedPosition" class="sp-v2-input" style="margin:0 0 7px;padding:9px;"><option value="random">Random within feed</option><option value="top">Top of feed</option><option value="after_3">After 3 posts</option><option value="after_5">After 5 posts</option><option value="after_10">After 10 posts</option><option value="after_15">After 15 posts</option><option value="bottom">Bottom of feed</option></select><div style="font-size:10.5px;color:var(--text3);line-height:1.4;">Choose exactly where the ad goes. Random is still one ad per loaded feed page.</div>';
+ row.parentNode.insertBefore(box,row.nextSibling);
+ feed.addEventListener('change',()=>{box.style.display=feed.checked?'block':'none';});
+}
+async function v2PopulateAdAppPicker(selectedId){
+ const sel=document.getElementById('spV2AdAppSelect');
+ if(!sel)return;
+ try{
+   const apps=await v2LoadApps(true);
+   const mine=(apps||[]).filter(v2AppForOwner);
+   if(!mine.length){
+     sel.innerHTML='<option value="">No mini apps yet — create one in App Market</option>';
+     sel.value='';
+     return;
+   }
+   sel.innerHTML='<option value="">Select a mini app…</option>'+mine.map(a=>`<option value="${v2esc(a.id)}">${v2esc(a.name)}${a.visibility==='public'?' · Published':''}</option>`).join('');
+   sel.value=selectedId||'';
+   sel.onchange=function(){
+     const v=this.value;
+     const input=document.getElementById('saAdCtaValue');
+     if(input)input.value=v;
+   };
+ }catch(e){
+   sel.innerHTML='<option value="">Could not load mini apps</option>';
+ }
+}
+function v2SyncAdCtaUI(){
+ const type=document.getElementById('saAdCtaType')?.value;
+ const appRow=document.getElementById('spV2AdAppMarketRow');
+ const urlRow=document.getElementById('saAdCtaValueRow');
+ if(appRow)appRow.style.display=type==='app_market'?'block':'none';
+ if(urlRow)urlRow.style.display=(type==='url')?'block':'none';
+ if(type==='app_market')v2PopulateAdAppPicker(document.getElementById('saAdCtaValue')?.value||'');
+}
+function v2PatchAdCtaTypeChanged(){
+ const old=window._saAdCtaTypeChanged;
+ if(window._spV2CtaPatched)return;
+ window._spV2CtaPatched=true;
+ window._saAdCtaTypeChanged=function(){
+   if(typeof old==='function')old.apply(this,arguments);
+   v2SyncAdCtaUI();
+ };
+}
+function v2PatchAdEditor(){
+ v2AddBuiltInAdUI();v2AddAdPositionUI();v2PatchAdCtaTypeChanged();
+ const pos=document.getElementById('spV2AdFeedPosition');if(pos){const ads=window._spV2CurrentAds||[];const a=ads[window._saEditingAdIndex];pos.value=(a&&a.feed_position)||'random';const feed=document.getElementById('saAdPlaceFeed');pos.style.display=feed&&feed.checked?'block':'none';}
+}
+window._spV2PatchAdEditor=v2PatchAdEditor;
+const oldOpenAd=window._saOpenAdEditor;
+window._saOpenAdEditor=async function(index){const r=await oldOpenAd.apply(this,arguments);try{window._spV2CurrentAds=await _loadAdsConfig();v2PatchAdEditor();v2SyncAdCtaUI();}catch(e){}return r;};
+const oldSaveAd=window._saSaveAd;
+window._saSaveAd=async function(){
+ const feed=document.getElementById('saAdPlaceFeed');const pos=document.getElementById('spV2AdFeedPosition');
+ const appSelect=document.getElementById('spV2AdAppSelect');const appValue=document.getElementById('saAdCtaValue');
+ if(document.getElementById('saAdCtaType')?.value==='app_market' && appSelect && appValue) appValue.value=appSelect.value||'';
+ const before=await _loadAdsConfig();const idx=window._saEditingAdIndex;const old=before[idx];
+ const r=await oldSaveAd.apply(this,arguments);
+ try{const ads=await _loadAdsConfig(true);const saved=ads.find(a=>old&&a.id===old.id)||ads[ads.length-1];if(saved&&saved.type==='post'&&feed&&feed.checked)saved.feed_position=pos?pos.value:'random';await _saveAdsConfig(ads);window._spV2CurrentAds=ads;}catch(e){}
+ return r;
+};
+function v2PickAd(feedAds){const profile=v2Profile();return (feedAds||[]).slice().sort((a,b)=>{const score=x=>v2Tokenize([x.title,x.body].join(' ')).reduce((n,t)=>n+(profile.terms[t]||0),0)+(Math.random()*1.5);return score(b)-score(a)})[0]||feedAds[0];}
+function v2AdInsertIndex(pos,count){if(pos==='top')return 0;if(pos==='bottom')return count;if(pos==='after_3')return Math.min(3,count);if(pos==='after_5')return Math.min(5,count);if(pos==='after_10')return Math.min(10,count);if(pos==='after_15')return Math.min(15,count);return Math.floor(Math.random()*Math.max(1,count));}
+const oldInject=window.injectAdCards;
+window.injectAdCards=async function(){
+ const container=document.getElementById('postsContainer');if(!container)return;
+ container.querySelectorAll('.sp-ad-block').forEach(e=>e.remove());
+ try{
+  if(_amIAdFree())return;
+  const ads=await _loadAdsConfig(false);let feedAds=(ads||[]).filter(a=>a.enabled!==false&&a.type==='post'&&(a.placements||['feed']).includes('feed'));
+  if(!feedAds.length){const d=V2_BUILTIN_ADS[(_spV2RefreshNonce||0)%V2_BUILTIN_ADS.length];feedAds=[{id:'builtin_'+d.id,type:'post',title:d.name,body:d.body,image:v2DefaultAdImage(d),cta_label:'Explore',cta_type:d.id==='premium'?'premium':'home',enabled:true,feed_position:'random'}];}
 
-// Legacy compat: single EVENT_CARD_ID, EVENT_TITLE etc still read from active
-var EVENT_CARD_ID  = ''; // dynamically set
-var EVENT_TITLE    = '';
-var EVENT_SUBTITLE = '';
-var EVENT_EMOJI    = '';
-var EVENT_ACCENT   = '';
+  const postEls=Array.from(container.children).filter(el=>el.classList&&el.classList.contains('post-card')||el.classList&&el.classList.contains('post')||el.matches?.('[data-post-id]'));
+  if(!postEls.length)return;
+  const ad=v2PickAd(feedAds);const pos=ad.feed_position||'random';let i=v2AdInsertIndex(pos,postEls.length);const tmp=document.createElement('div');tmp.innerHTML=_buildAdPostCard(ad);const w=tmp.firstElementChild;if(i>=postEls.length)container.appendChild(w);else container.insertBefore(w,postEls[i]);if(!_adSessionSeen.has(ad.id)){_adSessionSeen.add(ad.id);_bumpAdStat(ad.id,'impressions');}
+ }catch(e){console.error('[ads] v2 feed injection failed',e);try{return oldInject.apply(this,arguments)}catch(_){} }
+};
+function v2Track(type,payload){
+ if(!v2me())return;try{const k='sp_fyp_events_'+v2me();const a=JSON.parse(localStorage.getItem(k)||'[]');a.push({type,...payload,t:Date.now()});localStorage.setItem(k,JSON.stringify(a.slice(-500)));}catch(e){}
+}
+function v2Events(){try{return JSON.parse(localStorage.getItem('sp_fyp_events_'+v2me())||'[]')}catch(e){return[]}}
+function v2Tokenize(s){return String(s||'').toLowerCase().replace(/[^a-z0-9#@\s]/g,' ').split(/\s+/).filter(x=>x.length>2).slice(0,80)}
+function v2Profile(){
+ const ev=v2Events(), p={terms:{},authors:{},topics:{},formats:{},seen:{},weights:{like:6,comment:8,open:2,dwell:4,share:7,follow:8,impression:0.25,skip:-2}};
+ ev.forEach(e=>{const w=weightsFor(e.type);(e.terms||[]).forEach(t=>p.terms[t]=(p.terms[t]||0)+w);if(e.author)p.authors[e.author]=(p.authors[e.author]||0)+w;if(e.topic)p.topics[e.topic]=(p.topics[e.topic]||0)+w;if(e.postId)p.seen[e.postId]=e.t;});
+ try{const a=JSON.parse(localStorage.getItem('sp_fyp_search_'+v2me())||'[]');a.slice(-30).forEach(e=>v2Tokenize(e.q).forEach(t=>p.terms[t]=(p.terms[t]||0)+1.5));}catch(e){}
+ return p;
+ function weightsFor(t){return p.weights[t]??1}
+}
+let _spV2SignalCache=null;
+let _spV2SignalCacheAt=0;
+let _spV2PoolCache=null;
+let _spV2PoolCacheAt=0;
+let _spV2RefreshNonce=0;
 
-// ════════════════════════════════════════════════════════════
-// EXPLORE EVENT CARD
-// ════════════════════════════════════════════════════════════
-function renderEventCard() {
-  var wrap = document.getElementById('exploreEventCard');
-  if (!wrap) return;
-  if (localStorage.getItem(LS_OWNER_DISABLED) === 'true') { wrap.style.display = 'none'; return; }
-  var ids = _getActiveTemplateIds().filter(function(id) {
-    return localStorage.getItem(_getUserDismissedKey(id)) !== 'true';
+function v2RecentSeenIds(){
+  const p=v2Profile(), now=Date.now(), out=new Set();
+  Object.keys(p.seen||{}).forEach(id=>{
+    if(now-(p.seen[id]||0)<24*3600000)out.add(String(id));
   });
-  if (!ids.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = '';
-  var esc = typeof escHtml === 'function' ? escHtml : function(s){return s;};
+  return out;
+}
 
-  var cards = ids.map(function(id, i) {
-    var tpl = EVENT_TEMPLATES.find(function(t){ return t.id === id; });
-    if (!tpl) return '';
-    var isAnnounce = id.startsWith('custom_announce');
-    var isRoute = !!tpl.route;
-    var clickFn = isRoute ? ('window.location.href=\'' + tpl.route + '\'') : (isAnnounce ? 'openAnnouncementPage()' : 'openEventsPage()');
-    var viewLabel = isRoute ? (tpl.viewLabel || 'Open') : (isAnnounce ? 'View Announcement' : 'View Event');
-    var accent = tpl.accent || '#F5C518';
-    var textAccent = tpl.textAccent || accent;
-    return '<div onclick="' + clickFn + '" style="cursor:pointer;flex-shrink:0;width:100%;box-sizing:border-box;position:relative;border-radius:20px;overflow:hidden;'
-      + 'background:rgba(255,255,255,0.05);'
-      + 'border:1px solid ' + accent + '30;border-top-color:' + accent + '55;'
-      + 'box-shadow: 0 4px 32px ' + accent + '18, 0 1px 0 rgba(255,255,255,0.10) inset, 0 -1px 0 rgba(0,0,0,0.18) inset;'
-      + 'display:flex;align-items:center;gap:14px;padding:14px 16px;">'
-      // Top accent line
-      + '<div style="position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,transparent,' + accent + ',' + textAccent + ',' + accent + ',transparent);border-radius:20px 20px 0 0;"></div>'
-      // Icon
-      + '<div style="width:52px;height:52px;border-radius:14px;background:' + accent + '18;border:1px solid ' + accent + '35;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:26px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">' + tpl.emoji + '</div>'
-      // Text
-      + '<div style="flex:1;min-width:0;">'
-      + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:' + accent + ';opacity:0.8;margin-bottom:3px;">' + (isAnnounce ? 'Announcement' : 'Event') + '</div>'
-      + '<div style="font-size:14px;font-weight:800;color:' + textAccent + ';letter-spacing:-0.3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(tpl.title) + '</div>'
-      + '<div style="font-size:12px;color:rgba(255,255,255,0.52);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(tpl.subtitle||'') + '</div>'
-      + '<div style="margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:' + accent + ';">' + viewLabel + ' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>'
-      + '</div>'
-      // Dismiss
-      + '<button onclick="event.stopPropagation();_dismissEventById(\'' + id + '\')" style="position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:rgba(128,128,128,0.18);border:1px solid rgba(128,128,128,0.22);display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.45);font-size:11px;line-height:1;padding:0;">✕</button>'
-      + '</div>';
-  }).filter(Boolean);
+async function v2BuildSignals(){
+  const now=Date.now();
+  if(_spV2SignalCache && now-_spV2SignalCacheAt<120000)return _spV2SignalCache;
+  const p=v2Profile(), me=v2me();
+  if(!me){_spV2SignalCache=p;_spV2SignalCacheAt=now;return p;}
+  try{
+    const [myR,myF,sent,recv]=await Promise.all([
+      SB.query('reactions','?username=eq.'+encodeURIComponent(me)+'&select=post_id,emoji&limit=500').catch(()=>[]),
+      SB.query('follows','?follower=eq.'+encodeURIComponent(me)+'&select=following&limit=300').catch(()=>[]),
+      SB.query('messages','?sender=eq.'+encodeURIComponent(me)+'&select=receiver&limit=300').catch(()=>[]),
+      SB.query('messages','?receiver=eq.'+encodeURIComponent(me)+'&select=sender&limit=300').catch(()=>[])
+    ]);
+    p.reacted=new Set((myR||[]).map(x=>String(x.post_id)));
+    p.following=new Set((myF||[]).map(x=>String(x.following||'').toLowerCase()));
+    p.chatted=new Set([
+      ...(sent||[]).map(x=>String(x.receiver||'').toLowerCase()),
+      ...(recv||[]).map(x=>String(x.sender||'').toLowerCase())
+    ]);
+  }catch(e){}
+  _spV2SignalCache=p;_spV2SignalCacheAt=now;
+  return p;
+}
 
-  if (!cards.length) { wrap.style.display = 'none'; return; }
-
-  if (cards.length === 1) {
-    wrap.innerHTML = cards[0];
-  } else {
-    // Swipeable carousel — each card sits in its own full-width scroll-snap
-    // slot so multiple 100%-wide cards don't fight over the same flex row.
-    wrap.innerHTML = '<style>#_ecTrack::-webkit-scrollbar{display:none;}</style>'
-      + '<div id="_ecTrack" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;">'
-      + cards.map(function(c){ return '<div style="flex:0 0 100%;scroll-snap-align:center;box-sizing:border-box;">' + c + '</div>'; }).join('')
-      + '</div>'
-      + '<div id="_ecDots" style="display:flex;gap:5px;justify-content:center;margin-top:8px;">'
-      + cards.map(function(_,i){ return '<div style="width:' + (i===0?'20px':'6px') + ';height:4px;border-radius:2px;background:' + (i===0?'var(--gold)':'rgba(255,255,255,0.2)') + ';transition:all 0.25s;"></div>'; }).join('')
-      + '</div>';
-    var _ecTrack = document.getElementById('_ecTrack');
-    var _ecScrollTimer = null;
-    _ecTrack.addEventListener('scroll', function(){
-      clearTimeout(_ecScrollTimer);
-      _ecScrollTimer = setTimeout(function(){
-        var slotW = _ecTrack.children[0] ? _ecTrack.children[0].offsetWidth : _ecTrack.offsetWidth;
-        var idx = Math.round(_ecTrack.scrollLeft / slotW);
-        document.querySelectorAll('#_ecDots > div').forEach(function(d, i){
-          d.style.width = (i === idx ? '20px' : '6px');
-          d.style.background = (i === idx ? 'var(--gold)' : 'rgba(255,255,255,0.2)');
-        });
-      }, 80);
-    });
+function v2Score(post,profile){
+  const text=v2Tokenize([post.title,post.body,post.analysis,post.match,post.league,post.pick].join(' '));
+  let s=0;
+  text.forEach(t=>s+=(profile.terms[t]||0)*1.9);
+  const author=String(post.user||post.username||post.author||'').toLowerCase();
+  if(author&&profile.authors[author])s+=profile.authors[author]*3.5;
+  if(author&&profile.following&&profile.following.has(author))s+=24;
+  if(author&&profile.chatted&&profile.chatted.has(author))s+=12;
+  if(profile.reacted&&profile.reacted.has(String(post.id)))s+=30;
+  const topic=typeof resolvePostTopic==='function'?resolvePostTopic(post):'';
+  if(topic&&profile.topics[topic])s+=profile.topics[topic]*2.8;
+  const seenAt=profile.seen&&profile.seen[String(post.id)];
+  if(seenAt){
+    const age=Date.now()-seenAt;
+    if(age<2*3600000)s-=32;
+    else if(age<24*3600000)s-=14;
+    else s-=4;
   }
+  s+=(Number(post.views)||0)*0.002;
+  const engagement=(post.comments||[]).length+Object.values(post.reactions||{}).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);
+  s+=Math.min(9,engagement*.12);
+  // Freshness is a small tie-breaker, not the main ranking rule.
+  const ageH=Math.max(0,(Date.now()-new Date(post.timestamp||0).getTime())/3600000);
+  s+=Math.max(0,4-Math.log1p(ageH)*0.8);
+  // New nonce means a refresh can legitimately reshuffle near-equal posts.
+  s+=Math.random()*4.5;
+  return s;
 }
 
-// ── User dismiss ──────────────────────────────────────────────────────────
-window._dismissEventById = function(id) {
-  localStorage.setItem(_getUserDismissedKey(id), 'true');
-  renderEventCard();
-  if (typeof showToast === 'function') showToast('Card hidden.', 'info');
-};
-window.dismissEventCard = function() {
-  var tpl = _getActiveTemplate();
-  if (tpl) _dismissEventById(tpl.id);
-};
+async function v2RankPool(rows){
+  const profile=await v2BuildSignals();
+  window._spV2Profile=profile;
+  const recent=v2RecentSeenIds();
+  const scored=(rows||[]).map(p=>{
+    let score=v2Score(p,profile);
+    if(recent.has(String(p.id)))score-=10;
+    return {p,s:score};
+  }).sort((a,b)=>b.s-a.s);
 
-// ── Owner toggle (settings row — just enable/disable, no template change) ─
-window.toggleEventCardOwner = function() {
-  var isDisabled = localStorage.getItem(LS_OWNER_DISABLED) === 'true';
-  var next = !isDisabled;
-  localStorage.setItem(LS_OWNER_DISABLED, next ? 'true' : 'false');
-  _updateEventToggleUI(next);
-  renderEventCard();
-  if (typeof showToast === 'function') showToast(next ? 'Event card disabled for all users.' : 'Event card re-enabled.', next ? 'error' : 'success');
-};
-
-function _updateEventToggleUI(isDisabled) {
-  var lbl   = document.getElementById('eventCardToggleLabel');
-  var desc  = document.getElementById('eventCardToggleDesc');
-  var ind   = document.getElementById('eventCardToggleIndicator');
-  var thumb = document.getElementById('eventCardToggleThumb');
-  var activeId = localStorage.getItem(LS_ACTIVE_EVENT);
-  var hasActive = !!activeId && EVENT_TEMPLATES.some(function(t){ return t.id === activeId; });
-  // Label stays as "Event Manager" — desc reflects current publish state
-  if (desc)  desc.textContent = isDisabled ? 'Event card hidden — tap to manage' : (hasActive ? 'Active: ' + (EVENT_TEMPLATES.find(function(t){return t.id===activeId;})||{}).emoji + ' — tap to manage' : 'Publish a celebration card to Explore');
-  if (ind)   ind.style.background = isDisabled ? 'rgba(255,69,58,0.35)' : 'rgba(255,255,255,0.12)';
-  if (thumb) { thumb.style.background = isDisabled ? '#ff453a' : '#888'; thumb.style.transform = isDisabled ? 'translateX(16px)' : 'translateX(0px)'; }
+  const fresh=scored.filter(x=>!recent.has(String(x.p.id)));
+  const seen=scored.filter(x=>recent.has(String(x.p.id)));
+  // Prefer unseen material, but never starve the feed if the account has
+  // already consumed most of the available pool.
+  let pool=(fresh.length>=Math.min(rows.length,12)?fresh:scored).slice();
+  const out=[];
+  let n=0;
+  while(pool.length && out.length<rows.length){
+    // Roughly 1 in 5 slots explores outside the top-ranked cluster.
+    if(n && n%5===4 && pool.length>5){
+      const idx=Math.min(pool.length-1,Math.floor(pool.length*.55)+Math.floor(Math.random()*Math.max(1,Math.floor(pool.length*.35))));
+      out.push(pool.splice(idx,1)[0].p);
+    }else{
+      out.push(pool.shift().p);
+    }
+    n++;
+  }
+  // Keep a tiny fallback tail so pagination still works with very small pools.
+  if(out.length<rows.length)seen.forEach(x=>{if(out.length<rows.length)out.push(x.p)});
+  return out;
 }
 
-// Init toggle UI on settings open
-(function _initToggleState() {
-  function _sync() { _updateEventToggleUI(localStorage.getItem(LS_OWNER_DISABLED) === 'true'); }
-  var _origSetOwnerUI = window.setOwnerUI;
-  window.setOwnerUI = function() { if (_origSetOwnerUI) _origSetOwnerUI.apply(this, arguments); _sync(); };
-  document.addEventListener('DOMContentLoaded', _sync);
-  setTimeout(_sync, 500);
+const oldFetchRanked=window._fetchRankedPostsPage;
+window._fetchRankedPostsPage=async function(pageSize,seenIds){
+  const offset=seenIds?seenIds.size:0;
+  const select='id,username,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link';
+  let rows=[];
+  try{
+    const now=Date.now();
+    const useCache=offset===0 && _spV2PoolCache && now-_spV2PoolCacheAt<20000;
+    if(useCache){
+      rows=_spV2PoolCache.slice();
+    }else{
+      const olderOffset=offset===0 ? Math.floor(Math.random()*Math.max(1,Math.min(450,120))) : offset+40;
+      const [latest,older]=await Promise.all([
+        SB.query('posts',`?order=timestamp.desc&limit=120&offset=${offset}&select=${select}`).catch(()=>[]),
+        SB.query('posts',`?order=timestamp.desc&limit=60&offset=${olderOffset}&select=${select}`).catch(()=>[])
+      ]);
+      const byId=new Map();
+      [...(latest||[]),...(older||[])].forEach(r=>{if(r&&r.id)byId.set(String(r.id),r)});
+      rows=[...byId.values()];
+      if(offset===0){_spV2PoolCache=rows.slice();_spV2PoolCacheAt=Date.now();}
+    }
+  }catch(e){rows=[]}
+  if(!rows.length)return oldFetchRanked.apply(this,arguments);
+  _spV2RefreshNonce++;
+  const ranked=await v2RankPool(rows);
+  ranked.forEach((p,i)=>{p._fypRank=i});
+  const seen=seenIds||new Set();
+  const pinned=ranked.filter(p=>p.type==='feature_announcement'&&!seen.has(p.id)&&!(typeof _isFeatureAnnouncementDismissed==='function'&&_isFeatureAnnouncementDismissed(p.id))).slice(0,1);
+  const ids=new Set(pinned.map(p=>p.id));
+  return [...pinned,...ranked.filter(p=>!ids.has(p.id)).slice(0,Math.max(pageSize-pinned.length,0))];
+};
+function v2HookPostInteractions(){
+ if(window._spV2InteractionHooked)return;window._spV2InteractionHooked=true;
+ const oldReact=window.react;window.react=async function(postId,emoji){v2Track('like',{postId:String(postId),terms:v2Tokenize((posts.find(p=>String(p.id)===String(postId))||{}).body)});return oldReact.apply(this,arguments)};
+ const oldComment=window.submitComment;window.submitComment=async function(postId){const p=posts.find(x=>String(x.id)===String(postId));v2Track('comment',{postId:String(postId),author:p&&p.user,terms:v2Tokenize(p&&[p.title,p.body,p.analysis,p.match].join(' ')),topic:typeof resolvePostTopic==='function'?resolvePostTopic(p):''});return oldComment.apply(this,arguments)};
+ const oldOpen=window.openCommentOverlay;window.openCommentOverlay=async function(postId){const p=posts.find(x=>String(x.id)===String(postId));v2Track('open',{postId:String(postId),author:p&&p.user,terms:v2Tokenize(p&&[p.title,p.body,p.analysis,p.match].join(' ')),topic:typeof resolvePostTopic==='function'?resolvePostTopic(p):''});return oldOpen.apply(this,arguments)};
+ const oldFollow=window.toggleFollow; if(oldFollow)window.toggleFollow=async function(){v2Track('follow',{author:arguments[0]});return oldFollow.apply(this,arguments)};
+}
+function v2ObserveDwell(){
+ if(window._spV2DwellObserver)return;const root=document.getElementById('postsContainer');if(!root)return;window._spV2DwellObserver=new IntersectionObserver(entries=>entries.forEach(e=>{if(!e.isIntersecting)return;const id=e.target.getAttribute('data-post-id');if(!id)return;setTimeout(()=>{if(e.target.getBoundingClientRect().bottom>0){const p=posts.find(x=>String(x.id)===id);v2Track('dwell',{postId:id,author:p&&p.user,terms:v2Tokenize(p&&[p.title,p.body,p.analysis,p.match].join(' ')),topic:typeof resolvePostTopic==='function'?resolvePostTopic(p):''});}},1800)}),{threshold:.55});root.querySelectorAll('.post-card,.post').forEach(el=>{const m=(el.getAttribute('data-post-id')||el.id||'').replace(/^post-/,'');if(m)el.setAttribute('data-post-id',m);window._spV2DwellObserver.observe(el);v2Track('impression',{postId:m});});
+}
+const oldRender=window.renderPosts;window.renderPosts=function(){
+ try{
+  const profile=window._spV2Profile||v2Profile();
+  const main=Array.isArray(posts)?posts:[];const profilePosts=Array.isArray(window._forYouProfilePosts)?window._forYouProfilePosts:[];
+  const all=[...main,...profilePosts];const scored=all.map((p,i)=>({p,s:v2Score(p,profile)+(Math.random()*2.2)})).sort((a,b)=>b.s-a.s);
+  const ranks=new Map(scored.map((x,i)=>[String(x.p.id),i]));
+  main.forEach(p=>{if(p&&p.id!=null)p._fypRank=ranks.get(String(p.id));});
+  profilePosts.forEach(p=>{if(p&&p.id!=null)p._fypRank=ranks.get(String(p.id));});
+ }catch(e){}
+ const r=oldRender.apply(this,arguments);setTimeout(()=>{v2HookPostInteractions();v2ObserveDwell()},250);return r;
+};
+function v2Icon(name,size=18){const p={market:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 4V2h10v2"/><path d="M7 9h10M7 13h6"/>',plus:'<path d="M12 5v14M5 12h14"/>',share:'<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 11 7.5-4.5M8.2 13l7.5 4.5"/>',settings:'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a2 2 0 1 1-4 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.8 1.8 0 0 0 2.3 12 1.8 1.8 0 0 0 3.6 9.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.8 1.8 0 0 0 9.5 5V4.8a2 2 0 1 1 4 0V5a1.8 1.8 0 0 0 3.1 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.8 1.8 0 0 0 20.7 12a1.8 1.8 0 0 0-1.3 3Z"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>'};return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p[name]||p.market}</svg>`}
+function v2Close(id){const x=document.getElementById(id);if(x)x.remove();}
+function v2Overlay(id,title,body){v2Close(id);const d=document.createElement('div');d.id=id;d.style.cssText='position:fixed;inset:0;z-index:55000;background:rgba(0,0,0,.68);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center';d.innerHTML=`<div style="width:100%;max-width:520px;max-height:90vh;overflow:auto;background:var(--bg);border:1px solid var(--glass-border);border-radius:26px 26px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));box-sizing:border-box"><div style="width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:3px;margin:0 auto 15px"></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px"><div style="font-size:19px;font-weight:800;color:var(--text)">${v2esc(title)}</div><button onclick="window._spV2Close('${id}')" class="sp-v2-secondary">${v2Icon('close',17)}</button></div>${body}</div>`;document.body.appendChild(d);return d}
+window._spV2Close=v2Close;
+function v2AppForOwner(app){return String(app.owner||'').toLowerCase()===v2me()}
+function v2Public(app){return app.visibility==='public'&&app.status==='published'}
+function v2Locked(app){return !v2CanPublish()&&app.trial_expires_at&&new Date(app.trial_expires_at).getTime()<=Date.now()}
+function v2Init(){
+ v2HookPostInteractions();v2PatchAdEditor();
+ const search=document.getElementById('exploreSearch');if(search&&!search.dataset.spV2){search.dataset.spV2='1';let timer;search.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>{const q=search.value.trim();if(q&&q.length>2){const k='sp_fyp_search_'+v2me();try{const a=JSON.parse(localStorage.getItem(k)||'[]');a.push({q,t:Date.now()});localStorage.setItem(k,JSON.stringify(a.slice(-100)));}catch(e){}}},450)});}
+ const oldShare=window.sharePost;if(oldShare&&!window._spV2ShareHooked){window._spV2ShareHooked=true;window.sharePost=async function(postId){v2Track('share',{postId:String(postId)});return oldShare.apply(this,arguments)};}
+ setTimeout(()=>{if(typeof injectAdCards==='function')injectAdCards();},350);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v2Init);else v2Init();
 })();
+</script>
 
-// ════════════════════════════════════════════════════════════
-// EVENTS PAGE — open/close + dynamic flyer rendering
-// ════════════════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════════════
-// ANNOUNCEMENT PAGE — for custom owner announcements
-// ════════════════════════════════════════════════════════════
-window.openAnnouncementPage = function() {
-  var overlay = document.getElementById('announcementPageOverlay');
-  if (!overlay) return;
-  var tpl = _getActiveTemplate();
-  if (!tpl || tpl.id !== 'custom_announce') {
-    if (typeof showToast === 'function') showToast('No announcement is currently active.', 'info');
-    return;
-  }
-  var content = document.getElementById('announcementPageContent');
-  if (content) {
-    var accent = tpl.accent || '#F5C518';
-    var body = localStorage.getItem('ka_custom_announce_body') || '';
-    var imgs = [];
-    try { imgs = JSON.parse(localStorage.getItem('ka_custom_announce_images') || '[]'); } catch(e){}
-    var imgHtml = '';
-    if (imgs.length === 1) {
-      imgHtml = '<div style="margin-bottom:20px;border-radius:16px;overflow:hidden;cursor:pointer;" onclick="openLightbox(\'' + imgs[0] + '\',false)"><img src="' + imgs[0] + '" style="width:100%;max-height:280px;object-fit:cover;display:block;border-radius:16px;"></div>';
-    } else if (imgs.length > 1) {
-      var allSrcsJson = JSON.stringify(imgs);
-      imgHtml = '<div style="display:grid;grid-template-columns:' + (imgs.length===2?'1fr 1fr':'1fr 1fr 1fr') + ';gap:6px;margin-bottom:20px;">'
-        + imgs.map(function(src,i){ return '<div style="border-radius:12px;overflow:hidden;aspect-ratio:1;cursor:pointer;" onclick="openLightbox(\'' + src + '\',false,' + allSrcsJson.replace(/'/g,"\\'") + ')"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>'; }).join('')
-        + '</div>';
-    }
-    content.innerHTML =
-      '<div style="text-align:center;margin-bottom:24px;">'
-      + '<div style="font-size:56px;margin-bottom:16px;line-height:1;">' + tpl.emoji + '</div>'
-      + '<div style="font-size:22px;font-weight:900;color:' + accent + ';letter-spacing:-0.5px;margin-bottom:10px;line-height:1.2;">' + (typeof escHtml === 'function' ? escHtml(tpl.title) : tpl.title) + '</div>'
-      + '<div style="width:48px;height:2px;background:' + accent + ';margin:0 auto 20px;border-radius:2px;opacity:0.7;"></div>'
-      + '</div>'
-      + imgHtml
-      + (body ? '<div style="font-size:15px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--surface2);border:1px solid var(--b-std);border-radius:16px;padding:18px 20px;margin-bottom:24px;">' + (typeof escHtml === 'function' ? escHtml(body) : body) + '</div>' : '')
-      + '<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;">From the Social Plus team 🤍</div>';
-  }
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-};
-
-window.closeAnnouncementPage = function() {
-  var overlay = document.getElementById('announcementPageOverlay');
-  if (overlay) overlay.style.display = 'none';
-  document.body.style.overflow = '';
-};
-
-window.openEventsPage = function() {
-  var overlay = document.getElementById('eventsPageOverlay');
-  if (!overlay) return;
-  var tpl = _getActiveTemplate();
-  if (!tpl) { if (typeof showToast==='function') showToast('No event is currently active.','info'); return; }
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  var iframe = document.getElementById('eventsFlyer');
-  if (iframe) {
-    var lastId = iframe.getAttribute('data-event-id');
-    if (lastId !== tpl.id) {
-      iframe.srcdoc = tpl.flyer();
-      iframe.setAttribute('data-event-id', tpl.id);
-    }
-    _scaleEventsFlyer();
-  }
-};
-
-window.closeEventsPage = function() {
-  var overlay = document.getElementById('eventsPageOverlay');
-  if (overlay) overlay.style.display = 'none';
-  document.body.style.overflow = '';
-};
-
-function _scaleEventsFlyer() {
-  var iframe = document.getElementById('eventsFlyer');
-  if (!iframe) return;
-  var container = iframe.parentElement;
-  if (!container) return;
-  var cw = container.offsetWidth || 320;
-  var scale = cw / 600;
-  iframe.style.transform = 'scale(' + scale + ')';
-  iframe.style.width  = '600px';
-  iframe.style.height = '900px';
-  container.style.height = Math.round(900 * scale) + 'px';
-}
-
-window.addEventListener('resize', function() {
-  var ov = document.getElementById('eventsPageOverlay');
-  if (ov && ov.style.display === 'flex') _scaleEventsFlyer();
-});
-
-// ── Hook into openExplorePage ─────────────────────────────────────────────
-var _origOpenExplorePage = window.openExplorePage;
-window.openExplorePage = function() {
-  if (_origOpenExplorePage) _origOpenExplorePage.apply(this, arguments);
-  renderEventCard();
-};
-
-// Fetch the active event from Supabase so ALL users see it (not just owner's device)
-function _syncEventFromSupabase() {
-  // Fetch BOTH keys — the legacy singular id and the full array — and keep
-  // localStorage's array key (which _getActiveTemplateIds() checks first)
-  // in sync with Supabase. Previously only the singular key was synced, so
-  // a stale/empty local array key would silently shadow a freshly-published
-  // event on any device that had ever toggled events before.
-  var _idsSynced = null;
-  var idsPromise = fetch(SB_URL + '/rest/v1/app_config?key=eq.active_event_ids&limit=1', {
-    headers: _sbRawHeaders()
-  }).then(function(r){ return r.ok ? r.json() : null; }).then(function(rows) {
-    if (!rows || !Array.isArray(rows) || !rows[0]) return;
-    try {
-      var arr = JSON.parse(rows[0].value || '[]');
-      if (Array.isArray(arr)) { _idsSynced = arr; localStorage.setItem(LS_ACTIVE_EVENTS, JSON.stringify(arr)); }
-    } catch(e) {}
-  }).catch(function(){});
-
-  fetch(SB_URL + '/rest/v1/app_config?key=eq.active_event&limit=1', {
-    headers: _sbRawHeaders()
-  }).then(function(r) {
-    // If Supabase is rate-limited or erroring (402 etc), don't wipe the event
-    if (!r.ok) { renderEventCard(); return Promise.resolve(null); }
-    return r.json();
-  }).then(function(rows) {
-    if (!rows) return idsPromise; // bailed out above
-    // Guard: if response is an error object (not an array), fall back silently
-    if (!Array.isArray(rows)) { renderEventCard(); return idsPromise; }
-    var val = rows[0] && rows[0].value;
-    if (val && val.length > 0) {
-      localStorage.setItem(LS_ACTIVE_EVENT, val);
-      localStorage.removeItem(LS_OWNER_DISABLED);
-      // If custom announcement, also fetch its data so non-owners see it
-      if (val === 'custom_announce') {
-        fetch(SB_URL + '/rest/v1/app_config?key=eq.custom_announce_data&limit=1', {
-          headers: _sbRawHeaders()
-        }).then(function(r2){ return r2.ok ? r2.json() : null; }).then(function(rows2) {
-          if (!rows2 || !rows2[0] || !rows2[0].value) return;
-          try {
-            var d = JSON.parse(rows2[0].value);
-            if (d && d.title) {
-              localStorage.setItem('ka_custom_announce_title',  d.title  || '');
-              localStorage.setItem('ka_custom_announce_body',   d.body   || '');
-              localStorage.setItem('ka_custom_announce_emoji',  d.emoji  || '📣');
-              localStorage.setItem('ka_custom_announce_accent', d.accent || '#F5C518');
-              // Update runtime EVENT_TEMPLATES
-              var existing = EVENT_TEMPLATES.find(function(t){ return t.id === 'custom_announce'; });
-              if (existing) {
-                existing.emoji = d.emoji||'📣'; existing.title = d.title;
-                existing.subtitle = d.body||'From Social Plus';
-                existing.accent = d.accent||'#F5C518'; existing.textAccent = d.accent||'#F5C518';
-              } else {
-                EVENT_TEMPLATES.push({ id:'custom_announce', emoji:d.emoji||'📣', title:d.title,
-                  subtitle:d.body||'From Social Plus', accent:d.accent||'#F5C518', textAccent:d.accent||'#F5C518' });
-              }
-              renderEventCard();
-              if (typeof injectTipCards === 'function') injectTipCards();
-            }
-          } catch(e) {}
-        }).catch(function(){});
-      }
-    } else {
-      // No event published — clear locally so card hides for everyone
-      if (!isOwner) {
-        localStorage.removeItem(LS_ACTIVE_EVENT);
-      }
-    }
-    return idsPromise;
-  }).then(function() {
-    renderEventCard();
-    _updateEventToggleUI(localStorage.getItem(LS_OWNER_DISABLED) === 'true');
-    // The Live feed may have already rendered (and built Kris's Suggestions)
-    // before this async config sync resolved — refresh it now so a freshly
-    // published event/announcement shows up without needing a manual reload.
-    if (typeof injectTipCards === 'function') injectTipCards();
-  }).catch(function() {
-    renderEventCard(); // fall back to whatever localStorage has
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function() { _syncEventFromSupabase(); });
-setTimeout(_syncEventFromSupabase, 800);
-
-// ════════════════════════════════════════════════════════════
-// EVENT MANAGER MODAL — owner-only template picker
-// ════════════════════════════════════════════════════════════
-window.openEventManager = function() {
-  if (!isOwner) return;
-  var existing = document.getElementById('eventManagerModal');
-  if (existing) existing.remove();
-  var activeIds = _getActiveTemplateIds();
-  var activeId = activeIds[0] || '';
-  var html = '<div id="eventManagerModal" style="position:fixed;inset:0;z-index:19000;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeEventManager()">'
-    + '<div style="width:100%;max-width:560px;background:var(--overlay-bg);border-radius:24px 24px 0 0;padding:0 0 max(24px,env(safe-area-inset-bottom)) 0;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">'
-    // Header
-    + '<div style="padding:16px 20px 12px;border-bottom:1px solid var(--b-soft);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'
-    + '<div><div style="font-size:17px;font-weight:800;color:var(--text);letter-spacing:-0.3px;">🎉 Event Manager</div><div style="font-size:12px;color:var(--text2);margin-top:2px;">Pick & publish a celebration for your community</div></div>'
-    + '<button onclick="closeEventManager()" style="width:30px;height:30px;border-radius:50%;background:var(--surface4);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>'
-    + '</div>'
-    // Status bar
-    + '<div style="flex-shrink:0;padding:10px 20px;background:' + (activeId ? 'rgba(34,197,94,0.08)' : 'var(--surface)') + ';border-bottom:1px solid var(--b-subtle);">'
-    + '<div style="font-size:12px;color:' + (activeId ? '#4ade80' : 'var(--text3)') + ';font-weight:600;">'
-    + (activeIds.length ? '✅ Live: ' + activeIds.length + ' published (tap to toggle)' : '⚪ No events/announcements published')
-    + '</div></div>'
-    // Scrollable grid
-    + '<div style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
-
-  EVENT_TEMPLATES.forEach(function(tpl) {
-    var isActive = activeIds.indexOf(tpl.id) >= 0;
-    html += '<div onclick="publishEvent(\'' + tpl.id + '\')" style="cursor:pointer;border-radius:16px;border:2px solid ' + (isActive ? tpl.accent : 'var(--b-mid)') + ';background:' + (isActive ? tpl.accent + '18' : 'var(--surface)') + ';padding:14px 12px;position:relative;transition:all 0.15s;min-height:100px;display:flex;flex-direction:column;gap:6px;overflow:hidden;box-sizing:border-box;">'
-      + (isActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:' + tpl.accent + ';display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : '')
-      + '<div style="font-size:24px;line-height:1;flex-shrink:0;">' + tpl.emoji + '</div>'
-      + '<div style="font-size:12px;font-weight:700;color:' + (isActive ? tpl.textAccent : 'var(--text)') + ';line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;">' + tpl.title.replace(/ [^\s]+$/, '') + '</div>'
-      + '<div style="font-size:10px;color:var(--text3);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;">' + tpl.subtitle.split(' — ')[0] + '</div>'
-      + '</div>';
-  });
-
-  // Custom Announcement card (always last)
-  var customActiveId = localStorage.getItem('ka_custom_announce_id') || '';
-  var isCustomActive = activeIds.indexOf('custom_announce') >= 0;
-  html += '<div onclick="openCustomAnnounceCompose()" style="cursor:pointer;border-radius:16px;border:2px solid ' + (isCustomActive ? '#F5C518' : 'rgba(245,197,24,0.28)') + ';background:' + (isCustomActive ? 'rgba(245,197,24,0.12)' : 'rgba(245,197,24,0.04)') + ';padding:14px 12px;position:relative;transition:all 0.15s;min-height:100px;display:flex;flex-direction:column;gap:6px;overflow:hidden;box-sizing:border-box;">'
-    + (isCustomActive ? '<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#F5C518;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : '')
-    + '<div style="font-size:24px;line-height:1;flex-shrink:0;">📣</div>'
-    + '<div style="font-size:12px;font-weight:700;color:' + (isCustomActive ? '#F5C518' : 'var(--text)') + ';line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Custom Announcement</div>'
-    + '<div style="font-size:10px;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + (isCustomActive ? (localStorage.getItem('ka_custom_announce_title') || 'Tap to edit') : 'Write your own message') + '</div>'
-    + '</div>';
-
-  html += '</div>'
-    // Footer
-    + '<div style="flex-shrink:0;padding:12px 16px;border-top:1px solid var(--b-soft);display:flex;gap:10px;">'
-    + '<button onclick="unpublishEvent()" style="flex:1;padding:12px;border-radius:14px;background:rgba(255,69,58,0.15);border:1px solid rgba(255,69,58,0.3);color:#ff453a;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">Unpublish</button>'
-    + '<button onclick="closeEventManager()" style="flex:1;padding:12px;border-radius:14px;background:var(--surface3);border:1px solid var(--b-std);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Done</button>'
-    + '</div>'
-    + '</div></div>';
-
-  document.body.insertAdjacentHTML('beforeend', html);
-};
-
-window.closeEventManager = function() {
-  var m = document.getElementById('eventManagerModal');
-  if (m) m.remove();
-};
-// ── Custom Announcement Compose ──────────────────────────────────────────────
-window.openCustomAnnounceCompose = function() {
-  closeEventManager();
-  window._caeImages = [];
-  var existing = document.getElementById('customAnnounceModal');
-  if (existing) existing.remove();
-  var savedTitle = localStorage.getItem('ka_custom_announce_title') || '';
-  var savedBody  = localStorage.getItem('ka_custom_announce_body')  || '';
-  var savedEmoji = localStorage.getItem('ka_custom_announce_emoji') || '📣';
-  var savedAccent= localStorage.getItem('ka_custom_announce_accent')|| '#F5C518';
-  var emojiOpts = ['📣','🏆','⚽','🔥','💰','🎯','⭐','🚨','💬','📢','🎉','💡'];
-  var accentOpts = ['#F5C518','#30d158','#ff453a','rgba(255,255,255,0.92)','rgba(255,255,255,0.92)','#ff9500','#ff375f','#5ac8fa'];
-  var emojiHtml = emojiOpts.map(function(e) {
-    return `<button onclick="this.parentNode.querySelectorAll('[data-eopt]').forEach(function(b){b.style.outline='none'});this.style.outline='2px solid #F5C518';document.getElementById('cae_emoji').value='${e}'" data-eopt="1" style="font-size:20px;background:var(--surface2);border:1px solid var(--b-mid);border-radius:10px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;${e===savedEmoji?'outline:2px solid #F5C518;':''}">${e}</button>`;
-  }).join('');
-  var accentHtml = accentOpts.map(function(c) {
-    return `<button onclick="this.parentNode.querySelectorAll('[data-copt]').forEach(function(b){b.style.outline='none'});this.style.outline='3px solid var(--text)';document.getElementById('cae_accent').value='` + c + `'" data-copt="1" style="width:28px;height:28px;border-radius:50%;background:${c};border:none;cursor:pointer;transition:all 0.15s;${c===savedAccent?'outline:3px solid var(--text);':''}"></button>`;
-  }).join('');
-  var html = '<div id="customAnnounceModal" style="position:fixed;inset:0;z-index:19100;background:rgba(0,0,0,0.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)document.getElementById(\'customAnnounceModal\').remove()">'
-    + '<div style="width:100%;max-width:540px;background:var(--overlay-bg);border-radius:24px 24px 0 0;padding:0 0 max(28px,env(safe-area-inset-bottom)) 0;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">'
-    + '<div style="padding:16px 20px 12px;border-bottom:1px solid var(--b-soft);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'
-    + '<div style="font-size:17px;font-weight:800;color:var(--text);letter-spacing:-0.3px;">📣 Custom Announcement</div>'
-    + '<button onclick="document.getElementById(\'customAnnounceModal\').remove()" style="width:30px;height:30px;border-radius:50%;background:var(--surface4);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>'
-    + '</div>'
-    + '<div style="overflow-y:auto;padding:18px 20px;flex:1;-webkit-overflow-scrolling:touch;">'
-    // Hidden inputs
-    + '<input type="hidden" id="cae_emoji" value="'+savedEmoji+'">'
-    + '<input type="hidden" id="cae_accent" value="'+savedAccent+'">'
-    // Emoji picker
-    + '<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Icon</div>'
-    + '<div style="display:flex;gap:7px;flex-wrap:wrap;">'+emojiHtml+'</div></div>'
-    // Accent color
-    + '<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Accent Colour</div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+accentHtml+'</div></div>'
-    // Title
-    + '<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">Title <span style="color:rgba(255,69,58,0.8);">*</span></div>'
-    + `<input id="cae_title" type="text" maxlength="60" placeholder="e.g. Big Weekend Ahead!" value="${savedTitle.replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1px solid var(--b-bold);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--text);outline:none;" oninput="_caeCount(this)">`
-    + '<span style="font-size:10px;color:var(--text3);float:right;margin-top:3px;">'+(60-savedTitle.length)+' left</span></div>'
-    // Body
-    + '<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">Message</div>'
-    + '<textarea id="cae_body" maxlength="280" placeholder="Optional short message for your community…" rows="3" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1px solid var(--b-bold);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--text);outline:none;resize:none;line-height:1.5;">' + savedBody.replace(/</g,'&lt;') + '</textarea>'
-    + '<button onclick="_caeAIFill()" style="margin-top:6px;padding:7px 14px;border-radius:100px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:rgba(255,255,255,0.75);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg> AI Write</button>'
-    + '</div>'
-    // Image picker
-    + '<div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">Image (Optional)</div>'
-    + '<div id="cae_img_preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>'
-    + '<button onclick="document.getElementById(\'cae_file_input\').click()" style="padding:8px 14px;border-radius:100px;background:var(--surface3);border:1px solid var(--b-bold);color:var(--text2);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Add Image</button>'
-    + '<input type="file" id="cae_file_input" accept="image/*" multiple style="display:none;" onchange="_caeHandleImages(this)">'
-    + '</div>'
-    + '</div>'
-    + '<div style="flex-shrink:0;padding:12px 20px;border-top:1px solid var(--b-soft);display:flex;gap:10px;">'
-    + '<button onclick="document.getElementById(\'customAnnounceModal\').remove();openEventManager();" style="flex:1;padding:13px;border-radius:14px;background:var(--surface3);border:1px solid var(--b-std);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">← Back</button>'
-    + '<button onclick="publishCustomAnnounce()" style="flex:2;padding:13px;border-radius:14px;background:linear-gradient(135deg,#F5C518,#ffe066);border:none;color:#000;font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:-0.2px;">📣 Publish Announcement</button>'
-    + '</div>'
-    + '</div></div>';
-  document.body.insertAdjacentHTML('beforeend', html);
-};
-
-window._caeImages = []; // holds dataUrls for announcement images
-
-window._caeHandleImages = function(input) {
-  var files = Array.from(input.files);
-  var promises = files.map(function(f) {
-    return new Promise(function(resolve) {
-      if (typeof compressImage === 'function') {
-        compressImage(f, 1200, 1200, 0.82).then(resolve);
-      } else {
-        var r = new FileReader();
-        r.onload = function(e){ resolve({dataUrl: e.target.result, type:'image'}); };
-        r.readAsDataURL(f);
-      }
+<script id="sp-v4-performance">
+(function(){
+  'use strict';
+  // Keep expensive feed work from firing multiple times in the same frame.
+  let scheduled=false;
+  window._spV4ScheduleFeedRefresh=function(fn){
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(function(){
+      scheduled=false;
+      try{fn&&fn()}catch(e){}
     });
-  });
-  Promise.all(promises).then(function(results) {
-    results.forEach(function(m){ if (window._caeImages.length < 6) window._caeImages.push(m.dataUrl || m); });
-    _caeRenderImagePreview();
-  });
-  input.value = '';
-};
+  };
 
-window._caeRenderImagePreview = function() {
-  var wrap = document.getElementById('cae_img_preview');
-  if (!wrap) return;
-  wrap.innerHTML = (window._caeImages||[]).map(function(src, i) {
-    return '<div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--b-mid);cursor:pointer;" onclick="openLightbox(\'' + src + '\',false)">'
-      + '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"/>'
-      + '<button onclick="event.stopPropagation();window._caeImages.splice(' + i + ',1);_caeRenderImagePreview();" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>'
-      + '</div>';
-  }).join('');
-};
+  // Refresh only when a page was restored from memory and only after the
+  // existing UI is visible. This avoids destroying the instant back/forward
+  // experience.
+  window.addEventListener('pageshow',function(e){
+    if(!e.persisted)return;
+    setTimeout(function(){
+      try{
+        if(typeof _loadAdsConfig==='function')_loadAdsConfig(false);
+      }catch(err){}
+    },80);
+  },{passive:true});
 
-window._caeAIFill = function() {
-  var titleEl = document.getElementById('cae_title');
-  var bodyEl = document.getElementById('cae_body');
-  if (!titleEl) return;
-  var title = titleEl.value.trim();
-  var btn = document.querySelector('[onclick="_caeAIFill()"]');
-  if (btn) { btn.textContent = 'Writing…'; btn.disabled = true; }
-  var prompt = title
-    ? 'Write a short, engaging community announcement message for a social app called Social Plus. The announcement is titled: "' + title + '". Write 1-2 punchy sentences max. No hashtags. Just the message text.'
-    : 'Write a short community announcement for a social app called Social Plus. 1-2 sentences, engaging and direct.';
-  fetch('/api/groq', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'llama3-8b-8192', messages: [{ role: 'user', content: prompt }], max_tokens: 100, temperature: 0.8 })
-  }).then(function(res){ return res.json(); }).then(function(data) {
-    var msg = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-    if (bodyEl && msg) bodyEl.value = msg.trim();
-  }).catch(function() {
-    if (typeof showToast==='function') showToast('AI unavailable.', 'error');
-  }).finally(function() {
-    if (btn) { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg> AI Write'; btn.disabled = false; }
-  });
-};
-
-window.publishCustomAnnounce = function() {
-  var titleEl = document.getElementById('cae_title');
-  var bodyEl  = document.getElementById('cae_body');
-  var emojiEl = document.getElementById('cae_emoji');
-  var accentEl= document.getElementById('cae_accent');
-  if (!titleEl) return;
-  var title  = (titleEl.value||'').trim();
-  var body   = (bodyEl  && bodyEl.value) ? bodyEl.value.trim() : '';
-  var emoji  = (emojiEl  && emojiEl.value) ? emojiEl.value : '📣';
-  var accent = (accentEl && accentEl.value) ? accentEl.value : '#F5C518';
-  if (!title) { titleEl.style.borderColor='rgba(255,69,58,0.7)'; titleEl.focus(); return; }
-  // Save
-  localStorage.setItem('ka_custom_announce_title',  title);
-  localStorage.setItem('ka_custom_announce_body',   body);
-  localStorage.setItem('ka_custom_announce_emoji',  emoji);
-  localStorage.setItem('ka_custom_announce_accent', accent);
-  // Save images (dataUrls)
-  var imgs = window._caeImages || [];
-  try { localStorage.setItem('ka_custom_announce_images', JSON.stringify(imgs)); } catch(e){}
-  // Add to EVENT_TEMPLATES at runtime
-  var existing = EVENT_TEMPLATES.find(function(t){ return t.id === 'custom_announce'; });
-  if (existing) {
-    existing.emoji = emoji; existing.title = title; existing.subtitle = body || 'From Social Plus';
-    existing.accent = accent; existing.textAccent = accent; existing.images = imgs;
-  } else {
-    EVENT_TEMPLATES.push({ id:'custom_announce', emoji:emoji, title:title, subtitle:body||'From Social Plus', accent:accent, textAccent:accent, images:imgs });
-  }
-  // Add to active IDs array (not replace)
-  var activeIds = _getActiveTemplateIds();
-  if (activeIds.indexOf('custom_announce') < 0) activeIds.push('custom_announce');
-  _setActiveTemplateIds(activeIds);
-  // Write to Supabase
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method:'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body:JSON.stringify({key:'active_event',value:'custom_announce'})
-  }).catch(function(){});
-  // Also save custom data to Supabase so other users see it
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method:'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body:JSON.stringify({key:'custom_announce_data',value:JSON.stringify({emoji:emoji,title:title,body:body,accent:accent})})
-  }).catch(function(){});
-  var m = document.getElementById('customAnnounceModal');
-  if (m) m.remove();
-  renderEventCard();
-  if (typeof showToast==='function') showToast(emoji+' Announcement published!','success');
-};
-
-window.publishEvent = function(id) {
-  var tpl = EVENT_TEMPLATES.find(function(t){ return t.id === id; });
-  if (!tpl) return;
-  // Add to active IDs array (toggle: if already active, remove it)
-  var ids = _getActiveTemplateIds();
-  var idx = ids.indexOf(id);
-  if (idx >= 0) {
-    ids.splice(idx, 1);
-    if (typeof showToast==='function') showToast(tpl.emoji + ' ' + tpl.title + ' unpublished.', 'info');
-  } else {
-    ids.push(id);
-    if (typeof showToast==='function') showToast(tpl.emoji + ' ' + tpl.title + ' published!', 'success');
-  }
-  _setActiveTemplateIds(ids);
-  localStorage.setItem(LS_OWNER_DISABLED, 'false');
-  // Write to Supabase — store full array as JSON
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method: 'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body: JSON.stringify({ key: 'active_event', value: ids.length ? ids[0] : '' })
-  }).catch(function(){});
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method: 'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body: JSON.stringify({ key: 'active_event_ids', value: JSON.stringify(ids) })
-  }).catch(function(){});
-  closeEventManager();
-  openEventManager();
-  renderEventCard();
-  _updateEventToggleUI(false);
-};
-
-window.unpublishEvent = function() {
-  _setActiveTemplateIds([]);
-  // Clear from Supabase too
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method: 'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body: JSON.stringify({ key: 'active_event', value: '' })
-  }).catch(function(){});
-  fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-    method: 'POST',
-    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-    body: JSON.stringify({ key: 'active_event_ids', value: '[]' })
-  }).catch(function(){});
-  closeEventManager();
-  renderEventCard();
-  _updateEventToggleUI(false);
-  if (typeof showToast==='function') showToast('All events/announcements unpublished.', 'info');
-};
-
-// ════════════════════════════════════════════════════════════
-// FLYER HTML GENERATORS
-// Each returns a full self-contained HTML string.
-// Shared boilerplate is factored into _flyerBase().
-// ════════════════════════════════════════════════════════════
-
-function _flyerBase(opts) {
-  var a  = opts.accentColor  || '#D4A017';
-  var al = opts.lightColor   || '#F5C842';
-  var ad = opts.dimColor     || '#8B6914';
-  var cream = opts.cream || '#E8D5A3';
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-  + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">'
-  + '<style>*{margin:0;padding:0;box-sizing:border-box;}'
-  + 'body{background:#060606;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:Inter,sans-serif;}'
-  + '.flyer{width:600px;height:900px;position:relative;overflow:hidden;display:flex;flex-direction:column;background:' + opts.bg + ';}'
-  + '/* Noise texture overlay */'
-  + '.flyer::before{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E");opacity:0.35;z-index:1;pointer-events:none;}'
-  + '/* Radial glow */'
-  + '.flyer-glow{position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(ellipse 60% 50% at 50% 0%,' + a + '28 0%,transparent 70%);z-index:1;pointer-events:none;}'
-  + '.flyer-glow-bot{position:absolute;bottom:-80px;left:50%;transform:translateX(-50%);width:500px;height:400px;background:radial-gradient(ellipse 50% 40% at 50% 100%,' + a + '18 0%,transparent 70%);z-index:1;pointer-events:none;}'
-  + '/* Top accent bar */'
-  + '.top-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent 0%,' + a + ' 30%,' + al + ' 50%,' + a + ' 70%,transparent 100%);z-index:10;}'
-  + '/* Brand header */'
-  + '.brand-header{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:28px 36px 0;}'
-  + '.brand-left{display:flex;flex-direction:column;}'
-  + '.brand-eyebrow{font-size:9px;font-weight:700;letter-spacing:4px;color:' + a + ';text-transform:uppercase;opacity:0.7;margin-bottom:4px;}'
-  + '.brand-name{font-family:"Playfair Display",serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:0.5px;line-height:1;}'
-  + '.brand-name em{font-style:normal;color:' + al + ';}'
-  + '.brand-badge{background:' + a + '18;border:1px solid ' + a + '44;border-radius:100px;padding:6px 14px;font-size:9px;font-weight:700;letter-spacing:3px;color:' + a + ';text-transform:uppercase;}'
-  + '/* Divider */'
-  + '.divider{width:calc(100% - 72px);height:1px;background:linear-gradient(90deg,transparent,' + a + '44,' + al + '66,' + a + '44,transparent);margin:20px 36px;position:relative;z-index:5;}'
-  + '/* Hero section */'
-  + '.hero{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;}'
-  + '.icon-ring{position:relative;width:160px;height:160px;margin-bottom:32px;display:flex;align-items:center;justify-content:center}'
-  + '.icon-ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid ' + a + '44;animation:ringPulse 3s ease-in-out infinite;}'
-  + '.icon-ring::after{content:"";position:absolute;inset:-16px;border-radius:50%;border:1px solid ' + a + '18;animation:ringPulse 3s ease-in-out infinite 0.5s;}'
-  + '.icon-inner{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,' + a + '22 0%,' + a + '08 100%);border:1px solid ' + a + '44;display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);}'
-  + '.event-label{font-size:9px;font-weight:700;letter-spacing:5px;color:' + a + ';text-transform:uppercase;margin-bottom:10px;opacity:0.8;}'
-  + '.event-title{font-family:"Playfair Display",serif;font-size:42px;font-weight:900;color:#fff;text-align:center;line-height:1.1;margin-bottom:6px;}'
-  + '.event-title span{background:linear-gradient(135deg,' + al + ',' + a + ');-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}'
-  + '.event-sub{font-size:11px;font-weight:600;letter-spacing:4px;color:' + ad + ';text-transform:uppercase;text-align:center;margin-bottom:28px;}'
-  + '/* Message card */'
-  + '.msg-card{width:100%;max-width:480px;background:rgba(255,255,255,0.03);border:1px solid ' + a + '28;border-radius:16px;padding:22px 28px;text-align:center;position:relative;-webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);}'
-  + '.msg-card::before{content:"";position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,' + a + '88,transparent);}'
-  + '.msg-text{font-size:13.5px;font-weight:400;color:rgba(255,255,255,0.72);line-height:1.9;}'
-  + '.msg-text strong{color:' + cream + ';font-weight:700;}'
-  + '/* Arabic */'
-  + '.arabic-block{text-align:center;margin-bottom:20px;}'
-  + '.arabic-main{font-family:serif;font-size:36px;font-weight:700;color:' + al + ';line-height:1.2;text-shadow:0 0 40px ' + a + '55;}'
-  + '.arabic-sub{font-size:16px;color:rgba(255,255,255,0.55);margin-top:4px;font-weight:500;}'
-  + '/* Footer */'
-  + '.flyer-footer{position:relative;z-index:5;padding:0 36px 32px;display:flex;flex-direction:column;align-items:center;gap:12px;}'
-  + '.footer-dots{display:flex;align-items:center;gap:12px;width:100%;}'
-  + '.footer-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,' + a + '44);}'
-  + '.footer-line.r{background:linear-gradient(90deg,' + a + '44,transparent);}'
-  + '.footer-diamond{font-size:7px;color:' + a + ';letter-spacing:6px;}'
-  + '.footer-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}'
-  + '.footer-tag{font-size:8.5px;font-weight:700;letter-spacing:2.5px;color:' + ad + ';text-transform:uppercase;opacity:0.8;}'
-  + '.footer-tag::after{content:"·";margin-left:6px;opacity:0.4;}'
-  + '.footer-tag:last-child::after{content:"";}'
-  + '.footer-cta{font-size:10px;font-weight:600;letter-spacing:3px;color:' + a + ';text-transform:uppercase;opacity:0.7;}'
-  + '@keyframes floatAnim{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}'
-  + '@keyframes ringPulse{0%,100%{opacity:0.5;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}'
-  + (opts.extraCSS || '')
-  + '</style></head><body>'
-  + '<div class="flyer">'
-  + '<div class="top-bar"></div>'
-  + '<div class="flyer-glow"></div>'
-  + '<div class="flyer-glow-bot"></div>'
-  + '<div class="brand-header">'
-  + '<div class="brand-left"><div class="brand-eyebrow">Social Plus</div><div class="brand-name">Social <em>Plus</em></div></div>'
-  + '<div class="brand-badge">Official</div>'
-  + '</div>'
-  + '<div class="divider"></div>'
-  + '<div class="hero">'
-  + '<div class="icon-ring"><div class="icon-inner">' + opts.icon + '</div></div>'
-  + (opts.arabic ? '<div class="arabic-block"><div class="arabic-main">' + opts.arabic + '</div><div class="arabic-sub">' + (opts.arabicSub||'') + '</div></div>' : '')
-  + '<div class="event-label">Special Event</div>'
-  + '<div class="event-title">' + opts.title + '</div>'
-  + '<div class="event-sub">' + opts.sub + '</div>'
-  + '<div class="msg-card"><p class="msg-text">' + opts.message + '</p></div>'
-  + '</div>'
-  + '<div class="flyer-footer">'
-  + '<div class="footer-dots"><div class="footer-line"></div><div class="footer-diamond">◆ ◆ ◆</div><div class="footer-line r"></div></div>'
-  + '<div class="footer-tags"><span class="footer-tag">Premium Tips</span><span class="footer-tag">Expert Analysis</span></div>'
-  + '<div class="footer-cta">' + (opts.cta || 'Follow for Daily Predictions') + '</div>'
-  + '</div>'
-  + '</body></html>';
-}
-
-function _cornerSVG(c) {
-  var svg = '<svg viewBox="0 0 70 70" fill="none"><path d="M5 65 L5 5 L65 5" stroke="' + c + '" stroke-width="1.5" fill="none" opacity="0.7"/><circle cx="5" cy="5" r="3" fill="' + c + '" opacity="0.8"/><path d="M15 5 L5 5 L5 15" stroke="' + c + '" stroke-width="1" fill="none"/></svg>';
-  return '<div class="corner corner-tl">' + svg + '</div><div class="corner corner-tr">' + svg + '</div><div class="corner corner-bl">' + svg + '</div><div class="corner corner-br">' + svg + '</div>';
-}
-
-function _moonIconSVG(a, al) {
-  return '<svg viewBox="0 0 200 200" fill="none" style="width:90px;height:90px;filter:drop-shadow(0 0 18px ' + a + '88);">'
-  + '<circle cx="100" cy="100" r="90" stroke="' + a + '" stroke-width="0.5" opacity="0.3"/>'
-  + '<path d="M100 30 C65 30 40 62 40 100 C40 138 65 170 100 170 C85 155 76 130 76 100 C76 70 85 45 100 30Z" fill="url(#mg)"/>'
-  + '<circle cx="100" cy="100" r="55" fill="#0A0A0A"/>'
-  + '<g transform="translate(128,58)"><path d="M0,-18 L4.5,-6 L17,-6 L7,2 L11,14 L0,6 L-11,14 L-7,2 L-17,-6 L-4.5,-6 Z" fill="url(#sg)"/></g>'
-  + '<defs><linearGradient id="mg" x1="40" y1="30" x2="160" y2="170" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="' + al + '"/><stop offset="100%" stop-color="' + a + '"/></linearGradient>'
-  + '<linearGradient id="sg" x1="-17" y1="-18" x2="17" y2="14" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="' + al + '"/><stop offset="100%" stop-color="' + a + '"/></linearGradient></defs></svg>';
-}
-
-// ── Flyer: Eid el-Kebir ───────────────────────────────────────────────────
-function _flyerEid() {
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#0F0E0B,#070706)', accentColor:'#D4A017', lightColor:'#F5C842', dimColor:'#8B6914', cream:'#E8D5A3',
-    icon: _moonIconSVG('#D4A017','#F5C842'),
-    arabic:'عيد الأضحى مبارك', arabicSub:'Eid Al-Adha Mubarak',
-    title:'Happy <span>Eid el-Kebir</span>', sub:'2025 • From The Team',
-    message:'Wishing all our community a blessed and joyful Eid.<br>May this day bring peace, happiness &amp; abundance<br>to you and your loved ones.<br><br><strong>From Dave &amp; the whole Social Plus family —<br>Taqabbal Allahu minna wa minkum 🤍</strong>',
-    cta:'Follow for Daily Predictions'
-  });
-}
-
-// ── Flyer: Mother's Day ───────────────────────────────────────────────────
-function _flyerMothersDay() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 24px #e85d9a88)">💐</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#1a0010,#0d0008)', accentColor:'#e85d9a', lightColor:'#f9a8d4', dimColor:'#9d174d', cream:'#fce7f3',
-    icon: icon,
-    title:'Happy <span>Mother\'s Day</span>', sub:'2025 • With Love From Kris',
-    message:'To every mother, grandmother, and mother figure<br>in our community — <strong>you are seen, celebrated,<br>and deeply appreciated.</strong><br><br>Thank you for everything you do every single day. 🌸<br><br><strong>With love — Dave</strong>',
-    cta:'A Goal a Day, Just For You 🌸'
-  });
-}
-
-// ── Flyer: Valentine's Day ───────────────────────────────────────────────
-function _flyerValentines() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #e53e3e99)">❤️</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#1a0000,#0d0000)', accentColor:'#e53e3e', lightColor:'#feb2b2', dimColor:'#9b2c2c', cream:'#fff5f5',
-    icon: icon,
-    title:'Happy <span>Valentine\'s Day</span>', sub:'2025 • Love & Big Wins',
-    message:'Love is in the air — and so is good company! 💘<br><br>Wishing our whole community a day filled<br>with <strong>joy, warmth, and great connections.</strong><br><br>Share the love, share the moments. 🎯<br><br><strong>With love — Dave</strong>',
-    cta:'Love the Game. Win Together. ❤️'
-  });
-}
-
-// ── Flyer: Children's Day ─────────────────────────────────────────────────
-function _flyerChildrensDay() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #38bdf888)">🎈</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#001a2d,#000d1a)', accentColor:'#38bdf8', lightColor:'#bae6fd', dimColor:'#0369a1', cream:'#e0f7ff',
-    icon: icon,
-    title:'Happy <span>Children\'s Day</span>', sub:'2025 • Celebrating The Future',
-    message:'Today we celebrate the little ones —<br><strong>the future champions, the next generation.</strong> 🌟<br><br>May every child in our community know joy,<br>laughter, and endless possibility today.<br><br><strong>From the Social Plus family — keep dreaming big! 💙</strong>',
-    cta:'Dream Big. Play Bigger. 🎈'
-  });
-}
-
-// ── Flyer: Christmas ──────────────────────────────────────────────────────
-function _flyerChristmas() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #22c55e88)">🎄</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#001a08,#000d04)', accentColor:'#22c55e', lightColor:'#bbf7d0', dimColor:'#15803d', cream:'#f0fff4',
-    icon: icon,
-    title:'Merry <span>Christmas</span>', sub:'2025 • Season\'s Greetings',
-    message:'Wishing everyone in our Social Plus community<br>a wonderful Christmas filled with<br><strong>joy, family, great food and good times.</strong> 🎁<br><br>May the new year bring you everything you pray for.<br><br><strong>Merry Christmas — Dave 🎄</strong>',
-    cta:'Tis The Season To Connect 🎅'
-  });
-}
-
-// ── Flyer: New Year ───────────────────────────────────────────────────────
-function _flyerNewYear() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 30px #a855f799)">🎆</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#0d0020,#060012)', accentColor:'#a855f7', lightColor:'#e9d5ff', dimColor:'#7e22ce', cream:'#faf5ff',
-    icon: icon,
-    title:'Happy <span>New Year</span>', sub:'2026 • New Year, New Wins',
-    message:'A brand new year. A fresh start. New connections.<br><strong>New memories.</strong> 🏆<br><br>Thank you for being part of the Social Plus family<br>through every post, every share, every moment.<br><br><strong>Here\'s to 2026 — let\'s make it our best year yet!<br>— Dave 🥂</strong>',
-    cta:'New Year. New Streak. Let\'s Go! 🎆'
-  });
-}
-
-// ── Flyer: Easter ─────────────────────────────────────────────────────────
-function _flyerEaster() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #f59e0b88)">🐣</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#1a1000,#0d0800)', accentColor:'#f59e0b', lightColor:'#fde68a', dimColor:'#b45309', cream:'#fffbeb',
-    icon: icon,
-    title:'Happy <span>Easter</span>', sub:'2025 • Social Plus',
-    message:'Wishing our entire community a joyful Easter weekend!<br><br><strong>May this season bring you renewal,<br>hope, and of course — great memories.</strong> 🥚<br><br>Thank you for your continued trust and support.<br><br><strong>Happy Easter — Dave 🐣</strong>',
-    cta:'Happy Easter, Everyone! 🌅'
-  });
-}
-
-// ── Flyer: Africa Day ─────────────────────────────────────────────────────
-function _flyerAfricaDay() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #ef444488)">🌍</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#0d0d00,#0a0500)', accentColor:'#ef4444', lightColor:'#fca5a5', dimColor:'#991b1b', cream:'#fff1f2',
-    icon: icon,
-    title:'Happy <span>Africa Day</span>', sub:'May 25 • Celebrating The Continent',
-    message:'Africa Day celebrates <strong>our unity, diversity,<br>and the unstoppable spirit</strong> of this great continent. 🌍<br><br>To every member of this community — wherever<br>you are on this beautiful continent:<br><br><strong>We are proud of you. We rise together.<br>— Dave</strong>',
-    cta:'African Pride. African Wins. 🌍'
-  });
-}
-
-// ── Flyer: Nigeria Independence ───────────────────────────────────────────
-function _flyerNigeriaIndependence() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #16a34a88)">🇳🇬</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#001a08,#00120a)', accentColor:'#16a34a', lightColor:'#86efac', dimColor:'#166534', cream:'#f0fdf4',
-    icon: icon,
-    title:'Happy <span>Independence Day</span>', sub:'October 1 • Nigeria @ 65',
-    message:'Today we celebrate <strong>the Giant of Africa.</strong> 🦁<br><br>64 years of independence, resilience, and pride.<br>Social Plus is built in Nigeria, for Nigeria and the world.<br><br><strong>Happy Independence Day to every Nigerian<br>in our community — we are proud of where we come from!</strong><br><br><strong>— Dave 🇳🇬</strong>',
-    cta:'Naija Dey Connect! 🦅'
-  });
-}
-
-// ── Flyer: New Football Season ────────────────────────────────────────────
-function _flyerNewSeason() {
-  var icon = '<div style="font-size:64px;filter:drop-shadow(0 0 28px #F5C51888)">⚽</div>';
-  return _flyerBase({ bg:'radial-gradient(ellipse 100% 100% at 50% 50%,#080808,#0a0900)', accentColor:'#F5C518', lightColor:'#fde68a', dimColor:'#92400e', cream:'#fffbeb',
-    icon: icon,
-    title:'New <span>Football Season</span>', sub:'2025/26 • Let The Predictions Begin',
-    message:'The wait is over. The whistle has blown. 🏟️<br><br><strong>A brand new season means brand new opportunities</strong><br>— fresh form, fresh squads, fresh odds.<br><br>Social Plus is ready. Are you?<br><br><strong>Follow for daily tips and updates<br>all season long. — Dave ⚽</strong>',
-    cta:'New Season. Same Mission. Win. ⚽'
-  });
-}
-
-// Event Manager row onclick is set directly in HTML — no patch needed.
-
+  // Images that are below the fold should not block the first render.
+  const lazyImages=function(){
+    document.querySelectorAll('img:not([loading])').forEach(function(img){
+      if(!img.closest('.kaiIsland') && !img.dataset.spV4Eager)img.loading='lazy';
+      img.decoding='async';
+    });
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lazyImages,{once:true});
+  else setTimeout(lazyImages,0);
 })();
 </script>
 
@@ -47649,5 +47064,892 @@ body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
   };
 })();
 </script>
+
+<style id="sp-market-v4-css">
+#spMarket,#spMkGate,#spMarketCreate,#spMarketRun,#spMkAdmin{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
+#spMarket *,#spMkGate *,#spMarketCreate *,#spMarketRun *,#spMkAdmin *{box-sizing:border-box;font-family:var(--font)}
+
+/* ===== Shared top bar (App Store style: large title, back chevron, action) ===== */
+.spas-top{flex-shrink:0;padding:0 16px;padding-top:env(safe-area-inset-top);background:var(--bg)}
+.spas-top-row{height:44px;display:flex;align-items:center;justify-content:space-between}
+.spas-circle-btn{width:32px;height:32px;border-radius:50%;border:0;background:rgba(120,120,128,.16);color:var(--text);display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.spas-circle-btn:active{transform:scale(.9)}
+.spas-largetitle{font-size:32px;font-weight:800;letter-spacing:-.6px;color:var(--text);padding:2px 0 12px}
+.spas-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+
+/* ===== Discover / Today-style feature card ===== */
+.spas-feature{position:relative;margin:0 16px 20px;border-radius:26px;overflow:hidden;min-height:210px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;background:linear-gradient(160deg,#2a2440,#151221 65%)}
+.spas-feature.alt{background:linear-gradient(160deg,rgba(245,197,24,.35),#151221 65%)}
+.spas-feature-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.65);margin-bottom:6px}
+.spas-feature-title{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.4px;line-height:1.15;margin-bottom:14px;max-width:85%}
+.spas-feature-btn{align-self:flex-start;border:0;border-radius:999px;padding:9px 20px;background:rgba(255,255,255,.94);color:#000;font-size:13px;font-weight:800;cursor:pointer}
+
+/* ===== Horizontal scroller (Continue Playing style) ===== */
+.spas-hscroll{display:flex;gap:12px;overflow-x:auto;padding:0 16px 6px;-webkit-overflow-scrolling:touch}
+.spas-hscroll::-webkit-scrollbar{display:none}
+.spas-app-tile{flex-shrink:0;width:78px;text-align:center;cursor:pointer}
+.spas-app-tile-icon{width:64px;height:64px;border-radius:17px;overflow:hidden;background:var(--glass);border:1px solid var(--glass-border);margin:0 auto 6px;display:grid;place-items:center;font-weight:800;color:var(--gold);font-size:20px}
+.spas-app-tile-icon img{width:100%;height:100%;object-fit:cover}
+.spas-app-tile span{font-size:10.5px;color:var(--text2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+
+/* ===== Section header ===== */
+.spas-sec-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 16px;margin:22px 0 10px}
+.spas-sec-head b{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.spas-sec-head a{font-size:13px;font-weight:700;color:var(--gold);cursor:pointer}
+
+/* ===== Category grid (real icons, not text chips) ===== */
+.spas-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;padding:0 16px;margin-bottom:8px}
+.spas-cat{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.spas-cat-icon{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;color:#fff}
+.spas-cat span{font-size:10.5px;color:var(--text2);font-weight:700;text-align:center}
+
+/* ===== List row (ranked app list, like Top Charts) ===== */
+.spas-row{display:flex;align-items:center;gap:12px;padding:9px 16px}
+.spas-rank{width:16px;font-size:15px;font-weight:800;color:var(--text3);flex-shrink:0;text-align:center}
+.spas-row-icon{width:54px;height:54px;border-radius:14px;overflow:hidden;background:var(--glass);border:1px solid var(--glass-border);flex-shrink:0;display:grid;place-items:center;font-weight:800;color:var(--gold)}
+.spas-row-icon img{width:100%;height:100%;object-fit:cover}
+.spas-row-info{flex:1;min-width:0}
+.spas-row-info b{display:block;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spas-row-info span{display:block;font-size:11.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spas-get-btn{flex-shrink:0;border:0;border-radius:999px;padding:7px 18px;background:rgba(120,120,128,.18);color:var(--gold);font-size:12.5px;font-weight:800;cursor:pointer;min-width:64px}
+.spas-get-btn.installed{background:transparent;color:var(--text3);border:1px solid var(--glass-border)}
+
+.spas-search-field{margin:8px 16px 6px;height:36px;border-radius:11px;background:rgba(120,120,128,.16);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--text3)}
+.spas-search-field input{border:0;outline:0;background:transparent;flex:1;font-size:15px;color:var(--text)}
+
+.spas-empty{text-align:center;padding:50px 24px;color:var(--text3)}
+.spas-empty svg{margin-bottom:12px;color:var(--text3)}
+.spas-empty b{display:block;font-size:15px;color:var(--text);margin-bottom:6px}
+.spas-empty span{font-size:12.5px;line-height:1.5;max-width:260px;margin:0 auto;display:block}
+
+/* ===== Floating bottom tab bar (App Store: Today/Games/Apps/Search-equivalent) ===== */
+.spas-tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:calc(100% - 32px);max-width:420px;height:60px;display:flex;align-items:center;justify-content:space-around;border-radius:100px;background:rgba(30,30,34,.72);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:52050}
+body.light-mode .spas-tabbar{background:rgba(250,250,252,.78);border-color:rgba(0,0,0,.06)}
+.spas-tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text3);cursor:pointer;flex:1;padding:6px 0}
+.spas-tab.active{color:var(--gold)}
+.spas-tab span{font-size:9.5px;font-weight:700}
+
+/* ===== Account gate (first-open) ===== */
+.spmk-gate-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+.spmk-gate-icon{width:84px;height:84px;border-radius:22px;background:linear-gradient(135deg,var(--gold),#c99a00);display:grid;place-items:center;margin-bottom:22px;box-shadow:0 12px 32px rgba(245,197,24,.28)}
+.spmk-gate-body h1{font-size:23px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin:0 0 8px}
+.spmk-gate-body p{font-size:13.5px;color:var(--text3);line-height:1.55;max-width:290px;margin:0 0 26px}
+.spmk-gate-acct{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:14px 16px;width:100%;max-width:320px;margin-bottom:20px}
+.spmk-gate-avatar{width:46px;height:46px;border-radius:50%;overflow:hidden;background:rgba(245,197,24,.15);display:grid;place-items:center;font-weight:800;color:var(--gold);flex-shrink:0}
+.spmk-gate-avatar img{width:100%;height:100%;object-fit:cover}
+.spmk-gate-acct-info{flex:1;min-width:0;text-align:left}
+.spmk-gate-acct-info b{display:block;font-size:14.5px;font-weight:800;color:var(--text)}
+.spmk-gate-acct-info span{display:block;font-size:11.5px;color:var(--text3);margin-top:2px}
+.spmk-gate-plan-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:8px;flex-shrink:0}
+.spmk-gate-continue{width:100%;max-width:320px;height:50px;border:0;border-radius:16px;background:var(--gold);color:#000;font-size:15px;font-weight:800;cursor:pointer}
+
+/* ===== Create flow ===== */
+.spmc-top{height:56px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--glass-border)}
+.spmc-step{font-size:10.5px;font-weight:800;color:var(--text3);flex:1;text-align:center}
+.spmc-body{flex:1;overflow:auto;padding:18px 16px 100px;-webkit-overflow-scrolling:touch}
+.spmc-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin:0 0 6px}
+.spmc-body p.spmc-sub{font-size:12px;color:var(--text3);line-height:1.5;margin:0 0 20px}
+.spmc-field{margin-bottom:16px}
+.spmc-field label{display:block;font-size:11px;font-weight:800;color:var(--text3);margin-bottom:7px}
+.spmc-field input,.spmc-field textarea{width:100%;border:1px solid var(--glass-border);background:var(--glass);border-radius:14px;padding:12px 13px;font-size:14px;color:var(--text);outline:none;font-family:var(--font)}
+.spmc-field textarea{min-height:90px;resize:none}
+.spmc-icon-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.spmc-icon-preview{width:66px;height:66px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-border);display:grid;place-items:center;overflow:hidden;flex-shrink:0;color:var(--text3)}
+.spmc-icon-preview img{width:100%;height:100%;object-fit:cover}
+.spmc-icon-btn{border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-size:12px;font-weight:700;padding:10px 14px;border-radius:12px;cursor:pointer}
+.spmc-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}
+.spmc-cat{padding:12px 8px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);font-size:11px;font-weight:700;text-align:center;cursor:pointer}
+.spmc-cat.active{background:var(--gold);border-color:var(--gold);color:#000}
+.spmc-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.spmc-mode{padding:12px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);font-size:12px;font-weight:700;text-align:center;cursor:pointer;position:relative}
+.spmc-mode.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.spmc-mode.disabled{opacity:.5;cursor:not-allowed}
+.spmc-mode-soon{position:absolute;top:-7px;right:6px;font-size:8px;font-weight:800;background:var(--gold);color:#000;padding:1px 6px;border-radius:6px}
+.spmc-drop{min-height:150px;border:1.5px dashed var(--glass-border);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:var(--text3);cursor:pointer}
+.spmc-drop b{color:var(--text);font-size:13px}
+.spmc-drop small{font-size:10.5px}
+.spmc-slug-row{display:flex;align-items:center;border:1px solid var(--glass-border);background:var(--glass);border-radius:14px;overflow:hidden}
+.spmc-slug-row span{padding:12px 0 12px 13px;font-size:13px;color:var(--text3);white-space:nowrap}
+.spmc-slug-row input{flex:1;border:0;background:transparent;padding:12px 13px 12px 2px;font-size:13px;color:var(--text);outline:none}
+.spmc-vis{display:grid;gap:9px;margin:6px 0 6px}
+.spmc-vis button{border:1px solid var(--glass-border);background:var(--glass);border-radius:16px;padding:14px;text-align:left;color:var(--text);cursor:pointer;display:flex;align-items:flex-start;gap:10px}
+.spmc-vis button.active{border-color:var(--gold);background:rgba(245,197,24,.08)}
+.spmc-vis button b{display:block;font-size:13px;margin-bottom:3px}
+.spmc-vis button span{display:block;font-size:11px;color:var(--text3);line-height:1.4}
+.spmc-bottom{position:absolute;left:0;right:0;bottom:0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+.spmc-next{width:100%;height:50px;border:0;border-radius:16px;background:var(--gold);color:#000;font-size:14px;font-weight:800;cursor:pointer}
+.spmc-next:disabled{opacity:.4}
+
+/* ===== Runner with floating pill + menu button ===== */
+#spMarketRun{background:#000}
+.spmr-frame{flex:1;border:0;width:100%;background:#fff}
+.spmr-float-pill{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:100px;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;cursor:pointer;max-width:56vw}
+.spmr-float-pill img{width:26px;height:26px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.spmr-float-pill span{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spmr-float-menu{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;display:grid;place-items:center;color:#fff;cursor:pointer}
+.spmr-float-pill:active,.spmr-float-menu:active{transform:scale(.94)}
+
+/* ===== Admin panel ===== */
+.spmka-tabs{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto}
+.spmka-tab{flex-shrink:0;padding:8px 14px;border-radius:999px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer}
+.spmka-tab.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.spmka-req-card{margin:0 16px 12px;padding:14px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-border)}
+.spmka-req-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.spmka-req-top b{font-size:14px;font-weight:800;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spmka-req-top span{font-size:11px;color:var(--text3)}
+.spmka-req-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+.spmka-req-actions{display:flex;gap:8px}
+.spmka-req-actions button{flex:1;height:38px;border-radius:12px;border:0;font-size:12.5px;font-weight:800;cursor:pointer}
+.spmka-btn-approve{background:#30d158;color:#000}
+.spmka-btn-reject{background:rgba(255,69,58,.15);color:#ff453a;border:1px solid rgba(255,69,58,.3) !important}
+.spmka-btn-preview{background:rgba(120,120,128,.16);color:var(--text)}
+</style>
+
+<div id="spMarketRoot"></div>
+
+<script id="sp-market-v4-js">
+(function(){
+'use strict';
+
+var MK_CATS=['Games','Productivity','Education','Finance','Social','Utilities','Entertainment','Creator tools','Other'];
+var MK_CAT_COLORS={Games:'linear-gradient(135deg,#ff375f,#ff6482)',Productivity:'linear-gradient(135deg,#0a84ff,#5ac8fa)',Education:'linear-gradient(135deg,#ff9f0a,#ffd60a)',Finance:'linear-gradient(135deg,#30d158,#66e08a)',Social:'linear-gradient(135deg,#bf5af2,#e6a6ff)',Utilities:'linear-gradient(135deg,#8e8e93,#c7c7cc)',Entertainment:'linear-gradient(135deg,#ff453a,#ff7a70)',"Creator tools":'linear-gradient(135deg,#f5c518,#ffe082)',Other:'linear-gradient(135deg,#5e5ce6,#9d9bff)'};
+var MK_ICONS={
+  back:'<path d="m15 18-6-6 6-6"/>', chevron:'<path d="m9 6 6 6-6 6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  home:'<path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  library:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3.5"/>',
+  code:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  file:'<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  settings:'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a2 2 0 1 1-4 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.8 1.8 0 0 0 2.3 12 1.8 1.8 0 0 0 3.6 9.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.8 1.8 0 0 0 9.5 5V4.8a2 2 0 1 1 4 0V5a1.8 1.8 0 0 0 3.1 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.8 1.8 0 0 0 20.7 12a1.8 1.8 0 0 0-1.3 3Z"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/>',
+  share:'<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 11 7.5-4.5M8.2 13l7.5 4.5"/>',
+  shield:'<path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Z"/>',
+  crown:'<path d="m2 8 4 3 6-7 6 7 4-3-2 12H4L2 8Z"/>',
+  gamepad:'<rect x="2" y="7" width="20" height="12" rx="4"/><path d="M7 10v4M5 12h4M15 11h.01M18 13h.01"/>',
+  bolt:'<path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
+  wallet2:'<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><circle cx="17" cy="15" r="1.4"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2Z"/>',
+  film:'<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/>',
+  brush:'<path d="M9.06 11.9 9 12a3 3 0 0 1-3 3H4v2a2 2 0 0 0 2 2h2a3 3 0 0 0 3-3l-.06-.1"/><path d="m11 12 8.5-8.5a1.5 1.5 0 1 1 2 2L13 14"/>',
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+};
+var MK_CAT_ICON_KEY={Games:'gamepad',Productivity:'bolt',Education:'book',Finance:'wallet2',Social:'users',Utilities:'wrench',Entertainment:'film',"Creator tools":'brush',Other:'grid'};
+function ico(n,s,strokeW){s=s||18;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(strokeW||2)+'" stroke-linecap="round" stroke-linejoin="round">'+(MK_ICONS[n]||MK_ICONS.grid)+'</svg>';}
+function esc(v){return typeof escHtml==='function'?escHtml(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+function me(){return (typeof _myUsernameKey==='function'?_myUsernameKey():(window.currentUser||'')).toLowerCase();}
+function tier(){try{return (typeof getPremiumTier==='function'&&getPremiumTier(me()))||null;}catch(e){return null;}}
+var MK_LIMITS={free:2,pro:10,premium:20,prestige:Infinity};
+function limitFor(){var t=tier();return t?(MK_LIMITS[t.tier]||2):2;}
+function canPublish(){return !!tier();}
+function isAdmin(){try{return !!window.isOwner;}catch(e){return false;}}
+function initials(name){return String(name||'A').trim().charAt(0).toUpperCase();}
+function slugify(s){return String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40)||'app';}
+function myAccount(){try{var accts=JSON.parse(localStorage.getItem('ka_accounts')||'[]');return accts.find(function(a){return (a.username||a.user||'').toLowerCase()===me();})||null;}catch(e){return null;}}
+function myAvatar(){var a=myAccount();return a?(a.pic||a.avatar||''):'';}
+function toast(msg,type){if(typeof showToast==='function')showToast(msg,type);}
+function notifyAdmin(text,kind){if(typeof addNotifForUser==='function')addNotifForUser('plusofficial',text,null,null,kind||'app_market');}
+function notifyUser(user,text,kind){if(typeof addNotifForUser==='function')addNotifForUser(user,text,null,null,kind||'app_market');}
+
+var state={ tab:'discover', active:'All', query:'', apps:[] };
+var create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private' };
+
+function root(){return document.getElementById('spMarketRoot');}
+
+/* ================= ACCOUNT GATE (first open) ================= */
+function gateSeenKey(){return 'sp_market_gate_seen_'+me();}
+window._spV2OpenMarket=async function(){
+  if(!localStorage.getItem(gateSeenKey())){
+    showGate();
+  }else{
+    await openMarketHome();
+  }
+};
+function showGate(){
+  var r=root();
+  var t=tier();
+  var av=myAvatar();
+  r.innerHTML='<div id="spMkGate">'+
+    '<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button><div></div></div></div>'+
+    '<div class="spmk-gate-body">'+
+      '<div class="spmk-gate-icon">'+ico('grid',36,2.2).replace('currentColor','#000')+'</div>'+
+      '<h1>Welcome to App Market</h1>'+
+      '<p>Discover mini apps built by the Social Plus community, or build your own. Continue with your Plus account to get started.</p>'+
+      '<div class="spmk-gate-acct"><div class="spmk-gate-avatar">'+(av?('<img src="'+esc(av)+'">'):esc(initials(window.currentUser)))+'</div><div class="spmk-gate-acct-info"><b>'+esc(window.currentUser||me())+'</b><span>@'+esc(me())+'</span></div><div class="spmk-gate-plan-badge" style="background:'+(t?'rgba(245,197,24,.15);color:var(--gold)':'rgba(120,120,128,.18);color:var(--text3)')+'">'+(t?esc(t.label):'Free')+'</div></div>'+
+      '<button class="spmk-gate-continue" onclick="window._spMkGateContinue()">Continue as '+esc(window.currentUser||'me')+'</button>'+
+    '</div>'+
+  '</div>';
+  document.body.style.overflow='hidden';
+}
+window._spMkGateContinue=async function(){
+  localStorage.setItem(gateSeenKey(),'1');
+  await openMarketHome();
+};
+
+/* ================= MARKET HOME (App Store shell) ================= */
+async function openMarketHome(){
+  var r=root();
+  r.innerHTML='<div id="spMarket"></div>';
+  document.body.style.overflow='hidden';
+  state.apps=await v2LoadApps(true)||[];
+  renderMarket();
+}
+window._spMkClose=function(){
+  ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkAdmin'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+  document.body.style.overflow='';
+};
+function renderMarket(){
+  var host=document.getElementById('spMarket');
+  if(!host)return;
+  if(state.tab==='discover')host.innerHTML=discoverHtml();
+  else if(state.tab==='categories')host.innerHTML=categoriesHtml();
+  else if(state.tab==='library')host.innerHTML=libraryHtml();
+  host.innerHTML+=tabbarHtml();
+}
+function tabbarHtml(){
+  function t(id,icon,label){return '<div class="spas-tab '+(state.tab===id?'active':'')+'" onclick="window._spMkTab(\''+id+'\')">'+ico(icon,22,state.tab===id?2.3:2)+'<span>'+label+'</span></div>';}
+  return '<div class="spas-tabbar">'+t('discover','home','Discover')+t('categories','grid','Categories')+t('library','library','My Apps')+'</div>';
+}
+window._spMkTab=function(id){state.tab=id;renderMarket();};
+
+function pub(){return state.apps.filter(function(a){return a.visibility==='public'&&(a.status==='published');});}
+function mine(){return state.apps.filter(function(a){return String(a.owner||'').toLowerCase()===me();});}
+
+function discoverHtml(){
+  var p=pub();
+  var official=p.filter(function(a){return a.is_official;});
+  var featured=p.filter(function(a){return !a.is_official;}).slice(0,6);
+  var topList=p.slice().sort(function(a,b){return (b.launches||0)-(a.launches||0);}).slice(0,8);
+  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">Discover</div></div>'+
+    '<div class="spas-body">'+
+    '<div class="spas-search-field">'+ico('search',15)+'<input placeholder="Games, Utilities, Social…" value="'+esc(state.query)+'" oninput="window._spMkSearch(this.value)" onkeydown="if(event.key===\'Enter\'){window._spMkTab(\'categories\')}"></div>'+
+    '<div class="spas-feature"><div class="spas-feature-eyebrow">App Market</div><div class="spas-feature-title">Build something people can use</div><button class="spas-feature-btn" onclick="window._spMkCreate()">'+ico('plus',13)+' Build a mini app</button></div>'+
+    (official.length?('<div class="spas-sec-head"><b>Official</b></div><div class="spas-hscroll">'+official.map(function(a){return appTile(a);}).join('')+'</div>'):'')+
+    (featured.length?('<div class="spas-sec-head"><b>Featured</b><a onclick="window._spMkTab(\'categories\')">See All</a></div><div class="spas-hscroll">'+featured.map(function(a){return appTile(a);}).join('')+'</div>'):'')+
+    (topList.length?('<div class="spas-sec-head"><b>Top Apps</b></div>'+topList.map(function(a,i){return appRow(a,i+1);}).join(''))
+      :('<div class="spas-empty">'+ico('grid',34)+'<b>No apps published yet</b><span>Be the first to build one and share it with the community.</span></div>'))+
+    '</div>';
+}
+function categoriesHtml(){
+  var q=state.query.trim().toLowerCase();
+  var p=pub().filter(function(a){
+    var catOk=state.active==='All'||a.category===state.active;
+    var qOk=!q||(a.name||'').toLowerCase().indexOf(q)!==-1;
+    return catOk&&qOk;
+  });
+  var chips=MK_CATS.map(function(c){return c;});
+  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">Categories</div></div>'+
+    '<div class="spas-body">'+
+    '<div class="spas-search-field">'+ico('search',15)+'<input placeholder="Search apps" value="'+esc(state.query)+'" oninput="window._spMkSearch(this.value)"></div>'+
+    '<div class="spas-cat-grid">'+chips.map(function(c){return '<div class="spas-cat" onclick="window._spMkSetActiveCat(\''+c+'\')"><div class="spas-cat-icon" style="background:'+MK_CAT_COLORS[c]+(state.active===c?';box-shadow:0 0 0 2.5px var(--gold)':'')+'">'+ico(MK_CAT_ICON_KEY[c],24,2.1)+'</div><span>'+esc(c)+'</span></div>';}).join('')+'</div>'+
+    '<div class="spas-sec-head"><b>'+(state.active==='All'?'All Apps':esc(state.active))+'</b></div>'+
+    (p.length?p.map(function(a,i){return appRow(a,null);}).join(''):('<div class="spas-empty">'+ico('search',30)+'<b>Nothing here yet</b><span>No published apps in this category.</span></div>'))+
+    '</div>';
+}
+window._spMkSetActiveCat=function(c){state.active=state.active===c?'All':c;renderMarket();};
+function libraryHtml(){
+  var m=mine();
+  var limit=limitFor();
+  return '<div class="spas-top"><div class="spas-top-row"><div></div><button class="spas-circle-btn" onclick="window._spMkClose()">'+ico('close',16)+'</button></div><div class="spas-largetitle">My Apps</div></div>'+
+    '<div class="spas-body">'+
+    '<div class="spas-sec-head"><b>Your projects</b><span style="font-size:12px;color:var(--text3);font-weight:700">'+m.length+'/'+(limit===Infinity?'&infin;':limit)+'</span></div>'+
+    (m.length?m.map(function(a){return appRow(a,null,true);}).join(''):('<div class="spas-empty">'+ico('grid',30)+'<b>You haven&#39;t built anything yet</b><span>Tap the + button to create your first mini app.</span></div>'))+
+    '<div style="padding:20px 16px 0"><button class="spmk-gate-continue" style="max-width:none" onclick="window._spMkCreate()">'+ico('plus',15)+' Build a mini app</button></div>'+
+    (isAdmin()?('<div style="padding:14px 16px 0"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkAdminOpen()">'+ico('shield',15)+' App Market Admin</button></div>'):'')+
+    '</div>';
+}
+function appTile(a){
+  var iconHtml=a.logo?('<img src="'+esc(a.logo)+'">'):esc(initials(a.name));
+  return '<div class="spas-app-tile" onclick="window._spMkOpen(\''+esc(a.id)+'\')"><div class="spas-app-tile-icon">'+iconHtml+'</div><span>'+esc(a.name)+'</span></div>';
+}
+function appRow(a,rank,mineList){
+  var iconHtml=a.logo?('<img src="'+esc(a.logo)+'">'):esc(initials(a.name));
+  var statusTxt=a.category||'App';
+  if(mineList){
+    if(a.review_status==='pending')statusTxt='Pending review';
+    else if(a.review_status==='rejected')statusTxt='Rejected — tap to edit';
+    else if(a.review_status==='revoked')statusTxt='Removed by admin';
+    else if(a.visibility==='public')statusTxt='Published · '+(a.category||'');
+    else statusTxt='Private · '+(a.category||'');
+  }
+  return '<div class="spas-row" onclick="'+(mineList?('window._spMkManage(\''+esc(a.id)+'\')'):('window._spMkOpen(\''+esc(a.id)+'\')'))+'">'+
+    (rank?('<div class="spas-rank">'+rank+'</div>'):'')+
+    '<div class="spas-row-icon">'+iconHtml+'</div>'+
+    '<div class="spas-row-info"><b>'+esc(a.name)+(a.is_official?' <span style="color:var(--gold)">✓</span>':'')+'</b><span>'+esc(statusTxt)+'</span></div>'+
+    '<button class="spas-get-btn" onclick="event.stopPropagation();window._spMk'+(mineList?'Manage':'Open')+'(\''+esc(a.id)+'\')">'+(mineList?ico('settings',15).replace('currentColor','var(--text3)'):'OPEN')+'</button>'+
+  '</div>';
+}
+window._spMkSearch=function(v){state.query=v;if(state.tab==='discover')state.tab='categories';renderMarket();};
+
+/* ================= OPEN / RUN ================= */
+window._spMkOpen=async function(id){
+  var apps=state.apps.length?state.apps:await v2LoadApps();
+  var app=apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  var isOwner=String(app.owner||'').toLowerCase()===me();
+  var isPublic=app.visibility==='public'&&app.status==='published';
+  if(!isOwner&&!isPublic){toast('This app is private','error');return;}
+  var locked=!canPublish()&&app.trial_expires_at&&new Date(app.trial_expires_at).getTime()<=Date.now();
+  if(locked){toast('This free project has expired. Upgrade to keep using it.','error');return;}
+  app.launches=(app.launches||0)+1;
+  SB.upsert('mini_apps',{id:app.id,launches:app.launches},'id').catch(function(){});
+  var r=root();
+  var shell=document.createElement('div');
+  shell.id='spMarketRun';
+  shell.innerHTML='<iframe class="spmr-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>'+
+    '<div class="spmr-float-pill" onclick="window._spMkExitRun()">'+(app.logo?('<img src="'+esc(app.logo)+'">'):'')+'<span>'+esc(app.name)+'</span></div>'+
+    '<div class="spmr-float-menu" onclick="window._spMkRunMenu(\''+esc(app.id)+'\')">'+ico('more',18)+'</div>';
+  r.appendChild(shell);
+  var frame=shell.querySelector('iframe');
+  frame.srcdoc=app.html||'<!doctype html><html><body style="font-family:sans-serif;padding:24px;color:#333">This app has no content yet.</body></html>';
+};
+window._spMkExitRun=function(){var el=document.getElementById('spMarketRun');if(el)el.remove();};
+window._spMkRunMenu=function(id){window._spMkManage(id,true);};
+
+/* ================= MANAGE (owner) ================= */
+window._spMkManage=function(id,fromRunner){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  var isOwnerApp=String(app.owner||'').toLowerCase()===me();
+  var sheet=document.createElement('div');
+  sheet.id='spMkManageSheet';
+  sheet.style.cssText='position:fixed;inset:0;z-index:52300;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
+  var statusLine=app.review_status==='pending'?'Awaiting admin review':app.review_status==='rejected'?('Rejected'+(app.review_note?(' — '+esc(app.review_note)):'')):app.review_status==='revoked'?('Removed by admin'+(app.review_note?(' — '+esc(app.review_note)):'')):app.visibility==='public'?'Published to App Market':'Private';
+  sheet.innerHTML='<div style="width:100%;max-width:520px;margin:0 auto;background:var(--bg);border:1px solid var(--glass-border);border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))">'+
+    '<div style="width:34px;height:4px;background:var(--glass-border);border-radius:3px;margin:0 auto 16px"></div>'+
+    '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px">'+esc(app.name)+'</div>'+
+    '<div style="font-size:11.5px;color:var(--text3);margin-bottom:14px">'+statusLine+'</div>'+
+    (fromRunner?'':'<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkOpen(\''+esc(id)+'\');document.getElementById(\'spMkManageSheet\').remove()">Open app</button>')+
+    (isOwnerApp&&!app.is_official?(
+      publishActionHtml(app)+
+      '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShare(\''+esc(id)+'\')">'+ico('share',14)+' Share link</button>'+
+      '<button class="spmk-gate-continue" style="height:44px;max-width:none;background:rgba(255,69,58,.12);color:#ff453a" onclick="window._spMkDelete(\''+esc(id)+'\')">'+ico('trash',14)+' Delete app</button>'
+    ):(app.is_official?'<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0">'+ico('lock',12)+' Official app — cannot be removed</div>':''))+
+  '</div>';
+  document.body.appendChild(sheet);
+  sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.remove();});
+};
+function publishActionHtml(app){
+  if(app.visibility==='public'){
+    return '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkUnpublish(\''+esc(app.id)+'\')">'+ico('lock',14)+' Set to private</button>';
+  }
+  if(app.review_status==='pending'){
+    return '<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('clock',13)+' Waiting for admin approval</div>';
+  }
+  if(canPublish()){
+    return '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px" onclick="window._spMkPublish(\''+esc(app.id)+'\')">'+ico('globe',14).replace('currentColor','#000')+' Upload to App Market</button>';
+  }
+  return '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px" onclick="window._spMkRequestUpload(\''+esc(app.id)+'\')">'+ico('globe',14).replace('currentColor','#000')+' Request Upload</button>';
+}
+window._spMkShare=async function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  var url=location.origin+'/app/'+encodeURIComponent(app&&app.slug?app.slug:id);
+  try{await navigator.clipboard.writeText(url);toast('Link copied','success');}catch(e){toast(url,'success');}
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+};
+window._spMkPublish=async function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app||!canPublish())return;
+  app.visibility='public';app.status='published';app.review_status='published';app.updated_at=new Date().toISOString();
+  await SB.upsert('mini_apps',{id:app.id,visibility:app.visibility,status:app.status,review_status:app.review_status,updated_at:app.updated_at},'id');
+  toast('Published to App Market','success');
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  renderMarket();
+};
+window._spMkUnpublish=async function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  app.visibility='private';app.status='private';app.review_status='none';app.updated_at=new Date().toISOString();
+  await SB.upsert('mini_apps',{id:app.id,visibility:app.visibility,status:app.status,review_status:app.review_status,updated_at:app.updated_at},'id');
+  toast('Set to private','success');
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  renderMarket();
+};
+window._spMkRequestUpload=async function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  var priv=await SB.query('mini_app_uploader_privileges','?username=eq.'+encodeURIComponent(me())+'&select=can_request_upload&limit=1').catch(function(){return [];});
+  if(priv&&priv[0]&&priv[0].can_request_upload===false){toast('Your upload privileges have been revoked','error');var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();return;}
+  app.review_status='pending';app.updated_at=new Date().toISOString();
+  await SB.upsert('mini_apps',{id:app.id,review_status:app.review_status,updated_at:app.updated_at},'id');
+  notifyAdmin(esc(window.currentUser||me())+' requested App Market upload for "'+app.name+'"','app_market_request');
+  toast('Request sent — you&#39;ll be notified once reviewed','success');
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  renderMarket();
+};
+window._spMkDelete=function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app||app.is_official)return;
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  var doDelete=async function(){
+    await SB.delete('mini_apps','id=eq.'+encodeURIComponent(id)).catch(function(){});
+    state.apps=state.apps.filter(function(a){return a.id!==id;});
+    toast('App deleted','success');
+    renderMarket();
+  };
+  if(typeof window._islandConfirm==='function'){
+    window._islandConfirm('Delete "'+app.name+'"? This cannot be undone.',doDelete,{icon:'block'});
+  }else if(confirm('Delete "'+app.name+'"?')){doDelete();}
+};
+
+/* ================= CREATE FLOW ================= */
+window._spMkCreate=function(){
+  var m=mine();
+  if(m.length>=limitFor()){toast('Project limit reached for your plan','error');return;}
+  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private' };
+  var r=root();
+  var wiz=document.createElement('div');
+  wiz.id='spMarketCreate';
+  r.appendChild(wiz);
+  renderCreate();
+};
+window._spMkCloseCreate=function(){var el=document.getElementById('spMarketCreate');if(el)el.remove();};
+function stepLabel(){return 'Step '+create.step+' of 5';}
+function renderCreate(){
+  var wiz=document.getElementById('spMarketCreate');
+  if(!wiz)return;
+  var body='',canNext=true;
+  if(create.step===1){
+    body='<h2>Name your app</h2><p class="spmc-sub">Give it a clear name and a short description.</p>'+
+      '<div class="spmc-field"><label>App name</label><input value="'+esc(create.name)+'" placeholder="e.g. Budget Tracker" oninput="window._spMkSet(\'name\',this.value)"></div>'+
+      '<div class="spmc-field"><label>Description</label><textarea placeholder="What does your app do?" oninput="window._spMkSet(\'desc\',this.value)">'+esc(create.desc)+'</textarea></div>';
+    canNext=create.name.trim().length>0;
+  }else if(create.step===2){
+    var iconInner=create.logo?('<img src="'+esc(create.logo)+'">'):esc(initials(create.name));
+    body='<h2>Pick a category</h2><p class="spmc-sub">Add an icon and choose where it shows up in the market.</p>'+
+      '<div class="spmc-icon-row"><div class="spmc-icon-preview">'+iconInner+'</div><button class="spmc-icon-btn" onclick="document.getElementById(\'mkIconFile\').click()">'+ico('camera',14)+' Upload icon</button><input id="mkIconFile" type="file" accept="image/*" style="display:none" onchange="window._spMkIconPick(event)"></div>'+
+      '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>';
+    canNext=true;
+  }else if(create.step===3){
+    body='<h2>Build it</h2><p class="spmc-sub">Upload a ready HTML file. It runs inside a sandboxed frame and can be installed to the home screen once published.</p>'+
+      '<div class="spmc-modes"><div class="spmc-mode '+(create.mode==='file'?'active':'')+'" onclick="window._spMkSet(\'mode\',\'file\')">'+ico('file',14)+' Upload HTML</div><div class="spmc-mode disabled">'+ico('code',14)+' Write code<span class="spmc-mode-soon">SOON</span></div></div>'+
+      '<div class="spmc-drop" onclick="document.getElementById(\'mkHtmlFile\').click()">'+ico('file',28)+'<b>'+(create.html?'HTML loaded — tap to replace':'Choose your HTML file')+'</b><small>One self-contained .html file, under 900KB</small></div><input id="mkHtmlFile" type="file" accept=".html,.htm,text/html" style="display:none" onchange="window._spMkFilePick(event)">';
+    canNext=create.html.trim().length>0;
+  }else if(create.step===4){
+    if(!create.slug)create.slug=slugify(create.name);
+    body='<h2>Choose a link</h2><p class="spmc-sub">This is where your app lives once published. Letters, numbers and dashes only.</p>'+
+      '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input value="'+esc(create.slug)+'" oninput="window._spMkSet(\'slug\',this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\'))"></div></div>';
+    canNext=create.slug.trim().length>0;
+  }else{
+    var willRequest=!canPublish();
+    body='<h2>Ready to finish</h2><p class="spmc-sub">Choose who can see this app. You can change this anytime from My Apps.</p>'+
+      '<div class="spmc-vis"><button class="'+(create.visibility==='private'?'active':'')+'" onclick="window._spMkSet(\'visibility\',\'private\')">'+ico('lock',16)+'<div><b>Keep private</b><span>Only you can open it</span></div></button>'+
+      '<button class="'+(create.visibility==='public'?'active':'')+'" onclick="window._spMkSet(\'visibility\',\'public\')">'+ico('globe',16)+'<div><b>'+(willRequest?'Request App Market upload':'Publish to App Market')+'</b><span>'+(willRequest?'Sent for admin review — your app stays private until approved':'Goes live immediately, visible to everyone')+'</span></div></button></div>'+
+      (willRequest?'':'');
+    canNext=true;
+  }
+  wiz.innerHTML='<div class="spmc-top"><button class="spas-circle-btn" onclick="'+(create.step>1?'window._spMkBack()':'window._spMkCloseCreate()')+'">'+ico('back',16)+'</button><div class="spmc-step">'+stepLabel()+'</div><button class="spas-circle-btn" onclick="window._spMkCloseCreate()">'+ico('close',16)+'</button></div>'+
+    '<div class="spmc-body">'+body+'</div>'+
+    '<div class="spmc-bottom"><button class="spmc-next" '+(canNext?'':'disabled')+' onclick="window._spMkNext()">'+(create.step===5?'Create app':'Continue')+'</button></div>';
+}
+window._spMkSet=function(k,v){create[k]=v;renderCreate();};
+window._spMkBack=function(){if(create.step>1){create.step--;renderCreate();}};
+window._spMkNext=function(){
+  if(create.step<5){create.step++;renderCreate();return;}
+  finishCreate();
+};
+window._spMkIconPick=function(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  ev.target.value='';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var size=256;
+      var c=document.createElement('canvas');c.width=size;c.height=size;
+      var ctx=c.getContext('2d');
+      var s=Math.min(img.width,img.height);
+      var sx=(img.width-s)/2, sy=(img.height-s)/2;
+      ctx.drawImage(img,sx,sy,s,s,0,0,size,size);
+      create.logo=c.toDataURL('image/jpeg',0.85);
+      renderCreate();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+window._spMkFilePick=function(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  ev.target.value='';
+  if(file.size>900*1024){toast('File too large — keep it under 900KB','error');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){create.html=e.target.result;renderCreate();};
+  reader.readAsText(file);
+};
+async function finishCreate(){
+  var id='mk_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  var now=new Date().toISOString();
+  var wantsPublic=create.visibility==='public';
+  var canGoPublic=wantsPublic&&canPublish();
+  var willRequest=wantsPublic&&!canPublish();
+  var slug=slugify(create.slug||create.name);
+  var existing=await SB.query('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
+  if(existing&&existing.length)slug=slug+'-'+Math.random().toString(36).slice(2,5);
+  var row={
+    id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
+    category:create.cat, logo:create.logo||null, html:create.html, slug:slug,
+    visibility:canGoPublic?'public':'private',
+    status:canGoPublic?'published':'private',
+    review_status:canGoPublic?'published':(willRequest?'pending':'none'),
+    is_official:false,
+    trial_expires_at:canPublish()?null:new Date(Date.now()+24*60*60*1000).toISOString(),
+    created_at:now, updated_at:now, launches:0
+  };
+  try{await SB.upsert('mini_apps',row,'id');}catch(e){console.warn('[App Market] create failed',e);}
+  state.apps.push(row);
+  window._spMkCloseCreate();
+  if(willRequest){
+    notifyAdmin(esc(window.currentUser||me())+' requested App Market upload for "'+row.name+'"','app_market_request');
+    toast('App created — upload request sent for review','success');
+  }else{
+    toast('App created','success');
+  }
+  renderMarket();
+  window._spMkOpen(id);
+}
+
+/* ================= ADMIN PANEL ================= */
+window._spMkAdminOpen=async function(){
+  if(!isAdmin())return;
+  var r=root();
+  var wrap=document.createElement('div');
+  wrap.id='spMkAdmin';
+  r.appendChild(wrap);
+  window._spMkAdminTab='pending';
+  await renderAdmin();
+};
+window._spMkAdminClose=function(){var el=document.getElementById('spMkAdmin');if(el)el.remove();};
+async function renderAdmin(){
+  var wrap=document.getElementById('spMkAdmin');
+  if(!wrap)return;
+  var all=await SB.query('mini_apps','?order=updated_at.desc&limit=500').catch(function(){return [];})||[];
+  var pending=all.filter(function(a){return a.review_status==='pending';});
+  var live=all.filter(function(a){return a.visibility==='public'&&!a.is_official;});
+  var tab=window._spMkAdminTab||'pending';
+  var tabs=['pending','live','revoked'];
+  var list=tab==='pending'?pending:tab==='live'?live:all.filter(function(a){return a.review_status==='revoked'||a.review_status==='rejected';});
+  wrap.innerHTML='<div class="spas-top"><div class="spas-top-row"><button class="spas-circle-btn" onclick="window._spMkAdminClose()">'+ico('back',16)+'</button><div></div></div><div class="spas-largetitle">App Market Admin</div></div>'+
+    '<div class="spas-body">'+
+    '<div class="spmka-tabs">'+tabs.map(function(t){var n=t==='pending'?pending.length:t==='live'?live.length:'';return '<div class="spmka-tab '+(tab===t?'active':'')+'" onclick="window._spMkAdminTab=\''+t+'\';window._spMkAdminRefresh()">'+t.charAt(0).toUpperCase()+t.slice(1)+(n!==''?(' ('+n+')'):'')+'</div>';}).join('')+'</div>'+
+    (list.length?list.map(function(a){return adminCard(a,tab);}).join(''):('<div class="spas-empty">'+ico('shield',30)+'<b>Nothing here</b><span>'+(tab==='pending'?'No pending upload requests right now.':'Nothing to show.')+'</span></div>'))+
+    '</div>';
+}
+window._spMkAdminRefresh=function(){renderAdmin();};
+function adminCard(a,tab){
+  var iconHtml=a.logo?('<img src="'+esc(a.logo)+'" style="width:44px;height:44px;border-radius:12px;object-fit:cover">'):('<div style="width:44px;height:44px;border-radius:12px;background:var(--glass);display:grid;place-items:center;font-weight:800;color:var(--gold)">'+esc(initials(a.name))+'</div>');
+  return '<div class="spmka-req-card">'+
+    '<div class="spmka-req-top">'+iconHtml+'<b>'+esc(a.name)+'</b><span>by '+esc(a.owner)+'</span></div>'+
+    '<div class="spmka-req-desc">'+esc(a.description||'No description provided.')+'</div>'+
+    '<div class="spmka-req-actions">'+
+      '<button class="spmka-btn-preview" onclick="window._spMkAdminPreview(\''+esc(a.id)+'\')">Preview</button>'+
+      (tab==='pending'?('<button class="spmka-btn-approve" onclick="window._spMkAdminApprove(\''+esc(a.id)+'\')">Approve</button><button class="spmka-btn-reject" onclick="window._spMkAdminReject(\''+esc(a.id)+'\')">Reject</button>'):'')+
+      (tab==='live'?('<button class="spmka-btn-reject" onclick="window._spMkAdminRevoke(\''+esc(a.id)+'\')">Remove</button><button class="spmka-btn-reject" onclick="window._spMkAdminRevokePriv(\''+esc(a.owner)+'\')">Revoke user</button>'):'')+
+    '</div></div>';
+}
+window._spMkAdminPreview=async function(id){
+  var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1').catch(function(){return [];});
+  var app=rows&&rows[0];if(!app)return;
+  var shell=document.createElement('div');
+  shell.id='spMarketRun';
+  shell.style.zIndex='52400';
+  shell.innerHTML='<iframe class="spmr-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>'+
+    '<div class="spmr-float-menu" style="left:14px;right:auto" onclick="this.closest(\'#spMarketRun\').remove()">'+ico('close',18)+'</div>';
+  root().appendChild(shell);
+  shell.querySelector('iframe').srcdoc=app.html||'';
+};
+window._spMkAdminApprove=async function(id){
+  await SB.upsert('mini_apps',{id:id,visibility:'public',status:'published',review_status:'published',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
+  var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+  if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was approved and is now live on the App Market! 🎉','app_market_approved');
+  toast('Approved','success');
+  renderAdmin();
+};
+window._spMkAdminReject=function(id){
+  if(typeof window._islandConfirm==='function'){
+    window._islandConfirm('Reject this app? The developer can edit and resubmit.',async function(){
+      await SB.upsert('mini_apps',{id:id,review_status:'rejected',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
+      var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+      if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was not approved for App Market. You can edit it and try again.','app_market_rejected');
+      toast('Rejected','success');
+      renderAdmin();
+    });
+  }
+};
+window._spMkAdminRevoke=function(id){
+  if(typeof window._islandConfirm==='function'){
+    window._islandConfirm('Remove this app from the App Market for a guideline violation?',async function(){
+      await SB.upsert('mini_apps',{id:id,visibility:'private',status:'private',review_status:'revoked',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
+      var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+      if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was removed from the App Market for violating community guidelines.','app_market_revoked');
+      toast('Removed from App Market','success');
+      renderAdmin();
+    },{icon:'block'});
+  }
+};
+window._spMkAdminRevokePriv=function(owner){
+  if(typeof window._islandConfirm==='function'){
+    window._islandConfirm('Revoke '+owner+"'s ability to request App Market uploads?",async function(){
+      await SB.upsert('mini_app_uploader_privileges',{username:owner,can_request_upload:false,revoked_at:new Date().toISOString(),revoked_by:me()},'username').catch(function(){});
+      notifyUser(owner,'Your App Market upload privileges have been revoked.','app_market_priv_revoked');
+      toast('Upload privileges revoked','success');
+    },{icon:'block'});
+  }
+};
+
+/* ================= Deep link + ad CTA compatibility ================= */
+window._spV2OpenApp=async function(id){
+  if(!state.apps.length){state.apps=await v2LoadApps(true);}
+  if(!document.getElementById('spMarket')&&!document.getElementById('spMkGate')){await window._spV2OpenMarket();}
+  window._spMkOpen(id);
+};
+function earlyRoute(){
+  var s=new URLSearchParams(location.search);
+  var id=s.get('miniapp');
+  if(!id)return;
+  v2LoadApps().then(function(apps){
+    state.apps=apps||[];
+    var app=apps.find(function(a){return a.id===id||a.slug===id;});
+    if(app)window._spV2OpenApp(app.id);
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(earlyRoute,300);});
+else setTimeout(earlyRoute,300);
+
+})();
+</script>
+<script id="sp-feed-premium-engine">
+(function(){
+'use strict';
+const nativeLoadPosts=window.loadPosts;
+let refreshing=false, probeTimer=null, hiddenAt=0;
+function home(){return typeof _currentActiveTab==='undefined'||_currentActiveTab==='home'}
+function skeleton(){try{const c=document.getElementById('postsContainer');if(c&&typeof _buildFeedSkeleton==='function'){c.classList.add('sp-feed-refreshing');c.innerHTML=_buildFeedSkeleton(5,'predictions')}}catch(e){}}
+function unskeleton(){const c=document.getElementById('postsContainer');if(c)c.classList.remove('sp-feed-refreshing')}
+async function smartRefresh(reason){
+ if(typeof nativeLoadPosts!=='function')return; if(document.visibilityState!=='visible'||!home()){ return nativeLoadPosts(); } if(refreshing)return;
+ refreshing=true;
+ const started=performance.now();
+ const hasContent=Array.isArray(window.posts)?posts.length>0:!!document.querySelector('#postsContainer .post-card,#postsContainer .post');
+ if(hasContent)skeleton();
+ try{await nativeLoadPosts();}finally{
+   const wait=Math.max(0,180-(performance.now()-started));
+   setTimeout(()=>{unskeleton();refreshing=false},wait);
+ }
+}
+window.loadPosts=async function(){return smartRefresh('manual')};
+async function probe(){
+ if(refreshing||document.visibilityState!=='visible'||!home()||typeof SB==='undefined')return;
+ try{
+   const rows=await SB.query('posts','?select=id,timestamp&order=timestamp.desc&limit=1').catch(()=>[]);
+   const latest=rows&&rows[0];
+   if(!latest)return;
+   const local=Array.isArray(window.posts)?window.posts:[];
+   const newest=local.reduce((m,p)=>Math.max(m,new Date(p.timestamp||0).getTime()||0),0);
+   const remote=new Date(latest.timestamp||0).getTime()||0;
+   if(remote>newest){await smartRefresh('new-post')}
+   else if(window._postsLastLoaded&&Date.now()-window._postsLastLoaded>150000){await smartRefresh('stale')}
+ }catch(e){}
+}
+function start(){
+ if(probeTimer)return;
+ // The first pass deliberately uses the skeleton when the feed is coming
+ // from an old local snapshot, then paints the fresh server result.
+ setTimeout(()=>probe(),450);
+ probeTimer=setInterval(probe,30000);
+}
+window.addEventListener('visibilitychange',function(){
+ if(document.visibilityState==='hidden'){hiddenAt=Date.now();return}
+ if(Date.now()-hiddenAt>1200)setTimeout(probe,120);
+},{passive:true});
+window.addEventListener('pageshow',function(e){if(e.persisted)setTimeout(probe,100)});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+
+
+<script id="sp-final-market-ads-patch">
+(function(){
+'use strict';
+
+/* ── Ad template library ─────────────────────────────────────────────── */
+var SP_AD_TEMPLATES = [
+  {id:'premium_post', format:'post', name:'Premium · Full Post', title:'Unlock more with Plus Premium', body:'Get premium features, profile artifacts and more on Social Plus.', cta:'Explore Premium', ctaType:'premium', placements:['feed','home_top']},
+  {id:'market_post', format:'post', name:'App Market · Full Post', title:'Discover apps made for Social Plus', body:'Open the App Market and find useful mini apps without leaving Social Plus.', cta:'Open App Market', ctaType:'app_market', placements:['feed','home_top']},
+  {id:'creator_post', format:'post', name:'Creator · Full Post', title:'Build your audience on Social Plus', body:'Create posts, channels and a profile people remember.', cta:'Create', ctaType:'home', placements:['feed','home_top']},
+  {id:'earn_post', format:'post', name:'Earn · Full Post', title:'Earn more. Do more.', body:'Explore available tasks and ways to earn Plus Coins on Social Plus.', cta:'Explore', ctaType:'earn', placements:['feed','home_bottom']},
+  {id:'premium_card', format:'card', name:'Premium · Card', title:'Go Premium', body:'Unlock more features on Social Plus.', cta:'Explore', ctaType:'premium', placements:['channel_top','comment_thread','messages_list','home_top']},
+  {id:'market_card', format:'card', name:'App Market · Card', title:'Mini apps are here', body:'Open App Market and discover something useful.', cta:'Open Market', ctaType:'app_market', placements:['channel_top','comment_thread','messages_list','home_top']},
+  {id:'creator_card', format:'card', name:'Creator · Card', title:'Create on Social Plus', body:'Build posts, channels and your community.', cta:'Create', ctaType:'home', placements:['channel_top','comment_thread','messages_list','home_top']},
+  {id:'earn_card', format:'card', name:'Earn · Card', title:'Earn on Social Plus', body:'See available earning tasks and rewards.', cta:'Explore', ctaType:'earn', placements:['channel_top','comment_thread','messages_list','home_bottom']}
+];
+
+function _spAdTemplateApply(t){
+  var type=document.getElementById('saAdType');
+  if(type){type.value=t.format; if(typeof _syncSelectDisplay==='function')_syncSelectDisplay('saAdType','saAdTypeDisplayLabel');}
+  var title=document.getElementById('saAdTitle'), body=document.getElementById('saAdBody'), cta=document.getElementById('saAdCtaLabel'), ctype=document.getElementById('saAdCtaType');
+  if(title)title.value=t.title;
+  if(body)body.value=t.body;
+  if(cta)cta.value=t.cta;
+  if(ctype){ctype.value=t.ctaType; if(typeof _syncSelectDisplay==='function')_syncSelectDisplay('saAdCtaType','saAdCtaTypeDisplayLabel');}
+  var placementMap={
+    feed:'saAdPlaceFeed',channel_top:'saAdPlaceChannel',comment_thread:'saAdPlaceComment',
+    messages_list:'saAdPlaceMessages',home_top:'spAdPlaceHomeTop',home_bottom:'spAdPlaceHomeBottom'
+  };
+  Object.keys(placementMap).forEach(function(k){
+    var el=document.getElementById(placementMap[k]); if(el)el.checked=t.placements.indexOf(k)!==-1;
+  });
+  if(typeof window._saAdCtaTypeChanged==='function')window._saAdCtaTypeChanged();
+  if(typeof window._spV2PatchAdEditor==='function')window._spV2PatchAdEditor();
+  showToast(t.name+' loaded — edit anything before saving','success');
+}
+
+function _spInstallAdTemplateUI(){
+  var typeDisplay=document.getElementById('saAdTypeDisplay');
+  if(!typeDisplay || document.getElementById('spAdTemplateBox'))return;
+  var box=document.createElement('div');
+  box.id='spAdTemplateBox';
+  box.style.cssText='margin:2px 0 15px;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid var(--glass-border);';
+  box.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Quick templates</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">'+
+    SP_AD_TEMPLATES.map(function(t){
+      return '<button type="button" onclick="window._spApplyAdTemplate(&quot;'+t.id+'&quot;)" style="text-align:left;padding:10px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid var(--glass-border);color:var(--text);font:700 11px var(--font);cursor:pointer;">'+
+        '<span style="display:block;color:var(--text);">'+t.name+'</span><small style="display:block;margin-top:3px;color:var(--text3);font-size:9.5px;">'+(t.format==='post'?'Large feed ad':'Compact card ad')+'</small></button>';
+    }).join('')+'</div>'+
+    '<div style="font-size:10px;color:var(--text3);line-height:1.4;margin-top:8px;">Templates only fill the editor. You can change every detail before saving.</div>';
+  typeDisplay.parentNode.insertBefore(box,typeDisplay.nextSibling);
+}
+window._spApplyAdTemplate=function(id){
+  var t=SP_AD_TEMPLATES.find(function(x){return x.id===id}); if(t)_spAdTemplateApply(t);
+};
+
+/* Add two real homepage placements to the existing ad editor. */
+function _spInstallHomePlacementUI(){
+  var feed=document.getElementById('saAdPlaceFeed');
+  if(!feed || document.getElementById('spAdHomePlacementRows'))return;
+  var row=feed.closest('div');
+  if(!row)return;
+  var wrap=document.createElement('div');
+  wrap.id='spAdHomePlacementRows';
+  wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px;';
+  wrap.innerHTML=
+    '<label style="font-size:12.5px;color:var(--text2);font-weight:600;display:flex;align-items:center;gap:9px;cursor:pointer;">'+
+      '<input type="checkbox" id="spAdPlaceHomeTop" style="width:17px;height:17px;accent-color:var(--gold);flex-shrink:0;"/> Home top · near the start of the feed</label>'+
+    '<label style="font-size:12.5px;color:var(--text2);font-weight:600;display:flex;align-items:center;gap:9px;cursor:pointer;">'+
+      '<input type="checkbox" id="spAdPlaceHomeBottom" style="width:17px;height:17px;accent-color:var(--gold);flex-shrink:0;"/> Home bottom · after the loaded posts</label>';
+  row.appendChild(wrap);
+}
+
+function _spReadHomePlacements(){
+  var p=[];
+  if(document.getElementById('spAdPlaceHomeTop')?.checked)p.push('home_top');
+  if(document.getElementById('spAdPlaceHomeBottom')?.checked)p.push('home_bottom');
+  return p;
+}
+
+/* Wrap the original save so the new placements are persisted. */
+var _spNativeSaveAd=window._saSaveAd;
+if(typeof _spNativeSaveAd==='function' && !window._spFinalSaveAdPatched){
+  window._spFinalSaveAdPatched=true;
+  window._saSaveAd=async function(){
+    var home=_spReadHomePlacements();
+    var feed=document.getElementById('saAdPlaceFeed');
+    var channel=document.getElementById('saAdPlaceChannel');
+    var comment=document.getElementById('saAdPlaceComment');
+    var messages=document.getElementById('saAdPlaceMessages');
+    var type=document.getElementById('saAdType')?.value;
+    /* Temporarily treat home placements as compatible with both formats.
+       The native validator only knows the original four placements. */
+    var originalChecked={};
+    if(feed)originalChecked.feed=feed.checked;
+    if(channel)originalChecked.channel=channel.checked;
+    if(comment)originalChecked.comment=comment.checked;
+    if(messages)originalChecked.messages=messages.checked;
+    if(home.length && !feed.checked && type==='post')feed.checked=true;
+    if(home.length && !channel.checked && type==='card')channel.checked=true;
+    try{
+      await _spNativeSaveAd();
+    }finally{
+      if(feed)feed.checked=originalChecked.feed;
+      if(channel)channel.checked=originalChecked.channel;
+      if(comment)comment.checked=originalChecked.comment;
+      if(messages)messages.checked=originalChecked.messages;
+    }
+    var ads=await _loadAdsConfig(true);
+    var idx=window._saEditingAdIndex;
+    var ad=idx!==null&&idx!==undefined?ads[idx]:ads[ads.length-1];
+    if(ad){
+      var base=(ad.placements||[]).filter(function(x){return x!=='home_top'&&x!=='home_bottom';});
+      home.forEach(function(x){if(base.indexOf(x)<0)base.push(x);});
+      ad.placements=base;
+      await _saveAdsConfig(ads);
+      window._spV2CurrentAds=ads;
+    }
+  };
+}
+
+/* Render homepage ads in an additional stable slot, independent of random
+   insertion among posts. */
+async function _spRenderHomeAds(){
+  var container=document.getElementById('postsContainer');
+  if(!container)return;
+  var old=document.getElementById('spHomeAdTop'); if(old)old.remove();
+  var oldB=document.getElementById('spHomeAdBottom'); if(oldB)oldB.remove();
+  if(typeof _amIAdFree==='function' && _amIAdFree())return;
+  var ads=await _loadAdsConfig(false);
+  var top=(ads||[]).filter(function(a){return a.enabled!==false&&(a.placements||[]).indexOf('home_top')!==-1;});
+  var bottom=(ads||[]).filter(function(a){return a.enabled!==false&&(a.placements||[]).indexOf('home_bottom')!==-1;});
+  function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+  if(top.length){
+    var a=pick(top), node=document.createElement('div');node.id='spHomeAdTop';node.innerHTML=(a.type==='card'?_buildAdCardCompact(a):_buildAdPostCard(a));container.insertBefore(node,container.firstChild);if(!_adSessionSeen.has(a.id)){_adSessionSeen.add(a.id);_bumpAdStat(a.id,'impressions');}
+  }
+  if(bottom.length){
+    var b=pick(bottom), node2=document.createElement('div');node2.id='spHomeAdBottom';node2.innerHTML=(b.type==='card'?_buildAdCardCompact(b):_buildAdPostCard(b));container.appendChild(node2);if(!_adSessionSeen.has(b.id)){_adSessionSeen.add(b.id);_bumpAdStat(b.id,'impressions');}
+  }
+}
+
+/* Existing owner ad-free behavior made it impossible for the owner to verify
+   ads on their own device. Let the owner preview configured ads; premium users
+   still retain the normal ad-free behavior elsewhere. */
+var _spNativeAmIAdFree=window._amIAdFree;
+if(typeof _spNativeAmIAdFree==='function' && !window._spOwnerAdsPatched){
+  window._spOwnerAdsPatched=true;
+  window._amIAdFree=function(){
+    var myKey=typeof _myUsernameKey==='function'?_myUsernameKey():(currentUser||'').toLowerCase();
+    if(isOwner)return false;
+    return (typeof isPremiumUser==='function'&&isPremiumUser(myKey));
+  };
+}
+
+/* Patch the existing injection call path and ensure home slots are refreshed
+   after feed render. */
+var _spNativeInject=window.injectAdCards;
+window.injectAdCards=async function(){
+  try{
+    if(typeof _spNativeInject==='function')await _spNativeInject.apply(this,arguments);
+  }finally{
+    setTimeout(_spRenderHomeAds,20);
+  }
+};
+window._spRefreshHomeAds=_spRenderHomeAds;
+
+function boot(){
+  _spInstallAdTemplateUI();
+  _spInstallHomePlacementUI();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,250);
+})();
+</script>
+
+
 </body>
 
