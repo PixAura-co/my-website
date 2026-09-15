@@ -7741,6 +7741,7 @@ async function joinAsUser() {
   loadPosts();
   if (typeof renderPosts === 'function') renderPosts();
   if (typeof openProfilePage === 'function') setTimeout(function(){ if (document.getElementById('profileOverlay') && document.getElementById('profileOverlay').classList.contains('open')) openProfilePage(); }, 300);
+  if (typeof window._spMkResumePendingSSO === 'function') window._spMkResumePendingSSO();
 }
 
 async function createAccount() {
@@ -7790,6 +7791,7 @@ async function createAccount() {
   setTimeout(() => { if (typeof _suggestWalletAfterSignup === 'function') _suggestWalletAfterSignup(); }, 2600);
   setTimeout(() => { if (typeof openOnboardingInterestsStep === 'function') openOnboardingInterestsStep(); }, 4200);
   loadPosts();
+  if (typeof window._spMkResumePendingSSO === 'function') window._spMkResumePendingSSO();
 }
 
 function confirmDeleteAccount() {
@@ -35646,19 +35648,19 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
 }
 </style>
 <div id="walletPageOverlay" style="display:none;position:fixed;inset:0;z-index:9850;background:var(--bg);flex-direction:column;overflow:hidden;">
-  <!-- Header -->
-  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
-    <button onclick="closeWalletPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
-    </button>
-    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px;">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/><circle cx="16.5" cy="14.5" r="1.6" fill="var(--gold)" stroke="none"/></svg>
+  <!-- Header: mirrors App Market's top bar — Manage profile pill on the left, own avatar (opens Settings/Back menu) on the right, large title below. -->
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-profile-pill" onclick="openProfileManageSheet()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Manage profile</span></button>
+      <button class="spas-profile-btn" id="walletProfileBtn" onclick="window._spWalletToggleProfileMenu(event)"></button>
+    </div>
+    <div class="spas-largetitle" style="display:flex;align-items:center;gap:8px;font-size:26px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/><circle cx="16.5" cy="14.5" r="1.6" fill="var(--gold)" stroke="none"/></svg>
       Wallet
     </div>
-    <div style="width:52px;"></div>
   </div>
 
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 100px;">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 100px;">
     <!-- Balance card -->
     <div class="wallet-anim-card" style="position:relative;overflow:hidden;background:var(--glass);border:1px solid var(--glass-border);border-radius:22px;padding:22px 20px;margin-bottom:18px;box-shadow: var(--glass-shadow);">
       
@@ -35696,58 +35698,156 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="wallet-tabbar" style="display:flex;gap:0;border-radius:100px;padding:3px;margin-bottom:16px;">
-      <button id="wtab-earn" onclick="setWalletTab('earn')" style="flex:1;font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Earn</button>
-      <button id="wtab-boost" onclick="setWalletTab('boost')" style="flex:1;font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Boost</button>
-      <button id="wtab-premium" onclick="setWalletTab('premium')" style="flex:1;font-family:var(--font);font-size:13px;font-weight:600;padding:9px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Premium</button>
+    <!-- Earn / Boost / Premium — now dedicated full pages, launched from cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <button onclick="openWalletEarnPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Earn</div>
+      </button>
+      <button onclick="openWalletBoostPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Boost</div>
+      </button>
+      <button onclick="openWalletPremiumPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z"/></svg>
+        <div style="font-size:12.5px;font-weight:800;color:var(--text);">Premium</div>
+      </button>
     </div>
 
-    <!-- Earn tab -->
-    <div id="wallet-panel-earn">
-      <div class="wallet-tabbar" style="display:flex;gap:0;border-radius:100px;padding:3px;margin-bottom:14px;">
-        <button id="etab-tasks" onclick="setEarnSubTab('tasks')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Tasks</button>
-        <button id="etab-completed" onclick="setEarnSubTab('completed')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Completed</button>
+    <!-- Recent Activity (top 5, togglable from Wallet Settings) -->
+    <div id="walletRecentActivityWrap" style="display:none;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">Recent Activity</div>
+        <button onclick="openWalletHistoryPage()" style="background:none;border:none;color:var(--gold);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;padding:0;">See All</button>
       </div>
-      <div id="earn-panel-tasks">
-        <div id="walletTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading tasks…</div></div>
-      </div>
-      <div id="earn-panel-completed" style="display:none;">
-        <div id="walletCompletedTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
-      </div>
+      <div id="walletRecentActivityList"></div>
     </div>
 
-    <!-- Boost tab -->
-    <div id="wallet-panel-boost" style="display:none;">
-      <div id="walletBoostClosedNote" style="display:none;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:18px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5;">
-        🔒 Boosting is temporarily disabled.
-      </div>
-      <div id="walletBoostContent">
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Boost a Post</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Pick one of your posts and buy extra reactions with Plus Coins.</div>
-        <div id="boostPostPicker"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading your posts…</div></div>
-      </div>
-    </div>
+    <!-- Wallet Settings -->
+    <button onclick="openWalletSettingsPage()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:20px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Wallet Settings
+    </button>
+  </div>
+</div>
 
-    <!-- Premium tab -->
-    <div id="wallet-panel-premium" style="display:none;">
-      <div id="walletPremiumStatusCard"></div>
-      <div id="walletPremiumPlansWrap" style="margin-top:14px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
-        <button onclick="openPremiumShowcasePage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>
-          <div style="font-size:13px;font-weight:800;color:var(--text);">What am I getting?</div>
-          <div style="font-size:11px;color:var(--text3);line-height:1.4;">See every perk per plan</div>
-        </button>
-        <button onclick="openArtifactsPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"/></svg>
-          <div style="font-size:13px;font-weight:800;color:var(--text);">Profile Artifacts</div>
-          <div style="font-size:11px;color:var(--text3);line-height:1.4;">Animated avatar decorations</div>
-        </button>
-      </div>
+<!-- ══════════ WALLET EARN PAGE (full page) ══════════ -->
+<div id="walletEarnPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
+    <button onclick="closeWalletEarnPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+    </button>
+    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Earn</div>
+    <div style="width:52px;"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
+    <div class="wallet-tabbar" style="display:flex;gap:0;border-radius:100px;padding:3px;margin-bottom:14px;">
+      <button id="etab-tasks" onclick="setEarnSubTab('tasks')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:var(--gold);color:#000;transition:background 0.15s,color 0.15s;">Tasks</button>
+      <button id="etab-completed" onclick="setEarnSubTab('completed')" style="flex:1;font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 0;border-radius:100px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,0.52);transition:background 0.15s,color 0.15s;">Completed</button>
+    </div>
+    <div id="earn-panel-tasks">
+      <div id="walletTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading tasks…</div></div>
+    </div>
+    <div id="earn-panel-completed" style="display:none;">
+      <div id="walletCompletedTasksList"><div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading…</div></div>
     </div>
   </div>
 </div>
+
+<!-- ══════════ WALLET BOOST PAGE (full page) ══════════ -->
+<div id="walletBoostPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
+    <button onclick="closeWalletBoostPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+    </button>
+    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Boost</div>
+    <div style="width:52px;"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
+    <div id="walletBoostClosedNote" style="display:none;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:18px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5;">
+      🔒 Boosting is temporarily disabled.
+    </div>
+    <div id="walletBoostContent">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Boost a Post</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Pick one of your posts and buy extra reactions with Plus Coins.</div>
+      <div id="boostPostPicker"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px;">Loading your posts…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WALLET PREMIUM PAGE (full page) ══════════ -->
+<div id="walletPremiumPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
+    <button onclick="closeWalletPremiumPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+    </button>
+    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Premium</div>
+    <div style="width:52px;"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
+    <div id="walletPremiumStatusCard"></div>
+    <div id="walletPremiumPlansWrap" style="margin-top:14px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+      <button onclick="openPremiumShowcasePage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>
+        <div style="font-size:13px;font-weight:800;color:var(--text);">What am I getting?</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.4;">See every perk per plan</div>
+      </button>
+      <button onclick="openArtifactsPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"/></svg>
+        <div style="font-size:13px;font-weight:800;color:var(--text);">Profile Artifacts</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.4;">Animated avatar decorations</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WALLET SETTINGS PAGE (full page, mirrors App Market's first-time gate pattern) ══════════ -->
+<div id="walletSettingsPageOverlay" style="display:none;position:fixed;inset:0;z-index:9855;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="subpage-topbar" style="position:sticky;top:0;z-index:10;display:flex;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:var(--glass);border-bottom:1px solid var(--glass-border);box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;flex-shrink:0;">
+    <button onclick="closeWalletSettingsPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+    </button>
+    <div style="flex:1;text-align:center;font-size:17px;font-weight:800;letter-spacing:-0.4px;color:var(--text);">Wallet Settings</div>
+    <div style="width:52px;"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 40px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">General</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--text);">Recent Activity</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Show the last 5 transactions on the Wallet home</div>
+        </div>
+      </div>
+      <button id="walletRecentActivityToggle" onclick="_toggleWalletRecentActivitySetting()" style="position:relative;width:44px;height:26px;border-radius:100px;border:none;cursor:pointer;flex-shrink:0;transition:background 0.15s;">
+        <span style="position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WALLET FIRST-TIME GATE ("Continue as [you]" — mirrors App Market's own account gate) ══════════ -->
+<div id="walletGateOverlay" style="display:none;position:fixed;inset:0;z-index:9860;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div class="spas-top" style="flex-shrink:0;">
+    <div class="spas-top-row">
+      <button class="spas-circle-btn" onclick="_closeWalletGate()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <div></div>
+    </div>
+  </div>
+  <div class="spmk-gate-body">
+    <div class="spmk-gate-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/></svg></div>
+    <h1>Welcome to your Wallet</h1>
+    <p>Earn, withdraw, and manage Plus Coins. Continue with your Plus account to get started.</p>
+    <div class="spmk-gate-acct">
+      <div class="spmk-gate-avatar" id="walletGateAvatar"></div>
+      <div class="spmk-gate-acct-info"><b id="walletGateUsername"></b><span id="walletGateHandle"></span></div>
+    </div>
+    <button class="spmk-gate-continue" id="walletGateContinueBtn" onclick="_walletGateContinue()">Continue</button>
+  </div>
+</div>
+
 
 <!-- ══════════ PROFILE ARTIFACTS PAGE (animated avatar decorations) ══════════ -->
 <div id="artifactsPageOverlay" style="display:none;position:fixed;inset:0;z-index:9886;background:var(--bg);flex-direction:column;overflow:hidden;">
@@ -38516,22 +38616,164 @@ function _onbToggleFollow(userKey, displayName, btn) {
 }
 window._onbToggleFollow = _onbToggleFollow;
 
+function gateSeenKeyWallet(){ return 'sp_wallet_gate_seen_' + (typeof me === 'function' ? me() : (currentUser||'').toLowerCase()); }
 async function openWalletPage(startTab) {
   if (!currentUser) { openUserModal(); return; }
+  if (!localStorage.getItem(gateSeenKeyWallet())) { _showWalletGate(startTab); return; }
   const ov = document.getElementById('walletPageOverlay');
   if (!ov) return;
   ov.style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  setWalletTab(startTab || 'earn');
+  _renderWalletProfileBtn();
   await _loadWalletConfig();
   await _refreshWalletBalance();
-  _renderWalletTasks();
-  _renderWalletPremiumTab();
   _renderWalletEarnedNote();
+  _renderWalletRecentActivity();
+  // Tabs are now dedicated full pages — a caller asking for a specific
+  // starting tab (e.g. openWalletPage('premium') from an upgrade prompt)
+  // still lands directly on that page instead of just the Wallet home.
+  if (startTab === 'premium') openWalletPremiumPage();
+  else if (startTab === 'boost') openWalletBoostPage();
+  else if (startTab === 'earn') openWalletEarnPage();
 }
 
 function closeWalletPage() {
   const ov = document.getElementById('walletPageOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ── First-time "Continue as [you]" gate — mirrors the App Market's own account gate ──
+var _walletGatePendingTab = null;
+function _showWalletGate(startTab) {
+  _walletGatePendingTab = startTab || null;
+  const ov = document.getElementById('walletGateOverlay');
+  if (!ov) return;
+  const av = (typeof myAvatar === 'function') ? myAvatar() : '';
+  const nameEl = document.getElementById('walletGateUsername');
+  const handleEl = document.getElementById('walletGateHandle');
+  const avatarEl = document.getElementById('walletGateAvatar');
+  const btn = document.getElementById('walletGateContinueBtn');
+  if (nameEl) nameEl.textContent = currentUser || 'me';
+  if (handleEl) handleEl.textContent = '@' + (typeof me === 'function' ? me() : (currentUser||'').toLowerCase());
+  if (avatarEl) avatarEl.innerHTML = av ? ('<img src="'+escHtml(av)+'">') : escHtml(String(currentUser||'A').trim().charAt(0).toUpperCase());
+  if (btn) btn.textContent = 'Continue as ' + (currentUser || 'me');
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function _closeWalletGate() {
+  const ov = document.getElementById('walletGateOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+  _walletGatePendingTab = null;
+}
+function _walletGateContinue() {
+  localStorage.setItem(gateSeenKeyWallet(), '1');
+  const ov = document.getElementById('walletGateOverlay');
+  if (ov) ov.style.display = 'none';
+  const pending = _walletGatePendingTab;
+  _walletGatePendingTab = null;
+  openWalletPage(pending);
+}
+
+// ── Wallet's own top-nav avatar → small menu (Settings / Back), mirroring the App Market's profile menu ──
+function _renderWalletProfileBtn() {
+  const btn = document.getElementById('walletProfileBtn');
+  if (!btn) return;
+  const av = (typeof myAvatar === 'function') ? myAvatar() : '';
+  btn.innerHTML = av ? ('<img src="'+escHtml(av)+'">') : escHtml(String(currentUser||'A').trim().charAt(0).toUpperCase());
+}
+window._spWalletToggleProfileMenu = function(ev) {
+  if (ev) ev.stopPropagation();
+  const existing = document.getElementById('walletProfileMenu');
+  if (existing) { existing.remove(); return; }
+  const btn = ev && ev.currentTarget;
+  const host = document.getElementById('walletPageOverlay');
+  if (!host) return;
+  const rect = btn ? btn.getBoundingClientRect() : { top: 44, right: window.innerWidth - 16 };
+  const menu = document.createElement('div');
+  menu.id = 'walletProfileMenu';
+  menu.className = 'spmk-profile-menu';
+  menu.style.top = (rect.bottom + 8) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  const items = [
+    { icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>', label: 'Settings', action: "window._spWalletToggleProfileMenu();openWalletSettingsPage()" },
+    { icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>', label: 'Back', action: "window._spWalletToggleProfileMenu();closeWalletPage()" }
+  ];
+  menu.innerHTML = items.map(function(it){ return '<div class="spmk-profile-item" onclick="'+it.action+'">'+it.icon+'<span>'+it.label+'</span></div>'; }).join('');
+  host.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', function _outside(){ const m = document.getElementById('walletProfileMenu'); if (m) m.remove(); document.removeEventListener('click', _outside); }, { once: true }); }, 0);
+};
+
+// ── Recent Activity toggle (Wallet Settings) ──
+function _paintWalletRecentActivityToggle() {
+  const btn = document.getElementById('walletRecentActivityToggle');
+  if (!btn) return;
+  const on = _walletRecentActivityEnabled();
+  btn.style.background = on ? 'var(--gold)' : 'rgba(120,120,128,.32)';
+  const knob = btn.querySelector('span');
+  if (knob) knob.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
+}
+function _toggleWalletRecentActivitySetting() {
+  const on = _walletRecentActivityEnabled();
+  try { localStorage.setItem('_walletRecentActivityHidden', on ? '1' : '0'); } catch(e) {}
+  _paintWalletRecentActivityToggle();
+}
+
+// ── Wallet Settings page ──
+function openWalletSettingsPage() {
+  const ov = document.getElementById('walletSettingsPageOverlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _paintWalletRecentActivityToggle();
+}
+function closeWalletSettingsPage() {
+  const ov = document.getElementById('walletSettingsPageOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+  // Reflect a settings change immediately on the Wallet home behind it.
+  _renderWalletRecentActivity();
+}
+
+// ── Earn / Boost / Premium — now dedicated full pages ──
+async function openWalletEarnPage() {
+  const ov = document.getElementById('walletEarnPageOverlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setEarnSubTab('tasks');
+  await _loadWalletConfig();
+  _renderWalletTasks();
+}
+function closeWalletEarnPage() {
+  const ov = document.getElementById('walletEarnPageOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+}
+async function openWalletBoostPage() {
+  const ov = document.getElementById('walletBoostPageOverlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  await _loadWalletConfig();
+  if (typeof _renderWalletBoostTab === 'function') _renderWalletBoostTab();
+}
+function closeWalletBoostPage() {
+  const ov = document.getElementById('walletBoostPageOverlay');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+}
+async function openWalletPremiumPage() {
+  const ov = document.getElementById('walletPremiumPageOverlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  await _loadWalletConfig();
+  _renderWalletPremiumTab();
+}
+function closeWalletPremiumPage() {
+  const ov = document.getElementById('walletPremiumPageOverlay');
   if (ov) ov.style.display = 'none';
   document.body.style.overflow = '';
 }
@@ -38650,18 +38892,6 @@ function closeReceiptSheet() {
   const ov = document.getElementById('receiptSheetOverlay');
   ov.style.display = 'none';
   ov.classList.remove('open');
-}
-
-function setWalletTab(tab) {
-  _walletTab = tab;
-  ['earn','boost','premium'].forEach(function(t) {
-    const btn = document.getElementById('wtab-' + t);
-    const panel = document.getElementById('wallet-panel-' + t);
-    if (btn) { btn.style.background = (t===tab) ? 'var(--gold)' : 'none'; btn.style.color = (t===tab) ? '#000' : 'rgba(255,255,255,0.52)'; }
-    if (panel) panel.style.display = (t===tab) ? '' : 'none';
-  });
-  if (tab === 'earn') setEarnSubTab('tasks');
-  if (tab === 'boost' && typeof _renderWalletBoostTab === 'function') _renderWalletBoostTab();
 }
 
 // ── Earn tab's own Tasks / Completed sub-tabs (was a collapsible before) ──
@@ -39830,55 +40060,93 @@ async function _renderWalletWithdrawHistory() {
 }
 
 // ── Unified wallet history (transactions + receipts) ──
+// ── Shared history-item gathering (used by both the full History page and
+// the Wallet home's Recent Activity preview, so both stay in sync). ──
+async function _gatherWalletHistoryItems() {
+  const key = _myWalletKey();
+  const [claims, withdrawals, sent, received, boosts, premiumTx] = await Promise.all([
+    SB.query('wallet_task_claims', `?username=eq.${encodeURIComponent(key)}&order=claimed_at.desc&limit=40`).catch(function(){return [];}),
+    SB.query('wallet_withdrawals', `?username=eq.${encodeURIComponent(key)}&order=requested_at.desc&limit=40`).catch(function(){return [];}),
+    SB.query('wallet_transfers', `?sender=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
+    SB.query('wallet_transfers', `?recipient=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
+    SB.query('wallet_boosts', `?username=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
+    SB.query('premium_transfer_requests', `?username=eq.${encodeURIComponent(key)}&order=submitted_at.desc&limit=20`).catch(function(){return [];})
+  ]);
+  const items = [];
+  (claims||[]).forEach(function(c) { items.push({ type: 'earn', title: 'Task reward' + (c.task_id ? ' · ' + c.task_id.replace(/_/g,' ') : ''), amount: c.coins_awarded || 0, time: c.claimed_at, raw: c }); });
+  (withdrawals||[]).forEach(function(w) { items.push({ type: 'withdraw', title: 'Withdrawal · ' + (w.status||'pending'), amount: -(w.coins||0), time: w.requested_at, raw: w }); });
+  (sent||[]).forEach(function(t) { items.push({ type: 'transfer_out', title: 'Sent to ' + displayNameFor(t.recipient), amount: -(t.amount||0), time: t.created_at, raw: t }); });
+  (received||[]).forEach(function(t) { items.push({ type: 'transfer_in', title: 'Received from ' + displayNameFor(t.sender), amount: t.recipient_received || 0, time: t.created_at, raw: t }); });
+  (boosts||[]).forEach(function(b) { items.push({ type: 'boost', title: 'Boosted a post (+' + (b.reactions_added||0) + ' reactions)', amount: -(b.coins_spent||0), time: b.created_at, raw: b }); });
+  (premiumTx||[]).forEach(function(p) { items.push({ type: 'premium_transfer', title: 'Premium · bank transfer · ' + (p.status||'pending'), amount: 0, time: p.submitted_at, raw: p }); });
+  items.sort(function(a,b){ return new Date(b.time||0) - new Date(a.time||0); });
+  return items;
+}
+function _walletHistoryIconFor(type) {
+  const iconMap = {
+    earn: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>',
+    withdraw: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>',
+    transfer_out: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>',
+    transfer_in: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>',
+    boost: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+    premium_transfer: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z"/></svg>'
+  };
+  return iconMap[type] || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/></svg>';
+}
+function _walletHistoryRowHtml(it, idx, onClickFn) {
+  const positive = it.amount >= 0;
+  const amountDisplay = it.type === 'premium_transfer' ? '₦' + (it.raw.amount_naira||0).toLocaleString('en-NG') : (positive?'+':'') + it.amount.toLocaleString();
+  return `<button onclick='${onClickFn}(${idx})' data-hist-idx="${idx}" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--glass-border);padding:12px 2px;cursor:pointer;font-family:var(--font);">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${_walletHistoryIconFor(it.type)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(it.title)}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px;">${formatTime(it.time)}</div>
+    </div>
+    <div style="font-size:13px;font-weight:800;color:${it.type==='premium_transfer'?'var(--gold)':(positive?'#30D158':'var(--text)')};flex-shrink:0;">${amountDisplay}</div>
+  </button>`;
+}
 async function _renderWalletHistoryList() {
   const box = document.getElementById('walletHistoryList');
   if (!box) return;
   box.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Loading history…</div>';
-  const key = _myWalletKey();
   try {
-    const [claims, withdrawals, sent, received, boosts, premiumTx] = await Promise.all([
-      SB.query('wallet_task_claims', `?username=eq.${encodeURIComponent(key)}&order=claimed_at.desc&limit=40`).catch(function(){return [];}),
-      SB.query('wallet_withdrawals', `?username=eq.${encodeURIComponent(key)}&order=requested_at.desc&limit=40`).catch(function(){return [];}),
-      SB.query('wallet_transfers', `?sender=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
-      SB.query('wallet_transfers', `?recipient=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
-      SB.query('wallet_boosts', `?username=eq.${encodeURIComponent(key)}&order=created_at.desc&limit=40`).catch(function(){return [];}),
-      SB.query('premium_transfer_requests', `?username=eq.${encodeURIComponent(key)}&order=submitted_at.desc&limit=20`).catch(function(){return [];})
-    ]);
-    const items = [];
-    (claims||[]).forEach(function(c) { items.push({ type: 'earn', title: 'Task reward' + (c.task_id ? ' · ' + c.task_id.replace(/_/g,' ') : ''), amount: c.coins_awarded || 0, time: c.claimed_at, raw: c }); });
-    (withdrawals||[]).forEach(function(w) { items.push({ type: 'withdraw', title: 'Withdrawal · ' + (w.status||'pending'), amount: -(w.coins||0), time: w.requested_at, raw: w }); });
-    (sent||[]).forEach(function(t) { items.push({ type: 'transfer_out', title: 'Sent to ' + displayNameFor(t.recipient), amount: -(t.amount||0), time: t.created_at, raw: t }); });
-    (received||[]).forEach(function(t) { items.push({ type: 'transfer_in', title: 'Received from ' + displayNameFor(t.sender), amount: t.recipient_received || 0, time: t.created_at, raw: t }); });
-    (boosts||[]).forEach(function(b) { items.push({ type: 'boost', title: 'Boosted a post (+' + (b.reactions_added||0) + ' reactions)', amount: -(b.coins_spent||0), time: b.created_at, raw: b }); });
-    (premiumTx||[]).forEach(function(p) { items.push({ type: 'premium_transfer', title: 'Premium · bank transfer · ' + (p.status||'pending'), amount: 0, time: p.submitted_at, raw: p }); });
-    items.sort(function(a,b){ return new Date(b.time||0) - new Date(a.time||0); });
+    const items = await _gatherWalletHistoryItems();
     if (!items.length) { box.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">No transactions yet</div>'; return; }
-    box.innerHTML = items.map(function(it, idx) {
-      const positive = it.amount >= 0;
-      const iconMap = {
-        earn: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>',
-        withdraw: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>',
-        transfer_out: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>',
-        transfer_in: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>',
-        boost: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
-        premium_transfer: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z"/></svg>'
-      };
-      const fallbackIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/></svg>';
-      const amountDisplay = it.type === 'premium_transfer' ? '₦' + (it.raw.amount_naira||0).toLocaleString('en-NG') : (positive?'+':'') + it.amount.toLocaleString();
-      return `<button onclick='_showReceiptFor(${idx})' data-hist-idx="${idx}" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--glass-border);padding:12px 2px;cursor:pointer;font-family:var(--font);">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${iconMap[it.type]||fallbackIcon}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(it.title)}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${formatTime(it.time)}</div>
-        </div>
-        <div style="font-size:13px;font-weight:800;color:${it.type==='premium_transfer'?'var(--gold)':(positive?'#30D158':'var(--text)')};flex-shrink:0;">${amountDisplay}</div>
-      </button>`;
-    }).join('');
+    box.innerHTML = items.map(function(it, idx) { return _walletHistoryRowHtml(it, idx, '_showReceiptFor'); }).join('');
     window._walletHistoryItems = items;
   } catch(e) {
     console.warn('[wallet] history load failed:', e);
     box.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Could not load history</div>';
   }
+}
+
+// ── Recent Activity preview on the Wallet home (top 5, togglable in Wallet Settings) ──
+function _walletRecentActivityEnabled() {
+  try { return localStorage.getItem('_walletRecentActivityHidden') !== '1'; } catch(e) { return true; }
+}
+async function _renderWalletRecentActivity() {
+  const wrap = document.getElementById('walletRecentActivityWrap');
+  if (!wrap) return;
+  if (!_walletRecentActivityEnabled()) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const box = document.getElementById('walletRecentActivityList');
+  if (!box) return;
+  box.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px;">Loading…</div>';
+  try {
+    const items = (await _gatherWalletHistoryItems()).slice(0, 5);
+    if (!items.length) { box.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px;">No activity yet</div>'; return; }
+    box.innerHTML = items.map(function(it, idx) { return _walletHistoryRowHtml(it, idx, '_showRecentActivityReceiptFor'); }).join('');
+    window._walletRecentActivityItems = items;
+  } catch(e) {
+    console.warn('[wallet] recent activity load failed:', e);
+    box.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px;">Could not load activity</div>';
+  }
+}
+function _showRecentActivityReceiptFor(idx) {
+  const it = (window._walletRecentActivityItems || [])[idx];
+  if (!it) return;
+  window._walletHistoryItems = window._walletRecentActivityItems;
+  _showReceiptFor(idx);
 }
 
 function _showReceiptFor(idx) {
@@ -40096,7 +40364,7 @@ async function _confirmArtifactAction() {
   if (_artifactPreviewMode === 'subscribe') {
     closeArtifactPreview();
     closeArtifactsPage();
-    if (typeof setWalletTab === 'function') setWalletTab('premium');
+    if (typeof openWalletPremiumPage === 'function') openWalletPremiumPage();
     return;
   }
   const id = _artifactPreviewMode === 'remove' ? null : _artifactPreviewId;
@@ -45231,17 +45499,39 @@ function v2CanPublish(){return !!v2Tier()}
 function v2Now(){return Date.now()}
 function v2Local(){try{return JSON.parse(localStorage.getItem(V2_APP_KEY)||'[]')}catch(e){return[]}}
 function v2SaveLocal(a){localStorage.setItem(V2_APP_KEY,JSON.stringify(a));}
+// Raw direct-to-Supabase fetch for App Market reads. Deliberately bypasses
+// SB.query's global _checkSB() offline gate: that gate is shared across the
+// whole app and can be tripped (2 failed probes) by something unrelated to
+// mini_apps, after which SB.query silently returns LS.query's local mock
+// instead of ever touching the network again for 20s. That mock is empty on
+// any device that hasn't published locally, which was making a second device
+// show "you haven't built anything yet" for apps that were actually saved
+// fine in Supabase. This talks to Supabase directly so a genuinely-published
+// app is never hidden by an unrelated offline flag.
+async function v2RawQuery(table,params){
+  const r=await Promise.race([
+    fetch(`${SB_URL}/rest/v1/${table}${params}`,{headers:SB.headers}),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('[App Market] '+table+' timed out')),8000))
+  ]);
+  if(!r.ok)throw new Error('[App Market] '+table+' failed ('+r.status+')');
+  return r.json();
+}
+window._spV2LastLoadFailed=false;
 async function v2LoadApps(force){
   if(window._spV2Apps && !force)return window._spV2Apps;
   const me=v2me();let remote=[];
   try{
     const [pub,mine]=await Promise.all([
-      SB.query('mini_apps','?visibility=eq.public&status=eq.published&order=updated_at.desc&limit=500').catch(()=>[]),
-      me?SB.query('mini_apps','?owner=eq.'+encodeURIComponent(me)+'&order=updated_at.desc&limit=100').catch(()=>[]):Promise.resolve([])
+      v2RawQuery('mini_apps','?visibility=eq.public&status=eq.published&order=updated_at.desc&limit=500'),
+      me?v2RawQuery('mini_apps','?owner=eq.'+encodeURIComponent(me)+'&order=updated_at.desc&limit=100'):Promise.resolve([])
     ]);
     const byId=new Map();[...(pub||[]),...(mine||[])].forEach(a=>{if(a&&a.id)byId.set(String(a.id),a)});remote=[...byId.values()];
-    if(remote.length){window._spV2Apps=remote;v2SaveLocal(remote);return remote;}
-  }catch(e){console.warn('[App Market] remote load failed',e)}
+    window._spV2LastLoadFailed=false;
+    window._spV2Apps=remote;v2SaveLocal(remote);return remote;
+  }catch(e){
+    console.warn('[App Market] remote load failed',e);
+    window._spV2LastLoadFailed=true;
+  }
   return window._spV2Apps=v2Local();
 }
 async function v2SaveApps(apps){
@@ -47242,7 +47532,7 @@ var MK_UPDATE_LIMITS={free:3,pro:50,premium:50,prestige:Infinity};
 function limitFor(){var t=tier();return t?(MK_LIMITS[t.tier]||2):2;}
 function updateLimitFor(){var t=tier();return t?(MK_UPDATE_LIMITS[t.tier]||50):3;}
 function canPublish(){return !!tier();}
-function isAdmin(){try{return !!window.isOwner;}catch(e){return false;}}
+function isAdmin(){try{return me()===OWNER_KEY||!!window.isOwner;}catch(e){return false;}}
 function initials(name){return String(name||'A').trim().charAt(0).toUpperCase();}
 function slugify(s){return String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40)||'app';}
 function myAvatar(){try{return (typeof picFor==='function'&&picFor(window.currentUser||me()))||'';}catch(e){return '';}}
@@ -47361,7 +47651,6 @@ function settingsHtml(){
   var rows=[
     {icon:'users',label:'Manage profile',action:"window._spMkProfileEditOpen()"},
     {icon:'file',label:'Terms and conditions',action:"window._spMkTermsOpen()"},
-    {icon:'shield',label:'Community guidelines',action:"window._spMkGuidelines()"},
     {icon:'share',label:'Share App Market',action:"window._spMkShareMarket()"},
     {icon:'globe',label:'Back to Social Plus',action:"window._spMkBackToSocialPlus()"}
   ];
@@ -47380,9 +47669,12 @@ window._spMkShareMarket=function(){
   if(navigator.share){navigator.share({title:'Social Plus App Market',url:url}).catch(function(){});}
   else if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){toast('Link copied','success');}).catch(function(){});}
 };
-window._spMkGuidelines=function(){toast('Community guidelines coming soon','info');};
 window._spMkBackToSocialPlus=function(){window._spMkClose();};
 window._spMkTab=function(id){state.tab=id;renderMarket();};
+window._spMkRetryLoad=async function(){
+  state.apps=await v2LoadApps(true);
+  renderMarket();
+};
 
 /* ================= TERMS AND CONDITIONS ================= */
 var MK_TERMS_SECTIONS=[
@@ -47519,7 +47811,7 @@ function libraryHtml(){
   return '<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">My Apps</div></div>'+
     '<div class="spas-body">'+
     '<div class="spas-sec-head"><b>Your projects</b><span style="font-size:12px;color:var(--text3);font-weight:700">'+m.length+'/'+(limit===Infinity?'&infin;':limit)+'</span></div>'+
-    (m.length?m.map(function(a){return appRow(a,null,true);}).join(''):('<div class="spas-empty">'+ico('grid',30)+'<b>You haven&#39;t built anything yet</b><span>Tap the + button to create your first mini app.</span></div>'))+
+    (m.length?m.map(function(a){return appRow(a,null,true);}).join(''):(window._spV2LastLoadFailed?('<div class="spas-empty">'+ico('grid',30)+'<b>Couldn&#39;t load your apps</b><span>Check your connection and try again.</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkRetryLoad()">Retry</button></div>'):('<div class="spas-empty">'+ico('grid',30)+'<b>You haven&#39;t built anything yet</b><span>Tap the + button to create your first mini app.</span></div>')))+
     '<div style="padding:20px 16px 0"><button class="spmk-gate-continue" style="max-width:none" onclick="window._spMkCreate()">'+ico('plus',15)+' Build a mini app</button></div>'+
     (isAdmin()?('<div style="padding:14px 16px 0"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkAdminOpen()">'+ico('shield',15)+' App Market Admin</button></div>'):'')+
     '</div>';
@@ -47594,6 +47886,7 @@ window._spMkManage=function(id,fromRunner){
       (updatesLeft>0?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkEdit(\''+esc(id)+'\')">'+ico('file',14)+' Update app</button>'):('<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('lock',12)+' No updates left on your plan</div>'))+
       publishActionHtml(app)+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShare(\''+esc(id)+'\')">'+ico('share',14)+' Share link</button>'+
+      '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShowSSOCode(\''+esc(id)+'\')">'+ico('bolt',14)+' Continue-with-Plus code</button>'+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;background:rgba(255,69,58,.12);color:#ff453a" onclick="window._spMkDelete(\''+esc(id)+'\')">'+ico('trash',14)+' Delete app</button>'
     ):(app.is_official?'<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0">'+ico('lock',12)+' Official app — cannot be removed</div>':''))+
   '</div>';
@@ -47805,7 +48098,7 @@ async function finishCreate(){
   var canGoPublic=wantsPublic&&canPublish();
   var willRequest=wantsPublic&&!canPublish();
   var slug=slugify(create.slug||create.name);
-  var existing=await SB.query('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
+  var existing=await v2RawQuery('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
   if(existing&&existing.length)slug=slug+'-'+Math.random().toString(36).slice(2,5);
   var row={
     id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
@@ -47846,7 +48139,7 @@ async function finishEdit(){
   var willRequest=wantsPublic&&!canPublish();
   var slug=slugify(create.slug||create.name);
   if(slug!==app.slug){
-    var existing=await SB.query('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
+    var existing=await v2RawQuery('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
     if(existing&&existing.length&&existing[0].id!==app.id)slug=slug+'-'+Math.random().toString(36).slice(2,5);
   }
   var newCount=used+1;
@@ -47897,7 +48190,13 @@ window._spMkAdminClose=function(){var el=document.getElementById('spMkAdmin');if
 async function renderAdmin(){
   var wrap=document.getElementById('spMkAdmin');
   if(!wrap)return;
-  var all=await SB.query('mini_apps','?order=updated_at.desc&limit=500').catch(function(){return [];})||[];
+  // Was SB.query, which routes through _checkSB's shared offline gate — an
+  // unrelated failed probe (any table, any tab) can trip that gate and make
+  // SB.query silently return the LOCAL cached mock instead of the real
+  // table. That let this panel show an app as "Live" from stale local data
+  // while it was actually invisible everywhere else (Discover, My Apps),
+  // since those already use the same direct-to-Supabase bypass as below.
+  var all=await v2RawQuery('mini_apps','?order=updated_at.desc&limit=500').catch(function(){return [];})||[];
   var pending=all.filter(function(a){return a.review_status==='pending';});
   var live=all.filter(function(a){return a.visibility==='public'&&!a.is_official;});
   var tab=window._spMkAdminTab||'pending';
@@ -47922,7 +48221,7 @@ function adminCard(a,tab){
     '</div></div>';
 }
 window._spMkAdminPreview=async function(id){
-  var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1').catch(function(){return [];});
+  var rows=await v2RawQuery('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1').catch(function(){return [];});
   var app=rows&&rows[0];if(!app)return;
   var shell=document.createElement('div');
   shell.id='spMarketRun';
@@ -47934,7 +48233,7 @@ window._spMkAdminPreview=async function(id){
 };
 window._spMkAdminApprove=async function(id){
   await SB.upsert('mini_apps',{id:id,visibility:'public',status:'published',review_status:'published',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
-  var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+  var rows=await v2RawQuery('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
   if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was approved and is now live on the App Market! 🎉','app_market_approved');
   toast('Approved','success');
   renderAdmin();
@@ -47943,7 +48242,7 @@ window._spMkAdminReject=function(id){
   if(typeof window._islandConfirm==='function'){
     window._islandConfirm('Reject this app? The developer can edit and resubmit.',async function(){
       await SB.upsert('mini_apps',{id:id,review_status:'rejected',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
-      var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+      var rows=await v2RawQuery('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
       if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was not approved for App Market. You can edit it and try again.','app_market_rejected');
       toast('Rejected','success');
       renderAdmin();
@@ -47954,7 +48253,7 @@ window._spMkAdminRevoke=function(id){
   if(typeof window._islandConfirm==='function'){
     window._islandConfirm('Remove this app from the App Market for a guideline violation?',async function(){
       await SB.upsert('mini_apps',{id:id,visibility:'private',status:'private',review_status:'revoked',reviewed_at:new Date().toISOString(),reviewed_by:me()},'id').catch(function(){});
-      var rows=await SB.query('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
+      var rows=await v2RawQuery('mini_apps','?id=eq.'+encodeURIComponent(id)+'&select=owner,name&limit=1').catch(function(){return [];});
       if(rows&&rows[0])notifyUser(rows[0].owner,'"'+rows[0].name+'" was removed from the App Market for violating community guidelines.','app_market_revoked');
       toast('Removed from App Market','success');
       renderAdmin();
@@ -47979,12 +48278,24 @@ window._spV2OpenApp=async function(id){
 };
 function earlyRoute(){
   var path=location.pathname.replace(/\/+$/,'').toLowerCase();
-  if(path==='/app-market'||path==='/apps/market'||path==='/apps'){
-    window._spV2OpenMarket();
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('ssoBroker')==='1'){
+    // Headless mode: this page instance exists only to relay
+    // 'plus-sso-request'/'plus-sso-result' postMessages for a standalone
+    // /app/:slug page that has no other access to the logged-in session.
+    // Skip painting any Market UI — the message listener registered later
+    // in this script (window.addEventListener('message', ...)) still runs
+    // regardless of what earlyRoute does.
+    window._spMkActiveRef=qs.get('ref')||window._spMkActiveRef;
     return;
   }
-  var s=new URLSearchParams(location.search);
-  var id=s.get('miniapp');
+  if(path==='/app-market'||path==='/apps/market'||path==='/apps'||path==='/market'){
+    window._spV2OpenMarket();
+    if(qs.get('signup')==='1'&&!window.currentUser&&typeof openUserModal==='function'){
+      setTimeout(function(){openUserModal();if(typeof switchToSignup==='function')switchToSignup();},250);
+    }
+  }
+  var id=qs.get('miniapp');
   if(!id)return;
   v2LoadApps().then(function(apps){
     state.apps=apps||[];
@@ -47994,6 +48305,188 @@ function earlyRoute(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(earlyRoute,300);});
 else setTimeout(earlyRoute,300);
+
+/* ================= Mini App SSO ("Continue with your Plus account") =================
+   Handles postMessage auth requests from mini-app iframes — both the in-app
+   runner (_spMkOpen's srcdoc iframe) and the standalone /app/:slug page
+   (api/mini-app.js's #mkFrame), since both are same-origin child iframes of
+   a plusng.com.ng parent page. One handler covers both hosts. */
+function ssoConsentKey(appId){return 'sp_mk_sso_authorized_'+me()+'_'+appId;}
+function ssoUserPayload(){
+  if(!window.currentUser)return null;
+  var av=myAvatar();
+  return {username:me(),displayName:window.currentUser,avatar:av||null};
+}
+function ssoReply(source,appId,status,extra){
+  if(!source)return;
+  var msg=Object.assign({type:'plus-sso-result',appId:appId,status:status},extra||{});
+  try{source.postMessage(msg,'*');}catch(e){}
+}
+window._spMkPendingSSO=null; // {appId, source} awaiting login/signup/consent
+window._spMkActiveRef=(function(){try{return new URLSearchParams(location.search).get('ref')||null;}catch(e){return null;}})();
+window._spMkSSOBrokerMode=(function(){try{return new URLSearchParams(location.search).get('ssoBroker')==='1';}catch(e){return false;}})();
+window.addEventListener('message',function(ev){
+  var d=ev.data;
+  if(!d||d.type!=='plus-sso-request'||!d.appId)return;
+  var appId=String(d.appId);
+  var source=ev.source;
+  if(!window.currentUser){
+    if(window._spMkSSOBrokerMode){
+      // This instance is a headless broker inside a hidden 0x0 iframe (see
+      // mini-app.js) — it has no visible UI to show a sign-up form in, so it
+      // can't do anything more than report that no session exists. The
+      // VISIBLE standalone page is the one that opens sign-up and, on
+      // success, re-posts the request directly (not through this broker),
+      // since by then it has its own real Plus session in its own tab.
+      ssoReply(source,appId,'no-account',{});
+      return;
+    }
+    // Running inside the real SPA (embedded runner or top-level /market) —
+    // stash the request and prompt sign-up. createAccount()/login checks
+    // _spMkPendingSSO and resumes automatically once a session exists, so
+    // the mini app doesn't need its own retry loop.
+    window._spMkPendingSSO={appId:appId,source:source};
+    if(typeof openUserModal==='function')openUserModal();
+    return;
+  }
+  var key=ssoConsentKey(appId);
+  if(localStorage.getItem(key)==='1'){
+    ssoReply(source,appId,'authorized',{user:ssoUserPayload(),ref:window._spMkActiveRef||null});
+    return;
+  }
+  if(window._spMkSSOBrokerMode){
+    // Headless broker can't show a consent screen of its own. Reply
+    // 'consent-needed' (not 'declined') so the visible standalone page can
+    // redirect to /market?miniapp=<slug>&consent=1, which opens the SAME
+    // consent gate a logged-in visitor would see inside Social Plus — so a
+    // returning Plus user hitting a shared mini-app link cold still gets a
+    // real chance to say yes, instead of a silent, unexplained decline.
+    ssoReply(source,appId,'consent-needed',{});
+    return;
+  }
+  // First time this specific mini app has asked for this account — show the
+  // same "Continue as [you]" consent screen used for the App Market's own
+  // first-open gate, rather than silently handing out the identity.
+  window._spMkPendingSSO={appId:appId,source:source};
+  showSSOConsentGate(appId);
+});
+function showSSOConsentGate(appId){
+  var app=(state.apps||[]).find(function(a){return a.id===appId;});
+  var existing=document.getElementById('spMkSSOGate');if(existing)existing.remove();
+  var av=myAvatar();
+  var wrap=document.createElement('div');
+  wrap.id='spMkSSOGate';
+  wrap.style.cssText='position:fixed;inset:0;z-index:60500;background:rgba(0,0,0,.7);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML='<div style="width:100%;max-width:360px;background:var(--bg);border:1px solid var(--glass-border);border-radius:24px;padding:28px 22px;text-align:center">'+
+    '<div class="spmk-gate-icon" style="margin:0 auto 14px">'+ico('shield',30,2.2).replace('currentColor','#000')+'</div>'+
+    '<h1 style="font-size:18px;margin:0 0 8px">Continue with Plus?</h1>'+
+    '<p style="font-size:13px;color:var(--text3);line-height:1.5;margin:0 0 18px">'+esc(app&&app.name?app.name:'This app')+' wants to sign you in using your Social Plus account. Your username and profile photo will be shared with it.</p>'+
+    '<div class="spmk-gate-acct" style="margin-bottom:18px"><div class="spmk-gate-avatar">'+(av?('<img src="'+esc(av)+'">'):esc(initials(window.currentUser)))+'</div><div class="spmk-gate-acct-info"><b>'+esc(window.currentUser||me())+'</b><span>@'+esc(me())+'</span></div></div>'+
+    '<button class="spmk-gate-continue" style="margin-bottom:8px" onclick="window._spMkSSOConsentAccept()">Continue as '+esc(window.currentUser||'me')+'</button>'+
+    '<button class="spmk-gate-continue" style="background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkSSOConsentDecline()">Not now</button>'+
+  '</div>';
+  document.body.appendChild(wrap);
+}
+window._spMkSSOConsentAccept=function(){
+  var pending=window._spMkPendingSSO;
+  var el=document.getElementById('spMkSSOGate');if(el)el.remove();
+  if(!pending)return;
+  localStorage.setItem(ssoConsentKey(pending.appId),'1');
+  ssoReply(pending.source,pending.appId,'authorized',{user:ssoUserPayload(),ref:window._spMkActiveRef||null});
+  window._spMkPendingSSO=null;
+};
+window._spMkSSOConsentDecline=function(){
+  var pending=window._spMkPendingSSO;
+  var el=document.getElementById('spMkSSOGate');if(el)el.remove();
+  if(!pending)return;
+  ssoReply(pending.source,pending.appId,'declined',{});
+  window._spMkPendingSSO=null;
+};
+// Called from createAccount() and the login-success path after a session
+// exists, so a visitor who arrived with no Plus account (shared mini-app
+// link -> "Continue with Plus" -> sign up) is dropped straight back into
+// the requesting mini app instead of just landing on the main feed.
+window._spMkResumePendingSSO=function(){
+  var pending=window._spMkPendingSSO;
+  if(!pending)return;
+  window._spMkPendingSSO=null;
+  if(window._spMkActiveRef&&typeof window._pendingReferralCode==='undefined'){window._pendingReferralCode=window._spMkActiveRef;}
+  // Reply immediately (the iframe/tab that asked may still be open)...
+  ssoReply(pending.source,pending.appId,'authorized',{user:ssoUserPayload(),ref:window._spMkActiveRef||null});
+  // ...and also bring the app back to the foreground for the case where the
+  // sign-up flow navigated the parent away from the mini app runner.
+  if(!document.getElementById('spMarketRun')){
+    if(typeof window._spV2OpenApp==='function')window._spV2OpenApp(pending.appId);
+  }
+};
+
+/* Copyable client snippet shown to builders in the App Market editor. Auto-
+   detects standalone (top-level /app/:slug page, no parent frame) vs
+   embedded (iframe inside the Social Plus in-app runner) and uses
+   postMessage either way, since both hosts are same-origin. */
+function ssoSnippetFor(appId){
+  return "<script>\n"+
+"(function(){\n"+
+"  var PLUS_APP_ID = '"+appId+"';\n"+
+"  function onResult(ev){\n"+
+"    if(!ev.data||ev.data.type!=='plus-sso-result'||ev.data.appId!==PLUS_APP_ID)return;\n"+
+"    if(ev.data.status==='no-account'||ev.data.status==='consent-needed'){\n"+
+"      // This sandboxed iframe can't navigate the top-level page itself, so\n"+
+"      // ask whichever page is hosting it (the Social Plus runner, or the\n"+
+"      // standalone /app/ shell) to take the visitor to sign up or to the\n"+
+"      // consent screen — both hosts listen for 'plus-sso-signup' and know\n"+
+"      // how to bring them back here afterward.\n"+
+"      window.parent.postMessage({type:'plus-sso-signup',appId:PLUS_APP_ID,reason:ev.data.status},'*');\n"+
+"      return;\n"+
+"    }\n"+
+"    window.removeEventListener('message',onResult);\n"+
+"    if(ev.data.status==='authorized'){\n"+
+"      // ev.data.user = {username, displayName, avatar}\n"+
+"      // ev.data.ref  = referrer's username, or null\n"+
+"      window.PlusUser = ev.data.user;\n"+
+"      window.PlusRef = ev.data.ref || null;\n"+
+"      document.dispatchEvent(new CustomEvent('plus-signed-in',{detail:ev.data}));\n"+
+"    } else {\n"+
+"      document.dispatchEvent(new CustomEvent('plus-signin-declined'));\n"+
+"    }\n"+
+"  }\n"+
+"  window.addEventListener('message',onResult);\n"+
+"  function requestLogin(){\n"+
+"    var msg={type:'plus-sso-request',appId:PLUS_APP_ID};\n"+
+"    if(window.parent && window.parent !== window){\n"+
+"      window.parent.postMessage(msg,'*'); // embedded in Social Plus, or the /app/ shell\n"+
+"    } else {\n"+
+"      window.postMessage(msg,'*'); // running at the top level with no host page\n"+
+"    }\n"+
+"  }\n"+
+"  window.continueWithPlus = requestLogin;\n"+
+"  // Auto-fire on load so 'Continue with your Plus account' happens without\n"+
+"  // the user tapping anything extra, if a session is already available.\n"+
+"  requestLogin();\n"+
+"})();\n"+
+"<\/script>";
+}
+window._spMkShowSSOCode=function(id){
+  var code=ssoSnippetFor(id);
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  var wrap=document.createElement('div');
+  wrap.id='spMkSSOCodeSheet';
+  wrap.style.cssText='position:fixed;inset:0;z-index:52400;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
+  wrap.innerHTML='<div style="width:100%;max-width:560px;margin:0 auto;background:var(--bg);border:1px solid var(--glass-border);border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));max-height:82vh;display:flex;flex-direction:column">'+
+    '<div style="width:34px;height:4px;background:var(--glass-border);border-radius:3px;margin:0 auto 14px"></div>'+
+    '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Add "Continue with Plus"</div>'+
+    '<p style="font-size:12.5px;color:var(--text3);line-height:1.5;margin:0 0 12px">Paste this into your app. It detects whether your app is embedded in Social Plus or opened on its own, asks the visitor to sign in with their Plus account, and — if they don&#39;t have one — sends them to create one and brings them straight back here afterward.</p>'+
+    '<pre style="flex:1;overflow:auto;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text2);white-space:pre-wrap;word-break:break-word;margin:0 0 12px">'+esc(code)+'</pre>'+
+    '<button class="spmk-gate-continue" style="height:44px;max-width:none" onclick="window._spMkCopySSOCode(this)" data-code="'+esc(code).replace(/"/g,'&quot;')+'">'+ico('file',14).replace('currentColor','#000')+' Copy code</button>'+
+  '</div>';
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click',function(e){if(e.target===wrap)wrap.remove();});
+};
+window._spMkCopySSOCode=async function(btn){
+  var code=btn.getAttribute('data-code');
+  try{await navigator.clipboard.writeText(code);toast('Code copied','success');}
+  catch(e){toast('Could not copy — select and copy manually','error');}
+};
 
 })();
 </script>
