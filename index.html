@@ -4981,6 +4981,12 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
           </div>
           <button onclick="psCopyCurrentConfig()" style="padding:8px 12px;border-radius:100px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text2);font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0;">Copy Config</button>
         </div>
+        <div id="psFixKeyRow" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--card-border);">
+          <div style="font-size:11px;color:#ff9f0a;font-weight:700;margin-bottom:8px;line-height:1.4;">This project is unreachable. If the anon key was rotated in Supabase, paste the current one below to reconnect — same project, no merge needed.</div>
+          <input id="psFixKeyInput" type="text" placeholder="Paste current anon key…" style="width:100%;padding:10px 12px;border-radius:10px;background:var(--bg2,var(--bg));border:1px solid var(--card-border);color:var(--text);font-size:12px;font-family:monospace;margin-bottom:8px;box-sizing:border-box;">
+          <button onclick="psFixCurrentKey()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,159,10,0.14);border:1px solid rgba(255,159,10,0.4);color:#ff9f0a;font-weight:700;font-size:12.5px;cursor:pointer;">Test &amp; Apply New Key</button>
+          <div id="psFixKeyStatus" style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4;"></div>
+        </div>
       </div>
 
       <!-- Saved project history -->
@@ -5042,10 +5048,46 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
         </div>
       </div>
       <div id="psConfirmMergePreview" style="background:var(--bg2,var(--bg));border-radius:12px;padding:12px;margin-bottom:16px;max-height:180px;overflow-y:auto;"></div>
+      <div id="psMergeIssueRow" style="display:none;background:rgba(255,159,10,0.1);border:1px solid rgba(255,159,10,0.3);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div id="psMergeIssueText" style="font-size:11.5px;color:#ff9f0a;line-height:1.5;margin-bottom:10px;"></div>
+        <button id="psSwitchAnywayBtn" onclick="psSwitchAnyway()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,159,10,0.16);border:1px solid rgba(255,159,10,0.4);color:#ff9f0a;font-weight:700;font-size:12.5px;cursor:pointer;">Switch Anyway (skip merge)</button>
+      </div>
       <div style="display:flex;gap:10px;">
         <button id="psCancelSwitchBtn" onclick="psCancelSwitch()" style="flex:1;padding:12px;border-radius:12px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;">Cancel</button>
         <button id="psConfirmSwitchBtn" onclick="psConfirmSwitch()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.4);color:rgba(255,255,255,0.92);font-weight:800;font-size:13px;cursor:pointer;">Merge &amp; Switch</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── WRITE-ERROR DIAGNOSIS MODAL — shown whenever a Supabase write fails,
+     with the actual server-side cause and, where fixable, copyable SQL ── -->
+<div id="sbWriteErrorOverlay" style="display:none;position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:18px;padding:20px;max-width:400px;width:100%;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div style="width:30px;height:30px;border-radius:9px;background:rgba(255,69,58,0.14);border:1px solid rgba(255,69,58,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div style="font-size:15.5px;font-weight:800;color:var(--text);">Save failed</div>
+    </div>
+    <div id="sbWeSummary" style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px;"></div>
+    <div id="sbWeHintRow" style="display:none;font-size:11.5px;color:var(--text3);line-height:1.5;margin-bottom:10px;padding:10px 12px;background:var(--bg2,var(--bg));border-radius:10px;"></div>
+    <div id="sbWeDetailRow" style="display:none;margin-bottom:12px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:6px;">Raw server response</div>
+      <div id="sbWeDetailText" style="font-family:monospace;font-size:10.5px;color:var(--text3);background:var(--bg2,var(--bg));border-radius:10px;padding:10px;max-height:100px;overflow:auto;white-space:pre-wrap;word-break:break-word;"></div>
+    </div>
+    <div id="sbWeFixRow" style="display:none;margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:6px;">Fix — run this once in Supabase → SQL Editor</div>
+      <div id="sbWeFixSqlText" style="font-family:monospace;font-size:11px;color:var(--text);background:var(--bg2,var(--bg));border-radius:10px;padding:10px;max-height:100px;overflow:auto;white-space:pre-wrap;word-break:break-word;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="_sbWeCopyFixSql()" style="flex:1;padding:10px;border-radius:10px;background:rgba(245,197,24,0.12);border:1px solid rgba(245,197,24,0.35);color:var(--gold);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">Copy SQL</button>
+        <button id="sbWeAutoFixBtn" onclick="_sbWeAttemptAutoFix()" style="flex:1;padding:10px;border-radius:10px;background:rgba(48,209,88,0.12);border:1px solid rgba(48,209,88,0.35);color:#30d158;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">Try Auto-Fix</button>
+      </div>
+      <div id="sbWeAutoFixStatus" style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4;"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="_sbWeCloseModal()" style="flex:1;padding:12px;border-radius:12px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;">Close</button>
+      <button id="sbWeRetryBtn" onclick="_sbWeRetry()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.4);color:rgba(255,255,255,0.92);font-weight:800;font-size:13px;cursor:pointer;">Retry Save</button>
     </div>
   </div>
 </div>
@@ -36749,6 +36791,7 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       <option value="premium">Open Plus Premium page</option>
       <option value="earn">Open Wallet (Earn)</option>
       <option value="home">Open App Home</option>
+      <option value="market_home">Open App Market</option>
       <option value="app_market">Open an App Market mini app</option>
     </select>
     <div class="c-input" id="saAdCtaTypeDisplay" onclick="_saOpenAdCtaTypePicker()" style="margin-top:6px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
@@ -38096,12 +38139,260 @@ async function _saveWalletTasksConfig(tasks) {
   if (!r.ok) {
     const bodyText = await r.text().catch(function(){ return ''; });
     console.warn('[wallet] tasks save failed:', r.status, bodyText);
-    throw new Error('Task save failed (' + r.status + ')' + (bodyText ? ': ' + bodyText : ''));
+    const e = new Error('Task save failed (' + r.status + ')' + (bodyText ? ': ' + bodyText : ''));
+    // Carry status/body so callers can run this through _sbDiagnoseWriteError
+    // instead of showing the raw status code with no explanation.
+    e.status = r.status; e.body = bodyText; e.isNetworkError = false;
+    throw e;
   }
 }
 
 // ════════════════════════════════════════════════════════
-// ADS ENGINE — two formats: 'post' (looks like a real feed post,
+// WRITE-FAILURE DIAGNOSTICS — turns a raw PostgREST/Postgres error response
+// into a plain-English diagnosis plus, where the fix is a schema change, a
+// copy-pasteable SQL statement that fixes it. This exists because "Could not
+// save — check your connection" was misleading users into re-checking their
+// key/network for problems that were actually server-side (missing
+// constraints, RLS denials, bad payloads) — none of which "checking your
+// connection" can ever fix. Every save-failure toast in the app should route
+// its error through this before displaying anything, so the message always
+// points at the ACTUAL cause instead of the generic fallback guess.
+// ════════════════════════════════════════════════════════
+function _sbDiagnoseWriteError(err, opts) {
+  opts = opts || {};
+  const table = opts.table || 'this table';
+  const conflictCol = opts.conflictCol || null;
+  const status = err && err.status;
+  const bodyText = (err && err.body) || '';
+  let parsed = null;
+  try { parsed = JSON.parse(bodyText); } catch(e) {}
+  const pgCode = parsed && parsed.code;
+  const pgMessage = (parsed && (parsed.message || parsed.details)) || bodyText || (err && err.message) || 'Unknown error';
+
+  // Genuine network/offline failure — nothing server-side to diagnose.
+  if (err && err.isNetworkError) {
+    return {
+      summary: 'Could not reach Supabase — check your connection.',
+      detail: pgMessage,
+      fixSql: null,
+      autoFixable: false
+    };
+  }
+
+  // 401/403 — auth/RLS. Distinguish "no session identity sent" from
+  // "identity sent but not allowed" so the fix suggested actually matches.
+  if (status === 401 || status === 403 || pgCode === '42501') {
+    return {
+      summary: 'Permission denied — the request reached Supabase but was rejected by a security policy (RLS), not by the network or the API key.',
+      detail: pgMessage,
+      fixSql: null,
+      autoFixable: false,
+      hint: 'Check that the x-app-user header matches the RLS policy\'s expected owner/admin key, and that the account is actually logged in as that user.'
+    };
+  }
+
+  // 42P10 — PostgREST's exact code for "no unique or exclusion constraint
+  // matching the ON CONFLICT column(s)". This is precisely the bug that hit
+  // app_config: on_conflict=key with no UNIQUE(key) constraint on the table.
+  if (pgCode === '42P10' || /no unique or exclusion constraint/i.test(pgMessage)) {
+    const col = conflictCol || (function(){
+      const m = /matching the (?:on conflict|ON CONFLICT) specification/i.exec(pgMessage);
+      return null;
+    })() || 'key';
+    return {
+      summary: `Database is missing a UNIQUE constraint on "${table}.${col}" — the upsert has no way to know what counts as a "conflict", so Postgres rejects every save with a 400.`,
+      detail: pgMessage,
+      fixSql: `alter table ${table} add constraint ${table}_${col}_key unique (${col});`,
+      autoFixable: true,
+      autoFixKind: 'unique_constraint',
+      autoFixTable: table,
+      autoFixCol: col
+    };
+  }
+
+  // 23505 — unique violation. Different from 42P10: the constraint EXISTS,
+  // but this specific insert collides with a row the merge-duplicates
+  // resolution wasn't able to reconcile (e.g. inserting instead of upserting,
+  // or a partial/composite unique index that doesn't match on_conflict).
+  if (pgCode === '23505') {
+    return {
+      summary: `A row already exists that conflicts with this save on "${table}", and the current request isn't set up to overwrite it (missing or mismatched on_conflict target).`,
+      detail: pgMessage,
+      fixSql: null,
+      autoFixable: false,
+      hint: 'Check that the on_conflict= query param matches the actual UNIQUE constraint\'s column(s) exactly, including composite keys.'
+    };
+  }
+
+  // 23502 — not-null violation: payload is missing a required column.
+  if (pgCode === '23502') {
+    const m = /column "([^"]+)"/.exec(pgMessage);
+    const col = m ? m[1] : 'a required column';
+    return {
+      summary: `The save is missing a value for "${col}", which "${table}" requires (NOT NULL).`,
+      detail: pgMessage,
+      fixSql: null,
+      autoFixable: false,
+      hint: `Either send a value for "${col}" in the request, or if it should be optional: alter table ${table} alter column ${col} drop not null;`
+    };
+  }
+
+  // 42703 — undefined column: the client is sending/selecting a column that
+  // doesn't exist in the current schema (drifted migration, typo, renamed column).
+  if (pgCode === '42703') {
+    const m = /column "?([a-zA-Z0-9_.]+)"?/.exec(pgMessage);
+    const col = m ? m[1] : 'a column';
+    return {
+      summary: `"${table}" has no column "${col}" — the client and the database schema have drifted apart.`,
+      detail: pgMessage,
+      fixSql: null,
+      autoFixable: false,
+      hint: 'Either add the missing column to the table, or fix the client code to stop referencing it.'
+    };
+  }
+
+  // PGRST116/PGRST301-style — table/route not found or schema cache stale.
+  if (/PGRST(116|301|205)/.test(pgCode || '') || /schema cache/i.test(pgMessage)) {
+    return {
+      summary: `Supabase's API layer doesn't recognize "${table}" right now — usually a stale schema cache right after a table was created or renamed.`,
+      detail: pgMessage,
+      fixSql: `notify pgrst, 'reload schema';`,
+      autoFixable: true,
+      autoFixKind: 'reload_schema'
+    };
+  }
+
+  // Fallback — genuinely unrecognized. Show the raw server response rather
+  // than a made-up guess; a wrong guess is worse than an honest "I don't know."
+  return {
+    summary: `Save failed with HTTP ${status || '?'}${pgCode ? ' (Postgres code ' + pgCode + ')' : ''} — here's the exact response from Supabase:`,
+    detail: pgMessage,
+    fixSql: null,
+    autoFixable: false
+  };
+}
+
+let _sbWePendingRetry = null;
+let _sbWePendingDiagnosis = null;
+// Shows the write-error modal for any diagnosed save failure. `actions.retry`
+// is a function that re-runs the original save (e.g. re-calling _saSaveAd).
+function _sbShowWriteErrorModal(diagnosis, actions) {
+  actions = actions || {};
+  _sbWePendingRetry = actions.retry || null;
+  _sbWePendingDiagnosis = diagnosis;
+  document.getElementById('sbWeSummary').textContent = (diagnosis && diagnosis.summary) || 'Save failed for an unknown reason.';
+  const hintRow = document.getElementById('sbWeHintRow');
+  if (diagnosis && diagnosis.hint) { hintRow.style.display = 'block'; hintRow.textContent = diagnosis.hint; }
+  else { hintRow.style.display = 'none'; }
+  const detailRow = document.getElementById('sbWeDetailRow');
+  if (diagnosis && diagnosis.detail) { detailRow.style.display = 'block'; document.getElementById('sbWeDetailText').textContent = diagnosis.detail; }
+  else { detailRow.style.display = 'none'; }
+  const fixRow = document.getElementById('sbWeFixRow');
+  if (diagnosis && diagnosis.fixSql) {
+    fixRow.style.display = 'block';
+    document.getElementById('sbWeFixSqlText').textContent = diagnosis.fixSql;
+    document.getElementById('sbWeAutoFixStatus').textContent = '';
+    document.getElementById('sbWeAutoFixBtn').disabled = false;
+    document.getElementById('sbWeAutoFixBtn').style.opacity = '1';
+  } else {
+    fixRow.style.display = 'none';
+  }
+  document.getElementById('sbWeRetryBtn').style.display = actions.retry ? '' : 'none';
+  document.getElementById('sbWriteErrorOverlay').style.display = 'flex';
+}
+function _sbWeCloseModal() {
+  document.getElementById('sbWriteErrorOverlay').style.display = 'none';
+  _sbWePendingRetry = null;
+  _sbWePendingDiagnosis = null;
+}
+function _sbWeRetry() {
+  const fn = _sbWePendingRetry;
+  _sbWeCloseModal();
+  if (typeof fn === 'function') fn();
+}
+function _sbWeCopyFixSql() {
+  const sql = _sbWePendingDiagnosis && _sbWePendingDiagnosis.fixSql;
+  if (!sql) return;
+  const statusEl = document.getElementById('sbWeAutoFixStatus');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(sql).then(function() {
+      statusEl.style.color = '#30d158';
+      statusEl.textContent = 'Copied. Paste into Supabase → SQL Editor and run it, then tap Retry Save above.';
+    }).catch(function() { alert(sql); });
+  } else {
+    alert(sql);
+  }
+}
+// Attempts the auto-fix (only works if the project has opted into exposing a
+// DDL-running RPC to the owner key — see _sbAttemptAutoFix). If that RPC
+// isn't present, which is the case on most projects by design, this degrades
+// gracefully into pointing back at "Copy SQL" instead of pretending to have
+// fixed something it couldn't.
+async function _sbWeAttemptAutoFix() {
+  const diagnosis = _sbWePendingDiagnosis;
+  const statusEl = document.getElementById('sbWeAutoFixStatus');
+  const btn = document.getElementById('sbWeAutoFixBtn');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  statusEl.style.color = 'var(--text3)';
+  statusEl.textContent = 'Attempting fix…';
+  const result = await _sbAttemptAutoFix(diagnosis);
+  if (result.applied) {
+    statusEl.style.color = '#30d158';
+    statusEl.textContent = 'Fix applied. Retrying your save…';
+    setTimeout(function() {
+      _sbWeRetry();
+    }, 600);
+    return;
+  }
+  btn.disabled = false; btn.style.opacity = '1';
+  if (result.reason === 'no_ddl_rpc') {
+    statusEl.style.color = 'var(--text3)';
+    statusEl.textContent = 'This project doesn\'t expose a way to run schema fixes from the app (by design, for security) — use Copy SQL and run it in the Supabase SQL Editor instead.';
+  } else {
+    statusEl.style.color = '#ff453a';
+    statusEl.textContent = 'Auto-fix failed: ' + (result.detail || result.reason || 'unknown error') + '. Use Copy SQL instead.';
+  }
+}
+
+
+// Attempts the schema-level auto-fixes _sbDiagnoseWriteError can identify.
+// IMPORTANT: calls a narrow RPC (admin_apply_schema_fix) rather than sending
+// raw SQL — the anon key is public (ships in the client HTML), so nothing
+// reachable through it can be allowed to execute arbitrary text. The RPC
+// only accepts a fix "kind" plus a table/column pair, checks the table
+// against an explicit allowlist, and builds the DDL itself server-side with
+// identifier-quoting. If the RPC is missing entirely (an older DB that
+// hasn't run this migration) or the owner check fails, this degrades to
+// "here's the exact SQL, copy it into the Supabase SQL Editor" — always
+// safe, always works, no elevated permissions required.
+async function _sbAttemptAutoFix(diagnosis) {
+  if (!diagnosis || !diagnosis.autoFixable) {
+    return { applied: false, reason: 'no_fix_available' };
+  }
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/rpc/admin_apply_schema_fix', {
+      method: 'POST',
+      headers: _sbRawHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        fix_kind: diagnosis.autoFixKind,
+        target_table: diagnosis.autoFixTable || null,
+        target_col: diagnosis.autoFixCol || null
+      })
+    });
+    if (r.ok) return { applied: true };
+    if (r.status === 404) {
+      // RPC doesn't exist on this project yet — expected until the
+      // migration has been run, not an error condition.
+      return { applied: false, reason: 'no_ddl_rpc' };
+    }
+    const bodyText = await r.text().catch(function(){ return ''; });
+    return { applied: false, reason: 'rpc_failed', detail: bodyText };
+  } catch (e) {
+    return { applied: false, reason: 'network_error', detail: e.message };
+  }
+}
+
+
 // image + text, injected ~1 per 10 posts in the Home feed) and 'card'
 // (compact, shown at the top of a channel's broadcast list — mainly for
 // promoting in-app features like Premium). Premium subscribers never see
@@ -38164,6 +38455,11 @@ async function _saveAdsConfig(ads) {
   // with zero error anywhere. Routed through SB._writeWithRetry so a failed
   // save now retries and throws, and the caller can tell the admin it didn't
   // actually save instead of silently lying about it.
+  //
+  // UPGRADE: on failure this now also runs the error through
+  // _sbDiagnoseWriteError and stashes the diagnosis on window._lastAdsSaveError
+  // so the caller (the admin's Save button) can show the ACTUAL cause instead
+  // of a generic "check your connection" message that's often wrong.
   try {
     const r = await SB._writeWithRetry(function() {
       return fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
@@ -38173,9 +38469,11 @@ async function _saveAdsConfig(ads) {
       });
     }, 'save ads_config');
     _adsCache = ads; // only cache locally once the write is CONFIRMED to have succeeded
+    window._lastAdsSaveError = null;
     return true;
   } catch(e) {
     console.error('[ads] config save failed — NOT saved to Supabase:', e);
+    window._lastAdsSaveError = _sbDiagnoseWriteError(e, { table: 'app_config', conflictCol: 'key' });
     return false;
   }
 }
@@ -38207,6 +38505,7 @@ function _adCtaHref(ad) {
   if (ad.cta_type === 'premium') return "openWalletPage('premium')";
   if (ad.cta_type === 'earn') return "openWalletPage('earn')";
   if (ad.cta_type === 'home') return "if(typeof tabSwitch==='function')tabSwitch('home')";
+  if (ad.cta_type === 'market_home') return "if(window._spV2OpenMarket)window._spV2OpenMarket();";
   if (ad.cta_type === 'app_market') return `if(window._spV2OpenApp&&'${escHtml(ad.cta_value||'')}')window._spV2OpenApp('${escHtml(ad.cta_value||'')}');else if(window._spV2OpenMarket)window._spV2OpenMarket();`;
   return `openInChrome('${escHtml(ad.cta_value||'')}')`;
 }
@@ -38249,6 +38548,7 @@ async function _onAdCtaTap(adId) {
   if (ad.cta_type === 'premium' && typeof openWalletPage === 'function') openWalletPage('premium');
   else if (ad.cta_type === 'earn' && typeof openWalletPage === 'function') openWalletPage('earn');
   else if (ad.cta_type === 'home' && typeof tabSwitch === 'function') tabSwitch('home');
+  else if (ad.cta_type === 'market_home' && typeof window._spV2OpenMarket === 'function') window._spV2OpenMarket();
   else if (ad.cta_type === 'app_market' && ad.cta_value && typeof window._spV2OpenApp === 'function') window._spV2OpenApp(ad.cta_value);
   else if (ad.cta_type === 'app_market' && typeof window._spV2OpenMarket === 'function') window._spV2OpenMarket();
   else if (ad.cta_value) openInChrome(ad.cta_value);
@@ -41702,7 +42002,10 @@ async function _saSaveAd() {
   if (_saEditingAdIndex !== null && _saEditingAdIndex !== undefined) ads[_saEditingAdIndex] = adObj;
   else ads.push(adObj);
   const saveOk = await _saveAdsConfig(ads);
-  if (!saveOk) { showToast('Could not save the ad — check your connection and try again.', 'error'); return; }
+  if (!saveOk) {
+    _sbShowWriteErrorModal(window._lastAdsSaveError, { retry: () => _saSaveAd() });
+    return;
+  }
   _saCloseAdEditor();
   _saRenderAdsList();
   showToast('Ad saved', 'success');
@@ -41891,7 +42194,8 @@ async function _saSaveTask() {
   try {
     await _saveWalletTasksConfig(tasks);
   } catch(e) {
-    showToast('Failed to save task — try again. (' + e.message + ')', 'error');
+    const diagnosis = _sbDiagnoseWriteError(e, { table: 'app_config', conflictCol: 'key' });
+    _sbShowWriteErrorModal(diagnosis, { retry: () => _saSaveTask() });
     return;
   }
   _saCloseTaskEditor();
@@ -42621,21 +42925,71 @@ function psSaveProjectToHistory(url, key, opts) {
   psSaveHistory(hist);
 }
 
-// Pings a project's REST root to confirm it's reachable and the key is valid.
-// Returns { ok: true } or { ok: false, reason: '...' }
+// Pings a real table to confirm the project is reachable and the key is
+// valid. BUGFIX: this used to hit bare `/rest/v1/?select=*` (no table name)
+// as a generic "is anything here" probe. On this project that route itself
+// returns 401 regardless of the key — confirmed against live logs showing
+// the exact same key succeeding (200) on every real table (posts, comments,
+// channels, group_chats, etc.) in the same second that `/rest/v1/?select=*`
+// came back 401. So the health check was reporting "key rejected" for a
+// perfectly valid key, sending Dave in circles re-pasting a key that was
+// never the problem. Querying a real, always-present table with `limit=1`
+// is a valid PostgREST request and reflects the key's actual validity.
 async function psHealthCheck(url, key) {
   try {
-    const resp = await fetch(url.replace(/\/+$/,'') + '/rest/v1/?select=*', {
+    const resp = await fetch(url.replace(/\/+$/,'') + '/rest/v1/app_config?select=key&limit=1', {
       method: 'GET',
       headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
     });
     if (resp.status === 401 || resp.status === 403) return { ok: false, reason: 'Key rejected (401/403) — check the anon key' };
     if (resp.status >= 500) return { ok: false, reason: 'Project returned a server error (' + resp.status + ')' };
-    // Supabase's REST root responds even to unauthenticated/odd queries with 200/404-ish codes;
-    // anything that isn't a network failure or an auth failure counts as reachable.
+    // A 200 (or a 404/PGRST-style "table not found" if app_config somehow
+    // doesn't exist on this project) both mean the project is reachable and
+    // the key was accepted — only a network failure or an auth rejection
+    // above counts as "not ok".
     return { ok: true };
   } catch (e) {
     return { ok: false, reason: 'Could not reach that URL — likely blocked, paused, or the URL is wrong' };
+  }
+}
+
+// Companion to psHealthCheck: that function only proves READS work. The
+// app_config save-failure bug (missing UNIQUE constraint) is invisible to a
+// read-only check — every read succeeded the whole time the writes were
+// 400ing. This does a real upsert against a disposable probe row so the
+// switcher can catch this entire class of bug (missing constraints, RLS
+// write denials, schema drift) BEFORE it shows up as a broken ad/task save
+// somewhere else in the app. Only meant to run against the currently-active
+// project — this actually writes a row (then cleans it up), so it shouldn't
+// be run against a project the admin is only evaluating.
+async function psWriteHealthCheck(url, key) {
+  const probeKey = '_health_probe_' + Date.now();
+  try {
+    const r = await fetch(url.replace(/\/+$/,'') + '/rest/v1/app_config?on_conflict=key', {
+      method: 'POST',
+      headers: {
+        'apikey': key, 'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+        'x-app-user': (localStorage.getItem('ka_username_key') || '').toLowerCase()
+      },
+      body: JSON.stringify({ key: probeKey, value: '1' })
+    });
+    if (!r.ok) {
+      const bodyText = await r.text().catch(function(){ return ''; });
+      const err = new Error('write probe failed'); err.status = r.status; err.body = bodyText; err.isNetworkError = false;
+      return { ok: false, diagnosis: _sbDiagnoseWriteError(err, { table: 'app_config', conflictCol: 'key' }) };
+    }
+    // Clean up the probe row so this doesn't leave clutter in app_config.
+    // Best-effort — if this delete itself fails, it's a harmless orphan row,
+    // not worth surfacing as a health-check failure.
+    fetch(url.replace(/\/+$/,'') + '/rest/v1/app_config?key=eq.' + encodeURIComponent(probeKey), {
+      method: 'DELETE',
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'x-app-user': (localStorage.getItem('ka_username_key') || '').toLowerCase() }
+    }).catch(function(){});
+    return { ok: true };
+  } catch (e) {
+    e.isNetworkError = true;
+    return { ok: false, diagnosis: _sbDiagnoseWriteError(e, { table: 'app_config', conflictCol: 'key' }) };
   }
 }
 
@@ -42691,6 +43045,8 @@ function psOpenSwitcher() {
   document.getElementById('psTempDateRow').style.display = 'none';
   document.getElementById('psSwitchStatus').textContent = '';
   document.getElementById('psConfirmModal').style.display = 'none';
+  document.getElementById('psConfirmSwitchBtn').style.display = '';
+  document.getElementById('psMergeIssueRow').style.display = 'none';
 }
 function psCloseSwitcher() {
   document.getElementById('psSwitcherOverlay').style.display = 'none';
@@ -42702,9 +43058,40 @@ function psRenderCurrentIndicator() {
   refEl.textContent = _psRefFromUrl(SB_URL);
   dot.style.background = 'var(--text3)'; // neutral until checked
   document.getElementById('psCurrentStatusText').textContent = 'Checking connection…';
+  document.getElementById('psFixKeyRow').style.display = 'none';
   psHealthCheck(SB_URL, SB_KEY).then(function(res) {
-    dot.style.background = res.ok ? '#30d158' : '#ff453a';
-    document.getElementById('psCurrentStatusText').textContent = res.ok ? 'Connected' : ('Unreachable — ' + res.reason);
+    if (!res.ok) {
+      dot.style.background = '#ff453a';
+      document.getElementById('psCurrentStatusText').textContent = 'Unreachable — ' + res.reason;
+      // Only offer the "fix key" shortcut for an auth failure — a rejected key
+      // is something re-pasting can actually solve. A paused project, wrong
+      // URL, or network block needs the full switcher instead, so don't
+      // dangle a fix that can't work for those cases.
+      const isKeyIssue = /key rejected/i.test(res.reason || '');
+      document.getElementById('psFixKeyRow').style.display = isKeyIssue ? 'block' : 'none';
+      if (isKeyIssue) {
+        document.getElementById('psFixKeyInput').value = '';
+        document.getElementById('psFixKeyStatus').textContent = '';
+      }
+      return;
+    }
+    // Reads are fine — now actually test a write. This is the check that
+    // would have caught the app_config missing-constraint bug immediately,
+    // instead of it silently breaking every ad/task save while the
+    // connection indicator kept showing green.
+    dot.style.background = '#f5c518';
+    document.getElementById('psCurrentStatusText').textContent = 'Connected — testing writes…';
+    psWriteHealthCheck(SB_URL, SB_KEY).then(function(wres) {
+      if (wres.ok) {
+        dot.style.background = '#30d158';
+        document.getElementById('psCurrentStatusText').textContent = 'Connected — reads and writes both working';
+      } else {
+        dot.style.background = '#ff9f0a';
+        document.getElementById('psCurrentStatusText').innerHTML = 'Reads work, but writes are failing — <a href="javascript:void(0)" onclick="_sbShowWriteErrorModal(window._psLastWriteDiagnosis, {retry: window._psWriteDiagnosisRetry})" style="color:#ff9f0a;text-decoration:underline;">see why</a>';
+        window._psLastWriteDiagnosis = wres.diagnosis;
+        window._psWriteDiagnosisRetry = function() { psRenderCurrentIndicator(); };
+      }
+    });
   });
 }
 
@@ -42782,8 +43169,23 @@ async function psRequestSwitch(encUrl, encKey, encLabel, temp) {
   document.getElementById('psConfirmNewLabel').textContent = label || _psRefFromUrl(url);
   document.getElementById('psConfirmModal').style.display = 'flex';
   document.getElementById('psConfirmMergePreview').innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Comparing both projects…</div>';
+  document.getElementById('psMergeIssueRow').style.display = 'none';
   document.getElementById('psConfirmSwitchBtn').disabled = true;
   document.getElementById('psConfirmSwitchBtn').style.opacity = '0.5';
+  // Cheap upfront check: if the CURRENT project is already dead, don't
+  // grind through a per-table preview against it (every one of those
+  // requests will also fail, slowly) — go straight to "nothing to compare,
+  // switch when ready" instead.
+  const oldHealth = await psHealthCheck(SB_URL, SB_KEY);
+  if (!oldHealth.ok) {
+    document.getElementById('psConfirmMergePreview').innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px 0;">Current project is unreachable (' + oldHealth.reason + ') — nothing to compare it against.</div>';
+    document.getElementById('psMergeIssueText').textContent = 'Since the current project can\'t be read, there\'s no merge to run — switching just moves the app onto the new project. Nothing at the old project is touched or lost.';
+    document.getElementById('psMergeIssueRow').style.display = 'block';
+    document.getElementById('psConfirmSwitchBtn').style.display = 'none';
+    return;
+  } else {
+    document.getElementById('psConfirmSwitchBtn').style.display = '';
+  }
   try {
     const preview = await psPreviewMerge(SB_URL, SB_KEY, url, key);
     const diffRows = preview.filter(function(r) { return r.error || r.oldCount !== r.newCount; });
@@ -42808,41 +43210,9 @@ function psCancelSwitch() {
   _psPendingSwitch = null;
   document.getElementById('psConfirmModal').style.display = 'none';
 }
-async function psConfirmSwitch() {
-  if (!_psPendingSwitch) return;
-  const p = _psPendingSwitch;
-  const btn = document.getElementById('psConfirmSwitchBtn');
-  const progressEl = document.getElementById('psConfirmMergePreview');
-  btn.disabled = true; btn.style.opacity = '0.5';
-  document.getElementById('psCancelSwitchBtn').disabled = true;
-
-  try {
-    const results = await psRunFullMerge(SB_URL, SB_KEY, p.url, p.key, function(table, i, total) {
-      progressEl.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Merging ' + table + '… (' + (i + 1) + '/' + total + ')</div>';
-    });
-    const failedTables = results.filter(function(r) { return r.skipped || r.failedOld || r.failedNew; });
-    if (failedTables.length) {
-      const proceed = confirm(
-        failedTables.length + ' table(s) had issues during merge (' +
-        failedTables.map(function(r){return r.table;}).join(', ') +
-        '). This usually means one project rejected/blocked those specific requests. Switch anyway? Data already merged for other tables is safe either way, and you can re-run the switch later to retry the rest.'
-      );
-      if (!proceed) {
-        btn.disabled = false; btn.style.opacity = '1';
-        document.getElementById('psCancelSwitchBtn').disabled = false;
-        progressEl.innerHTML = '<div style="font-size:11px;color:#ff9f0a;">Merge incomplete — switch cancelled. Nothing was lost; already-merged tables stay merged.</div>';
-        return;
-      }
-    }
-  } catch (e) {
-    const proceed = confirm('Merge failed unexpectedly: ' + e.message + '. Switch anyway without guaranteed data parity between projects?');
-    if (!proceed) {
-      btn.disabled = false; btn.style.opacity = '1';
-      document.getElementById('psCancelSwitchBtn').disabled = false;
-      return;
-    }
-  }
-
+// Finalizes the switch (localStorage + history + reload). Shared by the
+// clean-merge path and the "switch anyway" fallback.
+function _psFinalizeSwitch(p) {
   localStorage.setItem('ps_active_sb_url', p.url);
   localStorage.setItem('ps_active_sb_key', p.key);
   psSaveProjectToHistory(p.url, p.key, { label: p.label, temp: p.temp });
@@ -42850,6 +43220,74 @@ async function psConfirmSwitch() {
     localStorage.removeItem('ps_temp_reminder_dismissed_for');
   }
   location.reload();
+}
+// Skips the merge entirely and switches straight away — used when the old
+// project is unreachable (dead key, paused project) and there is nothing a
+// merge could do, or when the admin has decided the merge issues are fine
+// to leave for a later re-run.
+function psSwitchAnyway() {
+  if (!_psPendingSwitch) return;
+  _psFinalizeSwitch(_psPendingSwitch);
+}
+async function psConfirmSwitch() {
+  if (!_psPendingSwitch) return;
+  const p = _psPendingSwitch;
+  const btn = document.getElementById('psConfirmSwitchBtn');
+  const progressEl = document.getElementById('psConfirmMergePreview');
+  const issueRow = document.getElementById('psMergeIssueRow');
+  const issueText = document.getElementById('psMergeIssueText');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  document.getElementById('psCancelSwitchBtn').disabled = true;
+  issueRow.style.display = 'none';
+
+  try {
+    const results = await psRunFullMerge(SB_URL, SB_KEY, p.url, p.key, function(table, i, total) {
+      progressEl.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Merging ' + table + '… (' + (i + 1) + '/' + total + ')</div>';
+    });
+    const failedTables = results.filter(function(r) { return r.skipped || r.failedOld || r.failedNew; });
+    if (failedTables.length) {
+      // Non-blocking: show what went wrong and offer "Switch Anyway" inline
+      // instead of a browser confirm() dialog, which can be dismissed by
+      // the OS/PWA chrome on mobile before the person even reads it.
+      const allOldUnreadable = failedTables.every(function(r) { return r.skipped && /old project unreadable/i.test(r.reason || ''); });
+      progressEl.innerHTML = '<div style="font-size:11px;color:var(--text2);">Merge finished with issues on ' + failedTables.length + ' table(s): ' + failedTables.map(function(r){return r.table;}).join(', ') + '.</div>';
+      issueText.textContent = allOldUnreadable
+        ? 'The current project couldn\'t be read at all, so nothing could be pulled from it — but nothing there is at risk either. Switching now just moves the app onto the new project.'
+        : 'This usually means one project rejected/blocked those specific requests. Data already merged for other tables is safe either way, and you can re-run the switch later to retry the rest.';
+      issueRow.style.display = 'block';
+      btn.disabled = false; btn.style.opacity = '1';
+      document.getElementById('psCancelSwitchBtn').disabled = false;
+      return;
+    }
+  } catch (e) {
+    progressEl.innerHTML = '<div style="font-size:11px;color:var(--text2);">Merge failed unexpectedly.</div>';
+    issueText.textContent = 'Merge failed unexpectedly: ' + e.message + '. You can switch anyway without guaranteed data parity between projects.';
+    issueRow.style.display = 'block';
+    btn.disabled = false; btn.style.opacity = '1';
+    document.getElementById('psCancelSwitchBtn').disabled = false;
+    return;
+  }
+
+  _psFinalizeSwitch(p);
+}
+
+// Re-tests and applies a new anon key for the SAME currently-active project
+// URL — for the common "key got rotated in Supabase" case. Skips the
+// merge-preview dance entirely since it's still one project, not a switch.
+async function psFixCurrentKey() {
+  const key = document.getElementById('psFixKeyInput').value.trim();
+  const statusEl = document.getElementById('psFixKeyStatus');
+  if (!key) { statusEl.style.color = '#ff453a'; statusEl.textContent = 'Paste the anon key first.'; return; }
+  statusEl.style.color = 'var(--text3)';
+  statusEl.textContent = 'Testing new key against ' + _psRefFromUrl(SB_URL) + '…';
+  const health = await psHealthCheck(SB_URL, key);
+  if (!health.ok) { statusEl.style.color = '#ff453a'; statusEl.textContent = 'Still failing: ' + health.reason; return; }
+  statusEl.style.color = '#30d158';
+  statusEl.textContent = 'Key works — reloading…';
+  localStorage.setItem('ps_active_sb_url', SB_URL);
+  localStorage.setItem('ps_active_sb_key', key);
+  psSaveProjectToHistory(SB_URL, key, {});
+  setTimeout(function() { location.reload(); }, 500);
 }
 
 // Copies the currently active URL+key to the clipboard as a small JSON blob.
@@ -48571,7 +49009,14 @@ window._spMkManage=function(id,fromRunner){
   var isOwnerApp=String(app.owner||'').toLowerCase()===me();
   var sheet=document.createElement('div');
   sheet.id='spMkManageSheet';
-  sheet.style.cssText='position:fixed;inset:0;z-index:52300;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
+  // BUGFIX: this was z-index:52300 while the running mini app's shell
+  // (#spMarketRun) is z-index:52500 — so opening this sheet from INSIDE a
+  // running mini app (the "..." pill → _spMkRunMenu → here) always rendered
+  // it underneath the app's iframe, invisible until the app was closed and
+  // the higher shell removed. Bumping this above #spMarketRun's 52500 fixes
+  // it for both call sites (from the runner AND from the app list, which
+  // never had this problem since nothing else was stacked above it there).
+  sheet.style.cssText='position:fixed;inset:0;z-index:52600;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
   var statusLine=app.review_status==='pending'?'Awaiting admin review':app.review_status==='rejected'?('Rejected'+(app.review_note?(' — '+esc(app.review_note)):'')):app.review_status==='revoked'?('Removed by admin'+(app.review_note?(' — '+esc(app.review_note)):'')):app.visibility==='public'?'Published to App Market':'Private';
   var usedUpdates=app.update_count||0;
   var updateLimit=updateLimitFor();
@@ -48685,6 +49130,15 @@ window._spMkEdit=function(id){
     return;
   }
   var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  // BUGFIX: #spMarketCreate shares the market screen's z-index (52000),
+  // which is BELOW the running mini-app shell #spMarketRun (52500) by
+  // design — #spMarketCreate is meant to replace the market view, not
+  // layer over a running app. Reaching "Update app" from the runner's own
+  // "..." menu (_spMkManage with fromRunner=true) left the edit wizard
+  // rendering behind the still-open runner — same invisible-until-you-close
+  // bug as the manage sheet, just one screen further in. Close the runner
+  // first, same as _spMkOpen already does for the detail page.
+  window._spMkExitRun();
   create={
     step:1, name:app.name||'', desc:app.description||'', cat:app.category||'Games',
     logo:app.logo||'', mode:'file', html:app.html||'', slug:app.slug||'',
@@ -49267,7 +49721,11 @@ window._spMkShowSSOCode=function(id){
   var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
   var wrap=document.createElement('div');
   wrap.id='spMkSSOCodeSheet';
-  wrap.style.cssText='position:fixed;inset:0;z-index:52400;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
+  // Same stacking bug as spMkManageSheet above: this can be opened from the
+  // runner's menu (which now sits at 52600, above #spMarketRun's 52500) —
+  // if this stayed below 52500 it would repeat the exact same "invisible
+  // until you close the mini app" bug one level deeper.
+  wrap.style.cssText='position:fixed;inset:0;z-index:52600;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;backdrop-filter:blur(10px)';
   wrap.innerHTML='<div style="width:100%;max-width:560px;margin:0 auto;background:var(--bg);border:1px solid var(--glass-border);border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));max-height:82vh;display:flex;flex-direction:column">'+
     '<div style="width:34px;height:4px;background:var(--glass-border);border-radius:3px;margin:0 auto 14px"></div>'+
     '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Add "Continue with Plus"</div>'+
