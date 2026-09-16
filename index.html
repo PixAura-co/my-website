@@ -7650,10 +7650,19 @@ async function joinAsUser() {
   if (isOwnerAttempt) {
     let ownerRow = null;
     try {
-      // FIX: same issue as the boot-time check — SB.query()'s fallback on
-      // failure looked identical to "row doesn't exist" and could wipe the
-      // owner's real profile with a blank upsert on a network hiccup.
-      const r = await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(OWNER_KEY)}`, { headers: SB.headers });
+      // FIX: raw fetch()/SB.upsert() against /rest/v1/accounts are gated by
+      // RLS policies that key off the x-app-user header (the CURRENTLY
+      // logged-in user). Before login succeeds that header is empty, so
+      // those calls 401 — a chicken-and-egg failure that showed up as
+      // "Connection error. Try again." on a correct password. login_lookup
+      // is a SECURITY DEFINER RPC that bypasses RLS by design for exactly
+      // this pre-authentication case, so use that instead of touching the
+      // table directly.
+      const r = await fetch(`${SB_URL}/rest/v1/rpc/login_lookup`, {
+        method: 'POST',
+        headers: SB.headers,
+        body: JSON.stringify({ p_username: OWNER_KEY, p_password: OWNER_PASS })
+      });
       if (!r.ok) throw new Error(`owner row check failed (${r.status})`);
       const rows = await r.json();
       if (!rows || !rows.length) {
