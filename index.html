@@ -7314,13 +7314,18 @@ async function getAccount(usernameOrDisplay) {
   if (!usernameOrDisplay) return null;
   const key = usernameOrDisplay.toLowerCase().trim();
   if (_cache['acct_' + key]) return _cache['acct_' + key];
-  let rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(key)}`);
+  // FIX: was querying the raw 'accounts' table, which RLS restricts to
+  // "own row or owner" — every lookup of ANOTHER user's profile silently
+  // returned nothing for regular users. accounts_public is the safe view
+  // (no password/email/device_fingerprint/plus_coins) meant for exactly
+  // this and isn't subject to the same row restriction.
+  let rows = await SB.query('accounts_public', `?username=eq.${encodeURIComponent(key)}`);
   if (!rows || !rows[0]) {
-    rows = await SB.query('accounts', `?display_name=ilike.${encodeURIComponent(usernameOrDisplay.trim())}`);
+    rows = await SB.query('accounts_public', `?display_name=ilike.${encodeURIComponent(usernameOrDisplay.trim())}`);
   }
   // @hardeh alias: if not found, also try 'money' (legacy username)
   if ((!rows || !rows[0]) && key === 'hardeh') {
-    rows = await SB.query('accounts', `?username=eq.money`);
+    rows = await SB.query('accounts_public', `?username=eq.money`);
   }
   // If still not found, check SUGGESTED_ACCOUNTS built-in list for a matching entry
   if ((!rows || !rows[0]) && typeof SUGGESTED_ACCOUNTS !== 'undefined') {
@@ -7363,7 +7368,10 @@ async function getAllAccounts() {
   // database happened to return was silently invisible to every name/avatar
   // lookup in the app (feed posts, comments, mentions, etc. all fell back to
   // the raw username with a blank avatar). Bumped with real headroom.
-  const rows = await SB.query('accounts', '?limit=5000') || [];
+  // FIX: raw 'accounts' RLS only returns the caller's own row for anyone
+  // but the owner — this made the account list empty (1 row) for every
+  // regular user. accounts_public exposes the safe fields for everyone.
+  const rows = await SB.query('accounts_public', '?limit=5000') || [];
   // Keep the local Premium cache fresh alongside the accounts fetch — don't block
   // on it, since a stale badge for a second is fine but a hung feed isn't.
   _refreshPremiumUsersCache();
@@ -7642,7 +7650,12 @@ async function joinAsUser() {
   if (isOwnerAttempt) {
     let ownerRow = null;
     try {
-      const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(OWNER_KEY)}`);
+      // FIX: same issue as the boot-time check — SB.query()'s fallback on
+      // failure looked identical to "row doesn't exist" and could wipe the
+      // owner's real profile with a blank upsert on a network hiccup.
+      const r = await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(OWNER_KEY)}`, { headers: SB.headers });
+      if (!r.ok) throw new Error(`owner row check failed (${r.status})`);
+      const rows = await r.json();
       if (!rows || !rows.length) {
         await SB.upsert('accounts', {
           username: OWNER_KEY, display_name: OWNER_USER,
@@ -7658,7 +7671,11 @@ async function joinAsUser() {
           ownerRow.password = OWNER_PASS;
         }
       }
-    } catch(e) { console.warn('Owner row check failed:', e); }
+    } catch(e) {
+      console.warn('Owner row check failed:', e);
+      _showFormError(errEl, 'Connection error. Try again.');
+      return;
+    }
 
     if (ownerRow) {
       _cache['acct_' + OWNER_KEY] = ownerRow;
@@ -13746,12 +13763,15 @@ async function openUserProfile(userKey) {
   (async () => {
     try {
       const dbUsername = (storedAcct && storedAcct.username) || (isKrisAccount2 ? OWNER_KEY : userKey.toLowerCase());
-      let rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(dbUsername)}`);
+      // FIX: this refreshes ANOTHER user's profile bio when viewing their
+      // page — raw 'accounts' RLS blocked it for non-owners. accounts_public
+      // exposes bio safely for this read.
+      let rows = await SB.query('accounts_public', `?username=eq.${encodeURIComponent(dbUsername)}`);
       if ((!rows || !rows.length) && dbUsername !== userKey.toLowerCase()) {
-        rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(userKey.toLowerCase())}`);
+        rows = await SB.query('accounts_public', `?username=eq.${encodeURIComponent(userKey.toLowerCase())}`);
       }
       if ((!rows || !rows.length) && displayName && displayName.toLowerCase() !== dbUsername) {
-        rows = await SB.query('accounts', `?display_name=ilike.${encodeURIComponent(displayName)}`);
+        rows = await SB.query('accounts_public', `?display_name=ilike.${encodeURIComponent(displayName)}`);
       }
       const acct = rows && rows[0];
       if (!acct) return;
@@ -14791,7 +14811,10 @@ async function _loadUserCover(usernameKey) {
     hideCover();
   }
   try {
-    const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(usernameKey)}`);
+    // FIX: this loads ANOTHER user's cover photo when their profile overlay
+    // is open — raw 'accounts' RLS blocked it for non-owners viewing anyone
+    // but themselves. accounts_public exposes cover_photo safely.
+    const rows = await SB.query('accounts_public', `?username=eq.${encodeURIComponent(usernameKey)}`);
     const acct = rows && rows[0];
     if (acct && acct.cover_photo && document.getElementById('uprofileOverlay').classList.contains('open')) {
       showCover(acct.cover_photo);
@@ -18290,7 +18313,6 @@ async function openSuggestedOverlay() {
       const isFollowing = myFollows.includes(normKey);
       const aviHtml = _aviHtml(p.pic, p.displayName, 44);
       const verBadge = (p.isKris || p.isVerified || isUserVerified(p.key) || isUserVerified(p.displayName)) ? ' ' + VERIFIED_BADGE_HTML : '';
-      const viewProfileBtn = `<button onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid var(--glass-border);background:rgba(255,255,255,0.06);color:var(--text2);">View Profile</button>`;
       const followBtn = isSelf ? '' : `<button id="sug-follow-${escHtml(p.key)}" onclick="sugOverlayToggleFollow('${escHtml(p.key)}','${escHtml(p.displayName)}',this)" style="font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;border:1px solid;${isFollowing ? 'background:rgba(245,197,24,0.12);border-color:rgba(245,197,24,0.3);color:var(--gold);' : 'background:var(--gold);border-color:var(--gold);color:#000;'}">${isFollowing ? 'Following' : 'Follow'}</button>`;
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--glass-border);">
         <div onclick="_openUserProfileFrom('suggested','${escHtml(p.key)}')" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(p.key, p.displayName)}">${aviHtml}</div>
@@ -18298,7 +18320,7 @@ async function openSuggestedOverlay() {
           <div style="font-size:14px;font-weight:700;color:var(--text);">${escHtml(p.displayName)}${verBadge}</div>
           <div style="font-size:12px;color:var(--text3);">@${escHtml(p.key.replace(/\s+/g,'_'))}</div>
         </div>
-        <div style="display:flex;gap:7px;flex-shrink:0;">${viewProfileBtn}${followBtn}</div>
+        <div style="display:flex;gap:7px;flex-shrink:0;">${followBtn}</div>
       </div>`;
     }).join('');
 
@@ -19885,7 +19907,10 @@ async function signupStepNext() {
     if (!/^[a-zA-Z0-9_]+$/.test(val)) { _showFormError(errEl, 'Letters, numbers, underscores only.'); return; }
     if ([OWNER_KEY,'owner'].includes(val.toLowerCase())) { _showFormError(errEl, 'That username is reserved.'); return; }
     errEl.textContent = 'Checking availability…';
-    const existing = await SB.query('accounts', `?username=eq.${encodeURIComponent(val.toLowerCase())}`);
+    // FIX: was querying raw 'accounts', which RLS blocks for a username
+    // that isn't the caller's own yet — every name looked "available" even
+    // when taken. accounts_public exposes username safely for this check.
+    const existing = await SB.query('accounts_public', `?username=eq.${encodeURIComponent(val.toLowerCase())}`);
     if (existing && existing.length > 0) { _showFormError(errEl, 'That username is already taken.'); return; }
     errEl.textContent = '';
     signupGoToStep(3);
@@ -21199,14 +21224,23 @@ async function submitForgotPassword() {
   if (!newPass || newPass.length < 4) { _showFormError(errEl, 'New password must be at least 4 characters.'); return; }
   errEl.textContent = 'Checking…';
   try {
-    const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(uname)}`);
-    const acct = rows && rows[0];
-    if (!acct) { _showFormError(errEl, 'No account found with that username.'); return; }
-    if (!acct.recovery_code || acct.recovery_code.toUpperCase().trim() !== code) {
-      _showFormError(errEl, 'Incorrect recovery code.'); return;
+    // FIX: this used to read/write recovery_code and password directly on
+    // 'accounts' — fields accounts_public doesn't expose, and RLS blocked
+    // the read entirely for anyone not yet logged in as that user (i.e.
+    // every real forgot-password attempt). Moved to a SECURITY DEFINER RPC
+    // that checks the code server-side and never returns the code/password
+    // to the client.
+    const result = await SB.rpc('reset_password_with_recovery_code', {
+      p_username: uname, p_code: code, p_new_password: newPass
+    });
+    if (!result || !result.ok) {
+      const err = result && result.error;
+      if (err === 'no_account') { _showFormError(errEl, 'No account found with that username.'); }
+      else if (err === 'bad_code') { _showFormError(errEl, 'Incorrect recovery code.'); }
+      else { _showFormError(errEl, 'Connection error. Try again.'); }
+      return;
     }
-    const newCode = _genRecoveryCode();
-    await SB.update('accounts', { password: newPass.toLowerCase(), recovery_code: newCode }, `username=eq.${encodeURIComponent(uname)}`);
+    const newCode = result.new_code;
     if (_cache['acct_' + uname]) { _cache['acct_' + uname].password = newPass.toLowerCase(); _cache['acct_' + uname].recovery_code = newCode; }
     if (_cache['acct_by_username'] && _cache['acct_by_username'][uname]) {
       _cache['acct_by_username'][uname].password = newPass.toLowerCase();
@@ -21216,7 +21250,7 @@ async function submitForgotPassword() {
     closeForgotPasswordModal();
     showToast('Password reset!', 'success');
     const unameField = document.getElementById('usernameInput');
-    if (unameField) unameField.value = acct.display_name || uname;
+    if (unameField) unameField.value = result.display_name || uname;
     showRecoveryCodeModal(newCode);
   } catch(e) {
     _showFormError(errEl, 'Connection error. Try again.');
@@ -22715,9 +22749,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof window._triggerSync === 'function') window._triggerSync();
     (async () => {
       try {
-        const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(OWNER_KEY)}`);
+        // FIX: this used to call SB.query(), which silently falls back to
+        // local cache (or an empty result) on ANY failure — a slow/cold
+        // Supabase connection, a timeout, a network blip. That looked
+        // identical to "the row doesn't exist," so on a bad connection this
+        // block would upsert a BLANK profile over the real one, wiping
+        // bio/profile_link/profile_pic. Now it does a raw fetch and only
+        // treats the row as missing when Supabase explicitly confirms it
+        // with a 200 and an empty array — any failure just skips this
+        // block and leaves the existing row untouched.
+        const r = await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(OWNER_KEY)}`, { headers: SB.headers });
+        if (!r.ok) throw new Error(`owner row check failed (${r.status})`);
+        const rows = await r.json();
         let ownerRow = rows && rows[0];
-        if (!ownerRow) {
+        if (!ownerRow && Array.isArray(rows)) {
+          // Confirmed empty (200, no row) — safe to create, and there's
+          // nothing existing to accidentally wipe.
           await SB.upsert('accounts', {
             username: OWNER_KEY, display_name: OWNER_USER,
             password: OWNER_PASS, bio: '', profile_link: '', profile_pic: '', is_built_in: false
@@ -27104,7 +27151,7 @@ function closeNotifDetailSheet() {
 <!-- Stub panels (kept for backward-compat with internal JS) -->
 <div id="notifOverlay" style="display:none!important;"></div>
 <div id="msgsOverlay" style="display:none!important;"></div>
-<div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow:hidden;">
+<div id="suggestedOverlay" style="display:none;position:fixed;inset:0;z-index:9650;background:var(--bg);flex-direction:column;overflow:hidden;touch-action:pan-y;overscroll-behavior-x:none;">
   <div class="subpage-topbar" style="position:fixed;top:0;left:0;right:0;z-index:10;padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--glass-border);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <button onclick="closeSuggestedOverlay()" title="Back" style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -27117,7 +27164,7 @@ function closeNotifDetailSheet() {
       <button id="suggestedOverlaySearchClear" onclick="document.getElementById('suggestedOverlaySearch').value='';this.style.display='none';window._sugOverlaySetQuery&&window._sugOverlaySetQuery('');document.getElementById('suggestedOverlaySearch').focus();" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--surface5);border:none;color:var(--text2);font-size:12px;cursor:pointer;align-items:center;justify-content:center;font-family:var(--font);line-height:1;">✕</button>
     </div>
   </div>
-  <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(118px + env(safe-area-inset-top,0px)) 16px 100px;box-sizing:border-box;">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-x:none;padding:calc(118px + env(safe-area-inset-top,0px)) 16px 100px;box-sizing:border-box;">
     <div style="max-width:620px;margin:0 auto;width:100%;" id="suggestedOverlayList"></div>
   </div>
 </div>
@@ -35748,18 +35795,6 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       <div id="walletRecentActivityList"></div>
     </div>
 
-    <!-- Settings card — sits right after Recent Activity on Wallet home, in addition to the Settings tab below. -->
-    <button onclick="openWalletSettingsPage()" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);margin-bottom:20px;">
-      <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text);">Settings</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:1px;">Wallet preferences</div>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-    </button>
-
   </div>
 
   <!-- Wallet tab bar — Home / Earn / Spend / Premium / Settings. This same bar
@@ -38037,13 +38072,23 @@ async function _loadWalletTasksConfig() {
 
 async function _saveWalletTasksConfig(tasks) {
   _walletTasksCache = tasks;
-  try {
-    await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
-      method: 'POST',
-      headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: 'wallet_tasks', value: JSON.stringify(tasks) })
-    });
-  } catch(e) { console.warn('[wallet] tasks save failed:', e); }
+  // FIX: this used a bare fetch() with no status check — fetch() only
+  // rejects on a genuine network failure, never on a 400/403/409/etc HTTP
+  // error response. So a rejected write (bad payload, an RLS check, a
+  // conflict) returned normally, hit no catch, and the task silently never
+  // saved — "vanishes into the void" with no error shown. Now it checks
+  // r.ok and throws (so the caller can show a real error) on anything but
+  // a genuine success.
+  const r = await fetch(SB_URL + '/rest/v1/app_config?on_conflict=key', {
+    method: 'POST',
+    headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
+    body: JSON.stringify({ key: 'wallet_tasks', value: JSON.stringify(tasks) })
+  });
+  if (!r.ok) {
+    const bodyText = await r.text().catch(function(){ return ''; });
+    console.warn('[wallet] tasks save failed:', r.status, bodyText);
+    throw new Error('Task save failed (' + r.status + ')' + (bodyText ? ': ' + bodyText : ''));
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -38285,8 +38330,15 @@ async function _refreshProfileCoverWalletPill() {
   if (!pillBal) return;
   pillBal.textContent = window._walletBalanceLoaded ? _walletBalance.toLocaleString() : '···';
   try {
-    const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`);
-    const bal = (rows && rows[0] && rows[0].plus_coins) || 0;
+    // FIX: same SB.query() failure-looks-like-empty issue as
+    // _refreshWalletBalance — a raw fetch with a status check means a
+    // network hiccup no longer gets displayed (and cached) as a real
+    // zero balance.
+    const r = await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`, { headers: SB.headers });
+    if (!r.ok) throw new Error(`balance pill fetch failed (${r.status})`);
+    const rows = await r.json();
+    if (!rows || !rows[0]) throw new Error('balance row not found');
+    const bal = rows[0].plus_coins || 0;
     _walletBalance = bal;
     window._walletBalanceLoaded = true;
     if (pillBal) pillBal.textContent = bal.toLocaleString();
@@ -39047,13 +39099,23 @@ function _toggleWalletBalanceHidden() {
 
 async function _refreshWalletBalance() {
   try {
-    const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`);
+    // FIX: SB.query() swallows fetch failures internally and falls back to
+    // local-storage cache, so a network hiccup and a genuinely-zero balance
+    // both looked like "rows is empty" here — the || 0 fallback then
+    // displayed (and could feed into later credit/debit writes as) a wrong
+    // zero balance instead of leaving the real number alone. Using a raw
+    // fetch with an explicit status check means we only trust a balance of
+    // 0 when Supabase actually returns it, not when the request failed.
+    const r = await fetch(`${SB_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(_myWalletKey())}&select=plus_coins`, { headers: SB.headers });
+    if (!r.ok) throw new Error(`balance fetch failed (${r.status})`);
+    const rows = await r.json();
     if (rows && rows[0] && rows[0].plus_coins == null) {
       // Row exists but plus_coins was never initialized — set it to 0 explicitly
       // so future reads are unambiguous, instead of silently defaulting forever.
       try { await SB.update('accounts', { plus_coins: 0 }, `username=eq.${encodeURIComponent(_myWalletKey())}`); } catch(e) {}
     }
-    _walletBalance = (rows && rows[0] && rows[0].plus_coins) || 0;
+    if (!rows || !rows[0]) throw new Error('balance row not found');
+    _walletBalance = rows[0].plus_coins || 0;
     window._walletBalanceLoaded = true;
   } catch(e) {
     console.warn('[wallet] balance load failed:', e);
@@ -41452,8 +41514,12 @@ function _saBeginTaskDrag(row, list) {
     const tasks = await _loadWalletTasksConfig();
     const reordered = orderedIndexes.map(function(i){ return tasks[i]; }).filter(Boolean);
     if (reordered.length === tasks.length) {
-      await _saveWalletTasksConfig(reordered);
-      _saRenderTasksList();
+      try {
+        await _saveWalletTasksConfig(reordered);
+        _saRenderTasksList();
+      } catch(e) {
+        showToast('Failed to save new order — try again.', 'error');
+      }
     }
   };
   document.addEventListener('touchmove', move, { passive: true });
@@ -41810,7 +41876,15 @@ async function _saSaveTask() {
   } else {
     tasks.push(taskObj);
   }
-  await _saveWalletTasksConfig(tasks);
+  // FIX: _saveWalletTasksConfig now throws on a real failure instead of
+  // swallowing it — catch that here so "Task saved" is only shown when it
+  // actually was, instead of always showing regardless of what happened.
+  try {
+    await _saveWalletTasksConfig(tasks);
+  } catch(e) {
+    showToast('Failed to save task — try again. (' + e.message + ')', 'error');
+    return;
+  }
   _saCloseTaskEditor();
   _saRenderTasksList();
   showToast('Task saved', 'success');
@@ -41819,7 +41893,12 @@ async function _saDeleteTask() {
   if (_saEditingTaskIndex === null || _saEditingTaskIndex === undefined) return;
   const tasks = await _loadWalletTasksConfig();
   tasks.splice(_saEditingTaskIndex, 1);
-  await _saveWalletTasksConfig(tasks);
+  try {
+    await _saveWalletTasksConfig(tasks);
+  } catch(e) {
+    showToast('Failed to delete task — try again. (' + e.message + ')', 'error');
+    return;
+  }
   _saCloseTaskEditor();
   _saRenderTasksList();
   showToast('Task deleted', 'success');
@@ -42253,11 +42332,16 @@ async function renderPartnerSitesRow() {
     + '</div>';
   // Refresh with the real balance in the background
   try {
-    var rows = await SB.query('accounts', '?username=eq.' + encodeURIComponent(_myWalletKey()) + '&select=plus_coins');
+    // FIX: same SB.query() issue — a failed/timed-out read was silently
+    // treated as a real zero balance and displayed/cached as such.
+    var r2 = await fetch(SB_URL + '/rest/v1/accounts?username=eq.' + encodeURIComponent(_myWalletKey()) + '&select=plus_coins', { headers: SB.headers });
+    if (!r2.ok) throw new Error('home card balance fetch failed (' + r2.status + ')');
+    var rows = await r2.json();
     if (rows && rows[0] && rows[0].plus_coins == null) {
       try { await SB.update('accounts', { plus_coins: 0 }, 'username=eq.' + encodeURIComponent(_myWalletKey())); } catch(e) {}
     }
-    var bal = (rows && rows[0] && rows[0].plus_coins) || 0;
+    if (!rows || !rows[0]) throw new Error('balance row not found');
+    var bal = rows[0].plus_coins || 0;
     _walletBalance = bal;
     window._walletBalanceLoaded = true;
     var balEl = document.getElementById('partnerSitesBalance');
@@ -42810,11 +42894,20 @@ async function psFetchAllRowsFrom(url, key, table) {
 // Inserts rows into an arbitrary project's table, skipping rows whose primary key already exists there.
 async function psInsertRowsInto(url, key, table, rows) {
   if (!rows || !rows.length) return { inserted: 0, failed: 0 };
+  const noPk = PS_NO_PK_TABLES.has(table);
+  const pk = _psPkFor(table);
   let inserted = 0, failed = 0;
   for (let i = 0; i < rows.length; i += 200) {
     const chunk = rows.slice(i, i + 200);
     try {
-      const res = await fetch(`${url}/rest/v1/${table}`, {
+      // on_conflict must be specified explicitly for resolution=ignore-duplicates
+      // to actually take effect — without it PostgREST has no conflict target
+      // to resolve against, so rows whose pk already exists on the destination
+      // fail outright (409) instead of being silently skipped as intended.
+      // Tables with no real primary key have no conflict target at all —
+      // sending on_conflict there causes a hard 400, so those are plain inserts.
+      const url_ = noPk ? `${url}/rest/v1/${table}` : `${url}/rest/v1/${table}?on_conflict=${encodeURIComponent(pk)}`;
+      const res = await fetch(url_, {
         method: 'POST',
         headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
         body: JSON.stringify(chunk)
@@ -42825,12 +42918,31 @@ async function psInsertRowsInto(url, key, table, rows) {
   return { inserted, failed };
 }
 
-// Best-effort primary key guess for de-duping two row sets before merge.
-// Every table in this app uses 'id' except a few — handle those explicitly.
+// Primary-key lookup for merge de-duping, matching the actual schema —
+// most tables use 'id', but accounts/premium_users/wallet_payout_methods/
+// mini_app_uploader_privileges are keyed on 'username', and messages on
+// 'chat_key'. Getting this wrong sends on_conflict against a column that
+// isn't actually the table's conflict target, which Postgres rejects
+// outright (400) rather than silently ignoring.
 function _psPkFor(table) {
-  if (table === 'messages') return 'id'; // messages table pk is id per the SUPABASE TABLES REQUIRED block
+  if (table === 'messages') return 'chat_key';
+  if (table === 'accounts' || table === 'premium_users' || table === 'wallet_payout_methods' || table === 'mini_app_uploader_privileges') return 'username';
   return 'id';
 }
+// Tables with no primary key at all in this schema (channel_post_views,
+// channel_reactions, chat_seen, dm_messages, flagged_accounts, follows,
+// group_seen, push_subscriptions, reactions, and the generic jsonb-blob
+// tables like admin_controls/app_config/blocked_users/premium_requests/
+// statuses/streaks/user_settings/verif_requests). Merge-by-id de-duping
+// is meaningless here — on_conflict has nothing to target, so these are
+// just appended as-is (accepting some risk of duplicate rows on repeated
+// merges) rather than silently miscounted as failures.
+const PS_NO_PK_TABLES = new Set([
+  'channel_post_views','channel_reactions','chat_seen','dm_messages',
+  'flagged_accounts','follows','group_seen','push_subscriptions','reactions',
+  'admin_controls','app_config','blocked_users','premium_requests',
+  'statuses','streaks','user_settings','verif_requests'
+]);
 
 // Merges two arrays of rows from the same table into one de-duplicated set.
 // Rows unique to either side are kept. On matching primary keys, the row
@@ -42876,6 +42988,7 @@ async function psRunFullMerge(oldUrl, oldKey, newUrl, newKey, onProgress) {
     const table = BACKUP_TABLE_LIST[i];
     if (onProgress) onProgress(table, i, BACKUP_TABLE_LIST.length);
     const pk = _psPkFor(table);
+    const noPk = PS_NO_PK_TABLES.has(table);
     let oldRows = [], newRows = [], fetchError = null;
     try { oldRows = await psFetchAllRowsFrom(oldUrl, oldKey, table); } catch (e) { fetchError = 'old project unreadable: ' + e.message; }
     try { newRows = await psFetchAllRowsFrom(newUrl, newKey, table); } catch (e) { fetchError = (fetchError ? fetchError + '; ' : '') + 'new project unreadable: ' + e.message; }
@@ -42885,12 +42998,16 @@ async function psRunFullMerge(oldUrl, oldKey, newUrl, newKey, onProgress) {
       continue;
     }
 
-    const merged = _psMergeRows(oldRows, newRows, pk);
+    // No-PK tables can't be de-duplicated by key — just send each side's
+    // rows to the other side as plain inserts (best-effort; may create
+    // duplicates on repeated merges, but that beats silently dropping data
+    // or collapsing distinct rows that happen to share an undefined key).
+    const merged = noPk ? oldRows.concat(newRows) : _psMergeRows(oldRows, newRows, pk);
     // Push whatever each side is missing. ignore-duplicates means rows
     // already present (matching pk) are silently skipped — this never
     // overwrites a row that's already there, it only fills gaps.
-    const toOld = await psInsertRowsInto(oldUrl, oldKey, table, merged);
-    const toNew = await psInsertRowsInto(newUrl, newKey, table, merged);
+    const toOld = await psInsertRowsInto(oldUrl, oldKey, table, noPk ? newRows : merged);
+    const toNew = await psInsertRowsInto(newUrl, newKey, table, noPk ? oldRows : merged);
     results.push({
       table,
       oldHad: oldRows.length, newHad: newRows.length, mergedTotal: merged.length,
@@ -45783,7 +45900,32 @@ function v2Limit(){const t=v2Tier();return t?V2_LIMITS[t.tier]||2:2}
 function v2CanPublish(){return !!v2Tier()}
 function v2Now(){return Date.now()}
 function v2Local(){try{return JSON.parse(localStorage.getItem(V2_APP_KEY)||'[]')}catch(e){return[]}}
-function v2SaveLocal(a){localStorage.setItem(V2_APP_KEY,JSON.stringify(a));}
+// Caches the app list to localStorage as an offline/error fallback. Full
+// app rows (especially `html`, which holds a mini app's entire source) can
+// easily exceed localStorage's per-origin quota once the Market has any
+// real number of public apps — that used to throw a raw QuotaExceededError
+// all the way up into the Market's "couldn't load" screen. Two things fix
+// that: (1) strip `html` from apps you don't own before caching, since the
+// fallback is only ever used to browse/list — running an app always goes
+// through v2RawQuery against Supabase directly, never this cache; and
+// (2) wrap the write itself so a quota failure degrades to "no cache"
+// instead of crashing whatever called this.
+function v2SaveLocal(a){
+  try{
+    const me=v2me();
+    const lean=(a||[]).map(function(app){
+      if(app && String(app.owner||'').toLowerCase()===me) return app; // keep full row for apps you own — v2SaveApps diffs against this
+      if(!app || typeof app.html==='undefined') return app;
+      const copy=Object.assign({},app); delete copy.html; return copy;
+    });
+    localStorage.setItem(V2_APP_KEY,JSON.stringify(lean));
+  }catch(e){
+    console.warn('[App Market] local cache write skipped (quota or storage error):',e);
+    // Best-effort: if even the lean version doesn't fit, drop the cache
+    // entirely rather than leave a corrupt/partial value behind.
+    try{localStorage.removeItem(V2_APP_KEY);}catch(e2){}
+  }
+}
 // Raw direct-to-Supabase fetch for App Market reads. Deliberately bypasses
 // SB.query's global _checkSB() offline gate: that gate is shared across the
 // whole app and can be tripped (2 failed probes) by something unrelated to
@@ -45860,6 +46002,13 @@ async function v2LoadApps(force){
   window._spV2LoadPromise=p;
   return p;
 }
+// v2LoadApps and v2Local are called from App Market UI code that lives in a
+// later, separate <script> block (openMarketHome, renderMarket, etc.) and so
+// is outside this IIFE's closure. Plain `function` declarations here are
+// private to the closure — exporting them explicitly is what makes them
+// reachable from outside, same as _spV2Close below already does.
+window.v2LoadApps=v2LoadApps;
+window.v2Local=v2Local;
 async function v2SaveApps(apps){
   try{
     const mineBefore=v2Local().filter(v2AppForOwner);const mineAfter=apps.filter(v2AppForOwner);
@@ -46076,7 +46225,7 @@ async function v2RankPool(rows){
 const oldFetchRanked=window._fetchRankedPostsPage;
 window._fetchRankedPostsPage=async function(pageSize,seenIds){
   const offset=seenIds?seenIds.size:0;
-  const select='id,username,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link';
+  const select='id,type,league,match,pick,odds,analysis,result,title,body,booking_codes,media,comments_on,timestamp,views,version,boost_data,download_link';
   let rows=[];
   try{
     const now=Date.now();
@@ -47663,7 +47812,17 @@ body.light-mode .post-context-menu-cancel{background:rgba(0,0,0,.05)!important}
 </script>
 
 <style id="sp-market-v4-css">
-#spMarket,#spMkGate,#spMarketCreate,#spMarketRun,#spMkAdmin,#spMkTerms,#spMkProfileEdit{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
+#spMarket,#spMkGate,#spMarketCreate,#spMkAdmin,#spMkTerms,#spMkProfileEdit{position:fixed;inset:0;z-index:52000;background:var(--bg);display:flex;flex-direction:column}
+/* FIX: spMarketRun previously shared the exact same z-index as #spMarket.
+   Since both are appended as siblings inside the same root container,
+   identical z-index means stacking is decided purely by DOM insertion
+   order — fragile, since anything that re-touches #spMarket afterward
+   (a background sync re-rendering it, for example) could end up visually
+   on top even though the run shell was appended later. Giving the runner
+   an explicit higher z-index makes it always paint above the market
+   screen, with no dependency on ordering. */
+#spMarketRun{position:fixed;inset:0;z-index:52500;background:var(--bg);display:flex;flex-direction:column}
+#spMkDetailPage{position:fixed;inset:0;z-index:52200;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
 #spMarket *,#spMkGate *,#spMarketCreate *,#spMarketRun *,#spMkAdmin *,#spMkTerms *,#spMkProfileEdit *{box-sizing:border-box;font-family:var(--font)}
 
 /* ===== Loading pulse — signals "actively working" vs a frozen/dead screen ===== */
@@ -47849,7 +48008,9 @@ var MK_ICONS={
   toolbox:'<path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Z"/><path d="M8 11V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"/><path d="M3 13h4v2H3zM17 13h4v2h-4z"/><path d="M11 13h2v2h-2z"/>',
   film:'<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/>',
   brush:'<path d="M9.06 11.9 9 12a3 3 0 0 1-3 3H4v2a2 2 0 0 0 2 2h2a3 3 0 0 0 3-3l-.06-.1"/><path d="m11 12 8.5-8.5a1.5 1.5 0 1 1 2 2L13 14"/>',
-  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  star:'<path d="M12 2.5 14.9 9l7.1.6-5.4 4.6 1.7 6.9L12 17.6 5.7 21.1l1.7-6.9L2 9.6 9.1 9Z"/>',
+  pin:'<path d="M12 2a6 6 0 0 0-6 6c0 4.5 6 12 6 12s6-7.5 6-12a6 6 0 0 0-6-6Z"/><circle cx="12" cy="8" r="2"/>'
 };
 var MK_CAT_ICON_KEY={Games:'gamepad',Education:'book',Finance:'wallet2',Social:'users',Utilities:'toolbox',Entertainment:'film',"Creator tools":'brush',Other:'grid'};
 function ico(n,s,strokeW){s=s||18;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(strokeW||2)+'" stroke-linecap="round" stroke-linejoin="round">'+(MK_ICONS[n]||MK_ICONS.grid)+'</svg>';}
@@ -47956,6 +48117,10 @@ async function openMarketHome(){
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out waiting for a response')),12000))
     ])||[];
     state._marketLoadFailed=window._spV2LastLoadFailed && !state.apps.length;
+    // Load pinned/favorited apps alongside the app list so the Pinned
+    // section on Discover is populated from the very first render, not
+    // only after the user opens a detail page.
+    await window._spMkLoadFavorites().catch(function(){});
   }catch(e){
     console.warn('[App Market] load failed',e);
     window._spV2LastLoadFailed=true;
@@ -47983,7 +48148,7 @@ function _spMkPaintLoadError(msg){
   host.innerHTML='<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">Discover</div></div><div class="spas-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:45vh;">'+ico('grid',34)+'<b>Couldn&#39;t load the App Market</b><span>'+esc(msg||'Check your connection and try again.')+'</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkRetryLoad()">Retry</button></div>' + tabbarHtml();
 }
 window._spMkClose=function(){
-  ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkAdmin','spMkTerms','spMkProfileEdit'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+  ['spMkGate','spMarket','spMarketCreate','spMarketRun','spMkDetailPage','spMkManageSheet','spMkAdmin','spMkTerms','spMkProfileEdit'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
   document.body.style.overflow='';
 };
 function renderMarket(){
@@ -48177,9 +48342,13 @@ function categoriesHtml(){
 window._spMkSetActiveCat=function(c){state.active=state.active===c?'All':c;renderMarket();};
 function libraryHtml(){
   var m=mine();
+  var pinned=state.apps.filter(function(a){
+    return window._spMkIsFavorite(a.id) && a.visibility==='public' && a.status==='published';
+  });
   var limit=limitFor();
   return '<div class="spas-top"><div class="spas-top-row"><div></div>'+profileBtnHtml()+'</div><div class="spas-largetitle">My Apps</div></div>'+
     '<div class="spas-body">'+
+    (pinned.length?('<div class="spas-sec-head"><b>Pinned</b><span style="font-size:12px;color:var(--text3);font-weight:700">'+pinned.length+'</span></div><div class="spas-hscroll">'+pinned.map(function(a){return appTile(a);}).join('')+'</div>'):'')+
     '<div class="spas-sec-head"><b>Your projects</b><span style="font-size:12px;color:var(--text3);font-weight:700">'+m.length+'/'+(limit===Infinity?'&infin;':limit)+'</span></div>'+
     (m.length?m.map(function(a){return appRow(a,null,true);}).join(''):(window._spV2LastLoadFailed?('<div class="spas-empty">'+ico('grid',30)+'<b>Couldn&#39;t load your apps</b><span>Check your connection and try again.</span></div><div style="padding:0 16px 4px"><button class="spmk-gate-continue" style="max-width:none;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkRetryLoad()">Retry</button></div>'):('<div class="spas-empty">'+ico('grid',30)+'<b>You haven&#39;t built anything yet</b><span>Tap the + button to create your first mini app.</span></div>')))+
     '<div style="padding:20px 16px 0"><button class="spmk-gate-continue" style="max-width:none" onclick="window._spMkCreate()">'+ico('plus',15)+' Build a mini app</button></div>'+
@@ -48188,7 +48357,7 @@ function libraryHtml(){
 }
 function appTile(a){
   var iconHtml=a.logo?('<img src="'+esc(a.logo)+'">'):esc(initials(a.name));
-  return '<div class="spas-app-tile" onclick="window._spMkOpen(\''+esc(a.id)+'\')"><div class="spas-app-tile-icon">'+iconHtml+'</div><span>'+esc(a.name)+'</span></div>';
+  return '<div class="spas-app-tile" onclick="window._spMkDetail(\''+esc(a.id)+'\')"><div class="spas-app-tile-icon">'+iconHtml+'</div><span>'+esc(a.name)+'</span></div>';
 }
 function appRow(a,rank,mineList){
   var iconHtml=a.logo?('<img src="'+esc(a.logo)+'">'):esc(initials(a.name));
@@ -48200,17 +48369,164 @@ function appRow(a,rank,mineList){
     else if(a.visibility==='public')statusTxt='Published · '+(a.category||'');
     else statusTxt='Private · '+(a.category||'');
   }
-  return '<div class="spas-row" onclick="'+(mineList?('window._spMkManage(\''+esc(a.id)+'\')'):('window._spMkOpen(\''+esc(a.id)+'\')'))+'">'+
+  return '<div class="spas-row" onclick="'+(mineList?('window._spMkManage(\''+esc(a.id)+'\')'):('window._spMkDetail(\''+esc(a.id)+'\')'))+'">'+
     (rank?('<div class="spas-rank">'+rank+'</div>'):'')+
     '<div class="spas-row-icon">'+iconHtml+'</div>'+
-    '<div class="spas-row-info"><b>'+esc(a.name)+(a.is_official?' <span style="color:var(--gold)">✓</span>':'')+'</b><span>'+esc(statusTxt)+'</span></div>'+
+    '<div class="spas-row-info"><b>'+esc(a.name)+(a.is_official&&a.id!=='official_wallet'?' <span style="color:var(--gold)">✓</span>':'')+'</b><span>'+esc(statusTxt)+'</span></div>'+
     '<button class="spas-get-btn" onclick="event.stopPropagation();window._spMk'+(mineList?'Manage':'Open')+'(\''+esc(a.id)+'\')">'+(mineList?ico('settings',15).replace('currentColor','var(--text3)'):'OPEN')+'</button>'+
   '</div>';
 }
 window._spMkSearch=function(v){state.query=v;if(state.tab==='discover')state.tab='categories';renderMarket();};
 
+/* ================= RATINGS ================= */
+window._spMkLoadRating=async function(appId){
+  var out={avg:null,count:0,mine:null};
+  try{
+    var summary=await v2RawQuery('mini_app_rating_summary','?app_id=eq.'+encodeURIComponent(appId)+'&limit=1').catch(function(){return [];});
+    if(summary&&summary[0]){out.avg=parseFloat(summary[0].avg_stars);out.count=summary[0].rating_count||0;}
+    var mine=me();
+    if(mine){
+      var mineRows=await v2RawQuery('mini_app_ratings','?app_id=eq.'+encodeURIComponent(appId)+'&username=eq.'+encodeURIComponent(mine)+'&limit=1').catch(function(){return [];});
+      if(mineRows&&mineRows[0])out.mine=mineRows[0].stars;
+    }
+  }catch(e){console.warn('[App Market] rating load failed',e);}
+  return out;
+};
+window._spMkRate=async function(appId,stars){
+  var mine=me();
+  if(!mine){toast('Sign in to rate this app','error');return;}
+  try{
+    await SB.upsert('mini_app_ratings',{app_id:appId,username:mine,stars:stars,updated_at:new Date().toISOString()},'app_id,username');
+    toast('Thanks for rating!','success');
+    var host=document.getElementById('spMkRatingHost');
+    if(host){var fresh=await window._spMkLoadRating(appId);host.outerHTML=_spMkRatingHtml(appId,fresh);}
+  }catch(e){
+    console.warn('[App Market] rating save failed',e);
+    toast('Failed to save rating — try again.','error');
+  }
+};
+function _spMkRatingHtml(appId,r){
+  var avgTxt=r.avg!=null?r.avg.toFixed(1):null;
+  var full=avgTxt?Math.round(r.avg):0;
+  var starsRow=[1,2,3,4,5].map(function(n){
+    return '<button onclick="window._spMkRate(\''+esc(appId)+'\','+n+')" style="background:none;border:0;padding:2px;cursor:pointer;color:'+((r.mine&&n<=r.mine)?'var(--gold)':(n<=full?'var(--gold)':'var(--glass-border)'))+'">'+ico('star',15).replace(/stroke-width="2"/,'stroke-width="0" fill="currentColor"')+'</button>';
+  }).join('');
+  return '<div id="spMkRatingHost" style="display:flex;align-items:center;gap:8px;margin-top:2px">'+
+    (avgTxt?('<span style="font-size:13px;font-weight:700;color:var(--text)">'+avgTxt+'</span><span style="font-size:11.5px;color:var(--text3)">('+r.count+')</span>'):'<span style="font-size:11.5px;color:var(--text3)">No ratings yet</span>')+
+    '<span style="display:inline-flex;margin-left:4px">'+starsRow+'</span>'+
+  '</div>';
+}
+
+/* ================= FAVORITES / PIN TO HOME ================= */
+window._spMkFavorites=[];
+window._spMkLoadFavorites=async function(){
+  var mine=me();
+  if(!mine){window._spMkFavorites=[];return [];}
+  try{
+    var rows=await v2RawQuery('mini_app_favorites','?username=eq.'+encodeURIComponent(mine)+'&select=app_id').catch(function(){return [];});
+    window._spMkFavorites=(rows||[]).map(function(r){return r.app_id;});
+  }catch(e){console.warn('[App Market] favorites load failed',e);}
+  return window._spMkFavorites;
+};
+window._spMkIsFavorite=function(appId){return window._spMkFavorites.indexOf(appId)!==-1;};
+window._spMkToggleFavorite=async function(appId){
+  var mine=me();
+  if(!mine){toast('Sign in to pin apps to your home screen','error');return;}
+  var isFav=window._spMkIsFavorite(appId);
+  try{
+    if(isFav){
+      await SB.delete('mini_app_favorites','username=eq.'+encodeURIComponent(mine)+'&app_id=eq.'+encodeURIComponent(appId));
+      window._spMkFavorites=window._spMkFavorites.filter(function(id){return id!==appId;});
+      toast('Removed from Home','success');
+    }else{
+      await SB.upsert('mini_app_favorites',{username:mine,app_id:appId},'username,app_id');
+      window._spMkFavorites.push(appId);
+      toast('Pinned to Home','success');
+    }
+    var btn=document.getElementById('spMkFavBtn');
+    if(btn)btn.outerHTML=_spMkFavBtnHtml(appId);
+    if(typeof window._spRenderHomeFavorites==='function')window._spRenderHomeFavorites();
+  }catch(e){
+    console.warn('[App Market] favorite toggle failed',e);
+    toast('Failed to update — try again.','error');
+  }
+};
+function _spMkFavBtnHtml(appId){
+  var isFav=window._spMkIsFavorite(appId);
+  var iconSvg=isFav
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a6 6 0 0 0-6 6c0 4.5 6 12 6 12s6-7.5 6-12a6 6 0 0 0-6-6Z"/><circle cx="12" cy="8" r="2" fill="var(--bg)"/></svg>'
+    : ico('pin',15);
+  return '<button id="spMkFavBtn" class="spas-circle-btn" onclick="window._spMkToggleFavorite(\''+esc(appId)+'\')" style="color:'+(isFav?'var(--gold)':'var(--text3)')+'">'+iconSvg+'</button>';
+}
+
+/* ================= DETAIL PAGE (App-Store-style) ================= */
+// Tapping an app (tile or row) opens this instead of launching it directly —
+// the small "OPEN"/tile-icon fast path still launches immediately, matching
+// how the real App Store distinguishes "view the listing" from "Open".
+window._spMkDetail=async function(id){
+  if(id==='official_wallet'){window._spMkOpen(id);return;}
+  var apps=state.apps.length?state.apps:await v2LoadApps();
+  var app=apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  var isOwner=String(app.owner||'').toLowerCase()===me();
+  var isPublic=app.visibility==='public'&&app.status==='published';
+  if(!isOwner&&!isPublic){toast('This app is private','error');return;}
+  await window._spMkLoadFavorites();
+  var ratingData=await window._spMkLoadRating(id);
+  var r=root();
+  var page=document.createElement('div');
+  page.id='spMkDetailPage';
+  page.style.cssText='position:fixed;inset:0;z-index:52200;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  var iconHtml=app.logo?('<img src="'+esc(app.logo)+'" style="width:100%;height:100%;object-fit:cover">'):('<span style="font-size:28px;font-weight:800;color:var(--gold)">'+esc(initials(app.name))+'</span>');
+  var shots=app.screenshots||[];
+  var devLabel=(app.is_official&&app.id!=='official_wallet')?'Social Plus':('@'+esc(app.owner||''));
+  page.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:var(--bg);z-index:2">'+
+      '<button class="spas-circle-btn" onclick="window._spMkCloseDetail()">'+ico('back',16)+'</button>'+
+      '<div style="display:flex;gap:8px">'+
+        _spMkFavBtnHtml(app.id)+
+        '<button class="spas-circle-btn" onclick="window._spMkShare(\''+esc(app.id)+'\')">'+ico('share',15)+'</button>'+
+        (isOwner?'<button class="spas-circle-btn" onclick="window._spMkManage(\''+esc(app.id)+'\')">'+ico('settings',15).replace('currentColor','var(--text3)')+'</button>':'')+
+      '</div>'+
+    '</div>'+
+    // FIX: icon and Open button now sit on the same row, with the button
+    // vertically centered against the icon (align-items:center instead of
+    // flex-start) and shrunk to a compact pill sized to match, instead of
+    // a full-width-feeling button stacked awkwardly under the name.
+    '<div style="padding:4px 20px 0;display:flex;gap:16px;align-items:center">'+
+      '<div style="width:76px;height:76px;border-radius:18px;overflow:hidden;background:var(--glass);border:1px solid var(--glass-border);flex-shrink:0;display:flex;align-items:center;justify-content:center">'+iconHtml+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1.2">'+esc(app.name)+(app.is_official&&app.id!=='official_wallet'?' <span style="color:var(--gold);font-size:15px">✓</span>':'')+'</div>'+
+        '<div style="font-size:13px;color:var(--text3);margin-top:2px">'+devLabel+'</div>'+
+      '</div>'+
+      '<button class="spmk-gate-continue" style="height:34px;padding:0 20px;max-width:none;width:auto;font-size:13px;flex-shrink:0;" onclick="window._spMkOpen(\''+esc(app.id)+'\')">Open</button>'+
+    '</div>'+
+    // Ratings row — real data from mini_app_ratings, tap a star to rate.
+    '<div style="padding:10px 20px 0">'+_spMkRatingHtml(app.id,ratingData)+'</div>'+
+    '<div style="display:flex;padding:18px 20px 14px;border-bottom:1px solid var(--glass-border);margin-top:6px">'+
+      '<div style="flex:1;text-align:center;border-right:1px solid var(--glass-border)"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Category</div><div style="font-size:12.5px;font-weight:700;color:var(--text)">'+esc(app.category||'App')+'</div></div>'+
+      '<div style="flex:1;text-align:center;border-right:1px solid var(--glass-border)"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Developer</div><div style="font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+devLabel+'</div></div>'+
+      '<div style="flex:1;text-align:center"><div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Launches</div><div style="font-size:12.5px;font-weight:700;color:var(--text)">'+(app.launches||0)+'</div></div>'+
+    '</div>'+
+    // FIX: screenshots were 130×230 (not quite a phone aspect and on the
+    // small side); bumped to 165×358, which matches a real phone's ~9:19.5
+    // portrait ratio at a size closer to how the App Store displays them.
+    (shots.length?('<div class="spas-hscroll" style="padding:16px 0 4px">'+shots.map(function(s){return '<div style="flex-shrink:0;width:165px;height:358px;border-radius:18px;overflow:hidden;border:1px solid var(--glass-border);margin-right:10px"><img src="'+esc(s)+'" style="width:100%;height:100%;object-fit:cover;display:block"></div>';}).join('')+'</div>'):'')+
+    (app.description?('<div style="padding:18px 20px 40px"><div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px">About this app</div><div style="font-size:13.5px;color:var(--text2);line-height:1.5;white-space:pre-wrap">'+esc(app.description)+'</div></div>'):'<div style="padding:0 0 30px"></div>');
+  r.appendChild(page);
+};
+window._spMkCloseDetail=function(){var el=document.getElementById('spMkDetailPage');if(el)el.remove();};
+
 /* ================= OPEN / RUN ================= */
 window._spMkOpen=async function(id){
+  // The "Wallet" card is a placeholder mini_apps row (id: official_wallet)
+  // representing the real native Wallet feature, not an actual mini app —
+  // it has stub HTML that was never meant to be run in the iframe runner.
+  // Route it straight to the real feature instead.
+  if(id==='official_wallet'){
+    if(typeof openWalletPage==='function'){openWalletPage();return;}
+    toast('Wallet is unavailable right now','error');return;
+  }
   var apps=state.apps.length?state.apps:await v2LoadApps();
   var app=apps.find(function(a){return a.id===id;});
   if(!app)return;
@@ -48219,6 +48535,11 @@ window._spMkOpen=async function(id){
   if(!isOwner&&!isPublic){toast('This app is private','error');return;}
   var locked=!canPublish()&&app.trial_expires_at&&new Date(app.trial_expires_at).getTime()<=Date.now();
   if(locked){toast('This free project has expired. Upgrade to keep using it.','error');return;}
+  // Close the detail page first — it's appended after (and used to render
+  // above) #spMarketRun, so launching the runner while the detail page is
+  // still open put the running app underneath it, invisible until the
+  // detail page was manually closed.
+  window._spMkCloseDetail();
   app.launches=(app.launches||0)+1;
   SB.upsert('mini_apps',{id:app.id,launches:app.launches},'id').catch(function(){});
   var r=root();
@@ -48278,7 +48599,14 @@ function publishActionHtml(app){
 window._spMkShare=async function(id){
   var app=state.apps.find(function(a){return a.id===id;});
   var url=location.origin+'/app/'+encodeURIComponent(app&&app.slug?app.slug:id);
-  try{await navigator.clipboard.writeText(url);toast('Link copied','success');}catch(e){toast(url,'success');}
+  // FIX: previously always copied to clipboard. Using the native share sheet
+  // when available matches how the App Store's own share button behaves —
+  // clipboard copy remains the fallback for browsers without it.
+  if(navigator.share){
+    try{await navigator.share({title:app?app.name:'App',url:url});}catch(e){/* user cancelled — not an error */}
+  }else{
+    try{await navigator.clipboard.writeText(url);toast('Link copied','success');}catch(e){toast(url,'success');}
+  }
   var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
 };
 window._spMkPublish=async function(id){
@@ -48330,7 +48658,7 @@ window._spMkDelete=function(id){
 window._spMkCreate=function(){
   var m=mine();
   if(m.length>=limitFor()){toast('Project limit reached for your plan','error');return;}
-  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null };
+  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[] };
   var r=root();
   var wiz=document.createElement('div');
   wiz.id='spMarketCreate';
@@ -48351,7 +48679,7 @@ window._spMkEdit=function(id){
   create={
     step:1, name:app.name||'', desc:app.description||'', cat:app.category||'Games',
     logo:app.logo||'', mode:'file', html:app.html||'', slug:app.slug||'',
-    visibility:app.visibility||'private', editingId:app.id
+    visibility:app.visibility||'private', editingId:app.id, screenshots:(app.screenshots||[]).slice()
   };
   var r=root();
   var wiz=document.createElement('div');
@@ -48372,9 +48700,16 @@ function renderCreate(){
     canNext=create.name.trim().length>0;
   }else if(create.step===2){
     var iconInner=create.logo?('<img src="'+esc(create.logo)+'">'):esc(initials(create.name));
+    var shots=create.screenshots||[];
     body='<h2>Pick a category</h2><p class="spmc-sub">Add an icon and choose where it shows up in the market.</p>'+
       '<div class="spmc-icon-row"><div class="spmc-icon-preview">'+iconInner+'</div><button class="spmc-icon-btn" onclick="document.getElementById(\'mkIconFile\').click()">'+ico('camera',14)+' Upload icon</button><input id="mkIconFile" type="file" accept="image/*" style="display:none" onchange="window._spMkIconPick(event)"></div>'+
-      '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>';
+      '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>'+
+      '<div class="spmc-field" style="margin-top:18px"><label>Screenshots <span style="color:var(--text3);font-weight:500">(optional)</span></label>'+
+      '<p class="spmc-sub" style="margin:0 0 10px">Shown on your app\'s detail page before someone opens it. Up to 5.</p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+        shots.map(function(s,i){return '<div style="position:relative;width:72px;height:128px;border-radius:10px;overflow:hidden;border:1px solid var(--glass-border)"><img src="'+esc(s)+'" style="width:100%;height:100%;object-fit:cover;display:block"><button onclick="window._spMkRemoveShot('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:11px;cursor:pointer;line-height:1">✕</button></div>';}).join('')+
+        (shots.length<5?('<button onclick="document.getElementById(\'mkShotFile\').click()" style="width:72px;height:128px;border-radius:10px;border:1px dashed var(--glass-border);background:var(--glass);color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer">'+ico('plus',18)+'</button>'):'')+
+      '</div><input id="mkShotFile" type="file" accept="image/*" style="display:none" onchange="window._spMkShotPick(event)"></div>';
     canNext=true;
   }else if(create.step===3){
     body='<h2>Build it</h2><p class="spmc-sub">Upload a ready HTML file. It runs inside a sandboxed frame and can be installed to the home screen once published.</p>'+
@@ -48431,6 +48766,44 @@ window._spMkNext=function(){
   if(create.step<5){create.step++;renderCreate();return;}
   if(create.editingId)finishEdit();else finishCreate();
 };
+window._spMkShotPick=function(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  ev.target.value='';
+  if(!create.screenshots)create.screenshots=[];
+  if(create.screenshots.length>=5){toast('Up to 5 screenshots','error');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      // Cap dimensions so screenshots don't bloat the row the way full-size
+      // phone photos would — this mirrors the icon picker's canvas resize.
+      var maxW=720;
+      var scale=Math.min(1,maxW/img.width);
+      var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var dataUrl=c.toDataURL('image/jpeg',0.82);
+      // FIX: there was no size cap here at all — unlike the html file picker
+      // (900KB limit below), so 5 screenshots could push the whole row past
+      // whatever payload limit Supabase/PostgREST enforces, and the save
+      // would fail. Combined with finishCreate/finishEdit previously
+      // swallowing that failure, developers saw "saved" with nothing
+      // actually persisted. Capping each screenshot here keeps the total
+      // payload well within a safe range.
+      if(dataUrl.length>400*1024){toast('That screenshot is too large even after resizing — try a smaller image','error');return;}
+      create.screenshots.push(dataUrl);
+      renderCreate();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+window._spMkRemoveShot=function(i){
+  if(!create.screenshots)return;
+  create.screenshots.splice(i,1);
+  renderCreate();
+};
 window._spMkIconPick=function(ev){
   var file=ev.target.files&&ev.target.files[0];
   if(!file)return;
@@ -48473,6 +48846,7 @@ async function finishCreate(){
   var row={
     id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
     category:create.cat, logo:create.logo||null, html:create.html, slug:slug,
+    screenshots:create.screenshots||[],
     visibility:canGoPublic?'public':'private',
     status:canGoPublic?'published':'private',
     review_status:canGoPublic?'published':(willRequest?'pending':'none'),
@@ -48481,7 +48855,18 @@ async function finishCreate(){
     update_count:0,
     created_at:now, updated_at:now, launches:0
   };
-  try{await SB.upsert('mini_apps',row,'id');}catch(e){console.warn('[App Market] create failed',e);}
+  // FIX: this used to swallow a failed save (console.warn only), then
+  // unconditionally push the row into local state, close the editor, and
+  // show "App created" — so a save that failed (e.g. payload too large
+  // with screenshots attached) looked identical to one that succeeded, and
+  // the app/its screenshots were never actually on the server.
+  try{
+    await SB.upsert('mini_apps',row,'id');
+  }catch(e){
+    console.warn('[App Market] create failed',e);
+    toast('Failed to save app — try again. ('+(e.message||'connection error')+')','error');
+    return;
+  }
   state.apps.push(row);
   window._spMkCloseCreate();
   if(willRequest){
@@ -48516,6 +48901,7 @@ async function finishEdit(){
   var patch={
     name:create.name.trim(), description:create.desc.trim(), category:create.cat,
     logo:create.logo||null, html:create.html, slug:slug,
+    screenshots:create.screenshots||[],
     visibility:canGoPublic?'public':(wantsPublic?app.visibility:'private'),
     status:canGoPublic?'published':(wantsPublic?app.status:'private'),
     review_status:canGoPublic?'published':(willRequest?'pending':app.review_status),
@@ -48523,6 +48909,7 @@ async function finishEdit(){
     update_count:newCount,
     updated_at:now
   };
+  var saveFailed=false;
   try{
     await SB.upsert('mini_apps',Object.assign({id:app.id},patch),'id');
   }catch(e){
@@ -48531,8 +48918,22 @@ async function finishEdit(){
     // rest of the edit still saves instead of silently failing outright.
     console.warn('[App Market] update failed, retrying without update_count',e);
     var fallback=Object.assign({},patch);delete fallback.update_count;
-    try{await SB.upsert('mini_apps',Object.assign({id:app.id},fallback),'id');}
-    catch(e2){console.warn('[App Market] update retry failed',e2);}
+    try{
+      await SB.upsert('mini_apps',Object.assign({id:app.id},fallback),'id');
+    }catch(e2){
+      console.warn('[App Market] update retry failed',e2);
+      saveFailed=true;
+    }
+  }
+  // FIX: this used to apply the patch to local state and always show
+  // "Changes saved" even when both the save and the fallback retry
+  // failed — so an oversized screenshot payload (or any other write
+  // failure) looked successful in the UI while nothing actually reached
+  // the server, and the change vanished on the next real fetch.
+  if(saveFailed){
+    toast('Failed to save changes — try again with a smaller image or fewer screenshots.','error');
+    window._spMkCloseCreate();
+    return;
   }
   Object.assign(app,patch);
   window._spMkCloseCreate();
@@ -48862,16 +49263,52 @@ window._spMkShowSSOCode=function(id){
     '<div style="width:34px;height:4px;background:var(--glass-border);border-radius:3px;margin:0 auto 14px"></div>'+
     '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Add "Continue with Plus"</div>'+
     '<p style="font-size:12.5px;color:var(--text3);line-height:1.5;margin:0 0 12px">Paste this into your app. It detects whether your app is embedded in Social Plus or opened on its own, asks the visitor to sign in with their Plus account, and — if they don&#39;t have one — sends them to create one and brings them straight back here afterward.</p>'+
-    '<pre style="flex:1;overflow:auto;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text2);white-space:pre-wrap;word-break:break-word;margin:0 0 12px">'+esc(code)+'</pre>'+
-    '<button class="spmk-gate-continue" style="height:44px;max-width:none" onclick="window._spMkCopySSOCode(this)" data-code="'+esc(code).replace(/"/g,'&quot;')+'">'+ico('file',14).replace('currentColor','#000')+' Copy code</button>'+
+    '<pre id="spMkSSOCodeBlock" style="flex:1;overflow:auto;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text2);white-space:pre-wrap;word-break:break-word;margin:0 0 12px;user-select:text;-webkit-user-select:text">'+esc(code)+'</pre>'+
+    '<button class="spmk-gate-continue" style="height:48px;max-width:none" onclick="window._spMkCopySSOCode()">'+ico('file',14).replace('currentColor','#000')+' Copy code</button>'+
   '</div>';
   document.body.appendChild(wrap);
   wrap.addEventListener('click',function(e){if(e.target===wrap)wrap.remove();});
 };
-window._spMkCopySSOCode=async function(btn){
-  var code=btn.getAttribute('data-code');
-  try{await navigator.clipboard.writeText(code);toast('Code copied','success');}
-  catch(e){toast('Could not copy — select and copy manually','error');}
+window._spMkCopySSOCode=async function(){
+  // Read the code straight from the rendered <pre> instead of round-tripping
+  // it through an HTML attribute — a multi-line snippet with quotes/angle
+  // brackets doesn't survive that trip cleanly, which was silently
+  // corrupting what got copied (or breaking the button markup itself).
+  var block=document.getElementById('spMkSSOCodeBlock');
+  var code=block?block.textContent:'';
+  // navigator.clipboard requires a secure context (https/localhost). This
+  // runs inside a WebView on a content:// page, which Chrome does not treat
+  // as secure, so clipboard.writeText always rejects here — silently
+  // failing to the manual-copy toast every single time. Fall back to the
+  // legacy execCommand('copy') path, which still works in insecure contexts.
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText&&window.isSecureContext){
+      await navigator.clipboard.writeText(code);
+      toast('Code copied','success');
+      return;
+    }
+    throw new Error('insecure context');
+  }catch(e){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=code;
+      ta.style.cssText='position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.focus();ta.select();
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok){toast('Code copied','success');return;}
+      throw new Error('execCommand failed');
+    }catch(e2){
+      // Last resort: select the text so the person can copy manually via
+      // the browser's own selection toolbar, and tell them so.
+      if(block){
+        var range=document.createRange();range.selectNodeContents(block);
+        var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+      }
+      toast('Couldn\'t auto-copy — text is selected, use your browser\'s copy','error');
+    }
+  }
 };
 
 })();
