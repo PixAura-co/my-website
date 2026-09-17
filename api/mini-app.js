@@ -51,17 +51,105 @@ function renderApp(app, origin) {
   #mkBoot{position:fixed;inset:0;background:#0b0b0d;display:flex;align-items:center;justify-content:center;z-index:2}
   #mkBoot img{width:64px;height:64px;border-radius:18px;animation:mkPulse 1.1s ease-in-out infinite}
   @keyframes mkPulse{0%,100%{opacity:.5;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+  /* Real install affordance for this specific app — only shown once the
+     browser confirms (via beforeinstallprompt) that installing THIS page
+     is actually possible. Hidden by default so it never flashes on
+     browsers/situations where it can't work (already installed, iOS
+     Safari, no SW support, etc). */
+  #mkInstallBar{position:fixed;left:0;right:0;bottom:0;z-index:3;display:none;align-items:center;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(20,20,23,.96);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.09);font-family:-apple-system,system-ui,sans-serif}
+  #mkInstallBar img{width:36px;height:36px;border-radius:10px;flex-shrink:0}
+  #mkInstallBar .mkib-text{flex:1;min-width:0;color:#fff}
+  #mkInstallBar .mkib-text b{display:block;font-size:13px;line-height:1.3}
+  #mkInstallBar .mkib-text span{display:block;font-size:11px;color:#8e8e93;line-height:1.3}
+  #mkInstallBtn{flex-shrink:0;background:#F5C518;color:#000;border:0;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer}
+  #mkInstallBtn:disabled{opacity:.6}
 </style>
 </head>
 <body>
 <div id="mkBoot"><img src="${icon}" alt=""/></div>
 <iframe id="mkFrame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer" title="${safeName}"></iframe>
+<div id="mkInstallBar">
+  <img src="${icon}" alt=""/>
+  <div class="mkib-text"><b>${safeName}</b><span>Install this app on your device</span></div>
+  <button id="mkInstallBtn">Install</button>
+</div>
 <script>
   document.getElementById('mkFrame').srcdoc = ${JSON.stringify(app.html || '')};
   document.getElementById('mkFrame').addEventListener('load', function(){
     document.getElementById('mkBoot').style.display='none';
   });
   fetch('${origin}/api/mini-app-ping?id=${encodeURIComponent(app.id)}', {method:'POST'}).catch(function(){});
+
+  // ── Real per-app install ────────────────────────────────────────────
+  // Requires: this page's own manifest (linked above, served per-slug by
+  // /api/mini-app-manifest) + an active service worker scoped to /app/
+  // (registered below). Both are prerequisites Chrome checks before it
+  // will ever fire beforeinstallprompt — without either, the bar below
+  // simply never appears, which is correct: there's nothing fake shown.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/api/mini-app-sw.js', { scope: '/app/' }).catch(function(e){
+      console.warn('[mini-app install] sw registration failed', e);
+    });
+  }
+  var mkDeferredPrompt = null;
+  var mkInstallBar = document.getElementById('mkInstallBar');
+  var mkInstallBtn = document.getElementById('mkInstallBtn');
+  var mkInstallRequested = (new URLSearchParams(location.search)).get('install') === '1';
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    mkDeferredPrompt = e;
+    clearTimeout(mkInstallFallbackTimer);
+    // Don't show the bar if this app is already running installed
+    // (standalone display mode) — nothing to install at that point.
+    var alreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (alreadyInstalled) return;
+    // Arrived here via the "Install" tap on the app's detail page inside
+    // Social Plus (?install=1) — skip showing the bar and go straight to
+    // the native prompt, so that one tap is the only tap needed instead
+    // of tap Install -> land here -> tap Install again.
+    mkInstallBar.style.display = 'flex';
+    if (mkInstallRequested) mkInstallBtn.click();
+  });
+  // beforeinstallprompt may simply never fire — iOS Safari doesn't support
+  // it at all, and Chrome won't fire it if the app's already installed or
+  // doesn't yet qualify. Someone who tapped Install on the detail page and
+  // lands here to silence, with no bar and no explanation, looks broken.
+  // Give it a couple seconds to arrive, then explain what's actually true.
+  var mkInstallFallbackTimer = mkInstallRequested ? setTimeout(function(){
+    if (mkDeferredPrompt) return; // it fired — nothing to do
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var alreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (alreadyInstalled) return; // nothing to install, correctly silent
+    var msg = isIOS
+      ? 'On iPhone/iPad: tap the Share button, then "Add to Home Screen".'
+      : "This browser can't install apps directly, or this app doesn't support it yet — you can still use it right here.";
+    var note = document.createElement('div');
+    note.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:4;background:rgba(20,20,23,.96);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:12px 14px;color:#fff;font-size:12.5px;line-height:1.4;font-family:-apple-system,system-ui,sans-serif';
+    note.textContent = msg;
+    document.body.appendChild(note);
+    setTimeout(function(){ note.remove(); }, 6000);
+  }, 2500) : null;
+  window.addEventListener('appinstalled', function(){
+    mkInstallBar.style.display = 'none';
+    mkDeferredPrompt = null;
+  });
+  mkInstallBtn.addEventListener('click', function(){
+    if (!mkDeferredPrompt) return;
+    mkInstallBtn.disabled = true;
+    mkInstallBtn.textContent = 'Installing…';
+    mkDeferredPrompt.prompt();
+    mkDeferredPrompt.userChoice.then(function(choice){
+      mkInstallBtn.disabled = false;
+      mkInstallBtn.textContent = 'Install';
+      if (choice.outcome === 'accepted') {
+        mkInstallBar.style.display = 'none';
+      }
+      mkDeferredPrompt = null;
+    }).catch(function(){
+      mkInstallBtn.disabled = false;
+      mkInstallBtn.textContent = 'Install';
+    });
+  });
 
   // ── Continue-with-Plus SSO broker ──────────────────────────────────────
   // This standalone page (plusng.com.ng/app/<slug>) has no access to the
