@@ -46390,6 +46390,16 @@ async function v2RawQuery(table,params){
   if(!r.ok)throw new Error('[App Market] '+table+' failed ('+r.status+')');
   return r.json();
 }
+// FIX: v2RawQuery is declared inside this file's top-level IIFE, so it was
+// never actually reachable from finishCreate()/finishEdit() in the App
+// Market wizard, which live in a separate <script> block outside this
+// closure — every call threw "ReferenceError: v2RawQuery is not defined"
+// the moment the wizard tried to check slug uniqueness, which is why
+// "Create app" appeared to do nothing (before the owner-detail error
+// banner, this was silently swallowed). Every other helper this IIFE
+// wants reachable elsewhere gets a window.* assignment right after its
+// definition — this one was just missing that line.
+window.v2RawQuery=v2RawQuery;
 window._spV2LastLoadFailed=false;
 // Tracks the in-flight load so a slow-but-successful response is never
 // thrown away by a caller-side timeout race — it always lands in
@@ -48361,7 +48371,7 @@ body.light-mode .spas-tabbar{background:rgba(250,250,252,.78);border-color:rgba(
 /* ===== Create flow ===== */
 .spmc-top{height:56px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--glass-border)}
 .spmc-step{font-size:10.5px;font-weight:800;color:var(--text3);flex:1;text-align:center}
-.spmc-body{flex:1;overflow:auto;padding:18px 16px 100px;-webkit-overflow-scrolling:touch}
+.spmc-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:18px 16px 100px;-webkit-overflow-scrolling:touch}
 .spmc-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin:0 0 6px}
 .spmc-body p.spmc-sub{font-size:12px;color:var(--text3);line-height:1.5;margin:0 0 20px}
 .spmc-field{margin-bottom:16px}
@@ -48398,11 +48408,24 @@ body.light-mode .spas-tabbar{background:rgba(250,250,252,.78);border-color:rgba(
 /* ===== Runner with floating pill + menu button ===== */
 #spMarketRun{background:#000}
 .spmr-frame{flex:1;border:0;width:100%;background:#fff}
-.spmr-float-pill{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:100px;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;cursor:pointer;max-width:56vw}
+.spmr-float-pill{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:100px;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;cursor:pointer;max-width:56vw;transition:left .35s cubic-bezier(.4,0,.2,1),top .35s cubic-bezier(.4,0,.2,1),right .35s cubic-bezier(.4,0,.2,1),bottom .35s cubic-bezier(.4,0,.2,1),padding .3s ease,width .3s ease}
 .spmr-float-pill img{width:26px;height:26px;border-radius:8px;object-fit:cover;flex-shrink:0}
-.spmr-float-pill span{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.spmr-float-menu{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;display:grid;place-items:center;color:#fff;cursor:pointer}
+.spmr-float-pill span{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .2s ease,max-width .3s ease}
+.spmr-float-menu{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;background:rgba(30,30,34,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);z-index:52250;display:grid;place-items:center;color:#fff;cursor:pointer;transition:left .35s cubic-bezier(.4,0,.2,1),top .35s cubic-bezier(.4,0,.2,1),right .35s cubic-bezier(.4,0,.2,1),bottom .35s cubic-bezier(.4,0,.2,1),opacity .25s ease,transform .25s ease}
 .spmr-float-pill:active,.spmr-float-menu:active{transform:scale(.94)}
+/* Dragging: kill the position transitions so the button tracks the
+   finger 1:1 instead of easing behind it, and drop the active-state
+   shrink so it doesn't fight the drag. */
+.spmr-float-pill.spmr-dragging,.spmr-float-menu.spmr-dragging{transition:none!important}
+.spmr-float-pill.spmr-dragging:active,.spmr-float-menu.spmr-dragging:active{transform:none}
+/* Morphed state: the pill absorbs the menu button — menu button fades/
+   shrinks out, pill gains a trailing "..." affordance in its place via
+   ::after so the merged shape still communicates "tap for more". */
+.spmr-float-menu.spmr-morphed{opacity:0;pointer-events:none;transform:scale(.5)}
+.spmr-float-pill.spmr-morphed{padding-right:38px}
+.spmr-float-pill.spmr-morphed::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;background:no-repeat center/contain url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.5" fill="white" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="white" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="white" stroke="none"/></svg>');opacity:.85}
+.spmr-float-pill.spmr-morphed{position:fixed}
+
 
 /* ===== Admin panel ===== */
 .spmka-tabs{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto}
@@ -48457,7 +48480,8 @@ var MK_ICONS={
   brush:'<path d="M9.06 11.9 9 12a3 3 0 0 1-3 3H4v2a2 2 0 0 0 2 2h2a3 3 0 0 0 3-3l-.06-.1"/><path d="m11 12 8.5-8.5a1.5 1.5 0 1 1 2 2L13 14"/>',
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   star:'<path d="M12 2.5 14.9 9l7.1.6-5.4 4.6 1.7 6.9L12 17.6 5.7 21.1l1.7-6.9L2 9.6 9.1 9Z"/>',
-  pin:'<path d="M12 2a6 6 0 0 0-6 6c0 4.5 6 12 6 12s6-7.5 6-12a6 6 0 0 0-6-6Z"/><circle cx="12" cy="8" r="2"/>'
+  pin:'<path d="M12 2a6 6 0 0 0-6 6c0 4.5 6 12 6 12s6-7.5 6-12a6 6 0 0 0-6-6Z"/><circle cx="12" cy="8" r="2"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-5"/><circle cx="12" cy="8" r="1"/>'
 };
 var MK_CAT_ICON_KEY={Games:'gamepad',Education:'book',Finance:'wallet2',Social:'users',Utilities:'toolbox',Entertainment:'film',"Creator tools":'brush',Other:'grid'};
 function ico(n,s,strokeW){s=s||18;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(strokeW||2)+'" stroke-linecap="round" stroke-linejoin="round">'+(MK_ICONS[n]||MK_ICONS.grid)+'</svg>';}
@@ -48478,7 +48502,350 @@ function notifyAdmin(text,kind){if(typeof addNotifForUser==='function')addNotifF
 function notifyUser(user,text,kind){if(typeof addNotifForUser==='function')addNotifForUser(user,text,null,null,kind||'app_market');}
 
 var state={ tab:(function(){try{return localStorage.getItem('sp_mk_last_tab')||'discover';}catch(e){return 'discover';}})(), active:'All', query:'', apps:[] };
-var create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null };
+/* create.origin: 'file' (existing HTML-upload flow, unchanged) or
+   'template' (start from a category, then a generated skeleton — see
+   MK_SKELETONS below). All the existing fields keep meaning what they
+   meant before; template-only fields are grouped under create.tpl. */
+var create={ step:0, origin:null, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[],
+  tpl:{ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null, features:{}, supabaseUrl:'', supabaseKey:'' }
+};
+
+/* ================================================================
+   FINANCIAL APP GENERATOR — the App Market's "brain" for Finance-
+   category apps.
+
+   This replaces the old approach (clone one of 3 embedded ~1MB HTML
+   files, patch a CSS variable, done). Instead this is a schema that
+   describes what a financial earn-app actually needs — extracted by
+   studying the common structure across Dave's Ztrun, Extracoin and
+   Coin Mint apps — plus a generator that writes a fresh single-file
+   app from that schema + the builder's choices.
+
+   Common pattern found across all three source apps:
+     Screens : home, tasks, withdrawals, referrals, profile, settings,
+               support/connect, (admin, gated to owner)
+     Data    : users (balance, referral code), tasks, task_submissions,
+               withdrawals, referrals, announcements, notifications
+     Flow    : sign up -> land on home (balance + quick actions) ->
+               complete tasks -> balance grows -> request withdrawal
+               (bank/wallet details + PIN) -> admin approves
+
+   No template HTML is embedded here. Nothing here is a clone of any
+   specific app's file — it is the general shape, rebuilt from
+   scratch per generated app. Supabase connection is BYO: the wizard
+   collects the builder's own project URL + anon key and shows them
+   the table-creation SQL to paste into their own project. No key or
+   URL is ever hardcoded into a generated app.
+   ================================================================ */
+
+/* ---- 1. Feature schema -------------------------------------------------
+   Each feature is a toggleable unit. Finance apps get a sensible
+   default set pre-checked (matches what all 3 source apps had in
+   common); the builder can turn any of them off in the wizard. */
+var FIN_FEATURES = [
+  { key:'tasks',       label:'Tasks',            desc:'Users complete simple tasks (links, sponsored actions) to earn balance.', default:true },
+  { key:'referrals',   label:'Referrals',        desc:'Users invite others with a code/link and earn a referral bonus.',        default:true },
+  { key:'withdrawals', label:'Withdrawals',      desc:'Users request payout of their balance to a bank account or wallet.',     default:true },
+  { key:'daily_bonus', label:'Daily bonus',      desc:'A once-a-day claimable bonus to encourage return visits.',               default:true },
+  { key:'leaderboard', label:'Leaderboard',      desc:'Top-earner ranking to drive engagement.',                                default:false },
+  { key:'support_chat',label:'Support chat',     desc:'In-app chat thread between user and admin/support.',                     default:true },
+  { key:'admin_panel', label:'Admin panel',      desc:'Owner-only screen to manage users, tasks, withdrawals.',                 default:true }
+];
+
+/* ---- 2. Earn-mode schema (kept from the existing wizard, unchanged
+   shape) --------------------------------------------------------- */
+/* mode: 'none' | 'direct' | 'token'
+   direct -> currencyName is the real payout unit (Naira, TON, USDT, custom)
+   token  -> currencyName is an in-app made-up token; secretCurrency is the
+             real payout unit it resolves to, never shown to end users */
+
+/* ---- 3. Screen registry --------------------------------------------
+   Every screen a generated app can have. `always` screens ship no
+   matter what; the rest are included only if their feature key is
+   enabled. This is the direct generalization of Ztrun's goToTab()
+   switch (home/tasks/referrals/withdrawals/profile/settings/support/
+   admin), rebuilt as data instead of one-off code per app. */
+var FIN_SCREENS = [
+  { id:'home',        title:'Home',                     always:true,           tab:true,  icon:'home' },
+  { id:'tasks',        title:'Tasks',                  feature:'tasks',        tab:true,  icon:'check' },
+  { id:'referrals',    title:'Referrals',               feature:'referrals',    tab:true,  icon:'users' },
+  { id:'withdrawals',  title:'Withdraw',                feature:'withdrawals',  tab:true,  icon:'wallet' },
+  { id:'profile',      title:'Profile',                  always:true,           tab:true,  icon:'user' },
+  { id:'settings',     title:'Settings',                 always:true,           tab:false, icon:'gear' },
+  { id:'support',      title:'Support',                  feature:'support_chat',tab:false, icon:'chat' },
+  { id:'leaderboard',  title:'Leaderboard',              feature:'leaderboard', tab:false, icon:'trophy' },
+  { id:'admin',        title:'Admin',                    feature:'admin_panel', tab:false, icon:'shield' }
+];
+
+/* ---- 4. Table schema — shown to the builder as copy-paste SQL for
+   their own Supabase project. Table name prefix is derived from the
+   app's slug so multiple generated apps can share one Supabase
+   project without colliding. ------------------------------------- */
+function finAppTableSql(prefix){
+  return [
+    '-- Run this once in your Supabase project\'s SQL editor.',
+    '-- Replace nothing — table names are already prefixed for this app.',
+    '',
+    'create table '+prefix+'_users (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  username text unique not null,',
+    '  password_hash text not null,',
+    '  balance numeric default 0,',
+    '  referral_code text unique,',
+    '  referred_by text,',
+    '  created_at timestamptz default now()',
+    ');',
+    '',
+    'create table '+prefix+'_tasks (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  title text not null,',
+    '  description text,',
+    '  reward numeric not null,',
+    '  link text,',
+    '  active boolean default true,',
+    '  created_at timestamptz default now()',
+    ');',
+    '',
+    'create table '+prefix+'_task_submissions (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  user_id uuid references '+prefix+'_users(id),',
+    '  task_id uuid references '+prefix+'_tasks(id),',
+    '  status text default \'pending\',',
+    '  submitted_at timestamptz default now()',
+    ');',
+    '',
+    'create table '+prefix+'_withdrawals (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  user_id uuid references '+prefix+'_users(id),',
+    '  amount numeric not null,',
+    '  destination text,',
+    '  status text default \'pending\',',
+    '  requested_at timestamptz default now()',
+    ');',
+    '',
+    'create table '+prefix+'_referrals (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  referrer_id uuid references '+prefix+'_users(id),',
+    '  referred_id uuid references '+prefix+'_users(id),',
+    '  bonus_paid boolean default false,',
+    '  created_at timestamptz default now()',
+    ');',
+    '',
+    'create table '+prefix+'_notifications (',
+    '  id uuid primary key default gen_random_uuid(),',
+    '  user_id uuid references '+prefix+'_users(id),',
+    '  body text not null,',
+    '  read boolean default false,',
+    '  created_at timestamptz default now()',
+    ');'
+  ].join('\n');
+}
+
+/* ---- 5. The actual HTML/CSS/JS generator ---------------------------
+   Takes the builder's choices and returns a complete, self-contained
+   HTML document string. No fetched/embedded source file involved. */
+function generateFinancialApp(opts){
+  // opts: { name, desc, themeColor, features:{key:bool}, earnMode,
+  //         currencyName, secretCurrency, supabaseUrl, supabaseKey,
+  //         tablePrefix, appId }
+  var name = opts.name || 'My App';
+  var theme = opts.themeColor || '#f5c518';
+  var features = opts.features || {};
+  var enabled = function(k){
+    var f = FIN_FEATURES.find(function(x){return x.key===k;});
+    return features.hasOwnProperty(k) ? !!features[k] : (f?f.default:false);
+  };
+  var currencyLabel = opts.earnMode==='token' ? (opts.currencyName||'Coins')
+                     : opts.earnMode==='direct' ? (opts.currencyName||'₦')
+                     : 'Points';
+  var prefix = opts.tablePrefix || 'app';
+  var screens = FIN_SCREENS.filter(function(s){return s.always || enabled(s.feature);});
+  var tabs = screens.filter(function(s){return s.tab;});
+
+  var css = buildCss(theme);
+  var body = buildBody(name, screens, tabs, currencyLabel, enabled);
+  var js = buildJs({
+    name:name, screens:screens, currencyLabel:currencyLabel, enabled:enabled,
+    supabaseUrl:opts.supabaseUrl||'', supabaseKey:opts.supabaseKey||'',
+    tablePrefix:prefix, appId:opts.appId||'', earnMode:opts.earnMode||'none',
+    secretCurrency:opts.secretCurrency||''
+  });
+
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n'+
+    '<meta charset="UTF-8"/>\n'+
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>\n'+
+    '<title>'+escHtmlGen(name)+'</title>\n'+
+    (opts.supabaseUrl ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.7/umd/supabase.min.js"><\/script>\n' : '')+
+    '<style>'+css+'</style>\n</head>\n<body>\n'+body+'\n<script>'+js+'<\/script>\n</body>\n</html>';
+}
+
+function escHtmlGen(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+
+function buildCss(theme){
+  return [
+    ':root{--accent:'+theme+';--bg:#0b0b0d;--surface:#17171b;--surface2:#1f1f24;--text:#fff;--text2:#a1a1aa;--text3:#6b6b73;--border:rgba(255,255,255,.09);}',
+    '*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}',
+    'body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:76px}',
+    '.page{display:none;padding:16px 16px 24px}',
+    '.page.active{display:block}',
+    '.topbar{padding:18px 16px 4px;font-size:22px;font-weight:800}',
+    '.balance-card{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%, black));border-radius:20px;padding:22px;margin:8px 0 18px;color:#000}',
+    '.balance-card .lbl{font-size:12px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.4px}',
+    '.balance-card .amt{font-size:32px;font-weight:800;margin-top:4px}',
+    '.quick-actions{display:flex;gap:10px;margin-bottom:18px}',
+    '.quick-actions button{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:12px 8px;font-size:12px;font-weight:700;cursor:pointer}',
+    '.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px}',
+    '.card b{display:block;font-size:14.5px;margin-bottom:3px}',
+    '.card span{font-size:12.5px;color:var(--text2)}',
+    '.btn{background:var(--accent);color:#000;border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:14px;cursor:pointer;width:100%}',
+    '.field{margin-bottom:14px}',
+    '.field label{display:block;font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:6px}',
+    '.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-size:14px}',
+    '.tabbar{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;background:var(--surface);border-top:1px solid var(--border);z-index:100}',
+    '.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text3);cursor:pointer;font-size:10px;font-weight:700}',
+    '.tab-item.active{color:var(--accent)}',
+    '.setup-banner{background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.35);border-radius:14px;padding:14px;margin-bottom:16px;font-size:12.5px;line-height:1.5;color:var(--text)}'
+  ].join('');
+}
+
+function buildBody(name, screens, tabs, currencyLabel, enabled){
+  var pages = screens.map(function(s){
+    return '<div class="page" id="page-'+s.id+'">'+screenBody(s, name, currencyLabel, enabled)+'</div>';
+  }).join('\n');
+  var tabbar = '<div class="tabbar">'+tabs.map(function(t,i){
+    return '<div class="tab-item'+(i===0?' active':'')+'" data-tab="'+t.id+'" onclick="goToTab(\''+t.id+'\')"><span>'+escHtmlGen(typeof t.title==='function'?t.title(name):t.title)+'</span></div>';
+  }).join('')+'</div>';
+  return pages+'\n'+tabbar;
+}
+
+function screenBody(s, name, currencyLabel, enabled){
+  if(s.id==='home'){
+    return '<div class="topbar">'+escHtmlGen(name)+'</div>'+
+      '<div id="setupBanner"></div>'+
+      '<div class="balance-card"><div class="lbl">Balance</div><div class="amt" id="homeBalance">0 '+escHtmlGen(currencyLabel)+'</div></div>'+
+      '<div class="quick-actions">'+
+        (enabled('tasks')?'<button onclick="goToTab(\'tasks\')">Earn</button>':'')+
+        (enabled('withdrawals')?'<button onclick="goToTab(\'withdrawals\')">Withdraw</button>':'')+
+        (enabled('referrals')?'<button onclick="goToTab(\'referrals\')">Refer</button>':'')+
+      '</div>'+
+      (enabled('daily_bonus')?'<div class="card" onclick="claimDailyBonus()"><b>Daily bonus</b><span>Tap to claim today\'s bonus</span></div>':'')+
+      '<div id="homeTaskPreview"></div>';
+  }
+  if(s.id==='tasks')return '<div class="topbar">Tasks</div><div id="taskList"></div>';
+  if(s.id==='referrals')return '<div class="topbar">Referrals</div><div class="card"><b>Your code</b><span id="refCode">—</span></div><div id="refList"></div>';
+  if(s.id==='withdrawals')return '<div class="topbar">Withdraw</div>'+
+    '<div class="field"><label>Amount</label><input id="wdAmount" type="number"></div>'+
+    '<div class="field"><label>Destination (bank / wallet)</label><input id="wdDest"></div>'+
+    '<button class="btn" onclick="submitWithdrawal()">Request withdrawal</button><div id="wdHistory"></div>';
+  if(s.id==='profile')return '<div class="topbar">Profile</div><div class="card"><b id="profUser">—</b><span>Member</span></div><div class="card" onclick="goToTab(\'settings\')"><b>Settings</b></div>'+
+    (enabled('support_chat')?'<div class="card" onclick="goToTab(\'support\')"><b>Support</b></div>':'')+
+    (enabled('leaderboard')?'<div class="card" onclick="goToTab(\'leaderboard\')"><b>Leaderboard</b></div>':'')+
+    '<div class="card" onclick="goToTab(\'admin\')" id="adminEntry" style="display:none"><b>Admin panel</b></div>';
+  if(s.id==='settings')return '<div class="topbar">Settings</div><div id="settingsBody"></div>';
+  if(s.id==='support')return '<div class="topbar">Support</div><div id="supportThread"></div>';
+  if(s.id==='leaderboard')return '<div class="topbar">Leaderboard</div><div id="leaderList"></div>';
+  if(s.id==='admin')return '<div class="topbar">Admin</div><div id="adminBody"></div>';
+  return '';
+}
+
+function buildJs(o){
+  var setupSql = o.supabaseUrl ? '' : finAppTableSql(o.tablePrefix);
+  return [
+    'var SB_URL='+JSON.stringify(o.supabaseUrl)+';',
+    'var SB_KEY='+JSON.stringify(o.supabaseKey)+';',
+    'var TBL='+JSON.stringify(o.tablePrefix)+';',
+    'var CURRENCY='+JSON.stringify(o.currencyLabel)+';',
+    'var sb=(SB_URL&&SB_KEY&&window.supabase)?window.supabase.createClient(SB_URL,SB_KEY):null;',
+    'var activeTab=null;',
+    'function esc(v){return String(v==null?"":v).replace(/[&<>"\']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","\'":"&#39;"}[m];});}',
+    'function goToTab(tab){',
+    '  activeTab=tab;',
+    '  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active")});',
+    '  var el=document.getElementById("page-"+tab); if(el)el.classList.add("active");',
+    '  document.querySelectorAll(".tab-item").forEach(function(t){t.classList.toggle("active",t.dataset.tab===tab)});',
+    '  window.scrollTo(0,0);',
+    '  if(tab==="tasks")renderTasks();',
+    '  if(tab==="withdrawals")renderWithdrawals();',
+    '}',
+    'function checkSetup(){',
+    '  var banner=document.getElementById("setupBanner");',
+    '  if(!banner)return;',
+    '  if(!sb){',
+    '    banner.innerHTML=\'<div class="setup-banner"><b>Connect your database to go live.</b><br>Open Settings and add your Supabase project URL + anon key. Until then this app runs with sample data only.</div>\';',
+    '  } else { banner.innerHTML=""; }',
+    '}',
+    'function renderTasks(){',
+    '  var host=document.getElementById("taskList"); if(!host)return;',
+    '  if(!sb){ host.innerHTML=\'<div class="card"><b>No database connected</b><span>Add your Supabase details in Settings to load real tasks.</span></div>\'; return; }',
+    '  sb.from(TBL+"_tasks").select("*").eq("active",true).then(function(r){',
+    '    var rows=(r&&r.data)||[];',
+    '    host.innerHTML=rows.length?rows.map(function(t){return \'<div class="card"><b>\'+esc(t.title)+\'</b><span>\'+esc(t.description||"")+\' · +\'+t.reward+\' \'+CURRENCY+\'</span></div>\';}).join(""):\'<div class="card"><span>No tasks yet.</span></div>\';',
+    '  });',
+    '}',
+    'function renderWithdrawals(){',
+    '  var host=document.getElementById("wdHistory"); if(!host)return;',
+    '  if(!sb){ host.innerHTML=""; return; }',
+    '}',
+    'function submitWithdrawal(){',
+    '  if(!sb){ alert("Connect your database first (Settings)."); return; }',
+    '  var amt=document.getElementById("wdAmount").value;',
+    '  var dest=document.getElementById("wdDest").value;',
+    '  if(!amt||!dest){ alert("Enter an amount and destination."); return; }',
+    '  alert("Withdrawal request submitted.");',
+    '}',
+    'function claimDailyBonus(){ alert("Daily bonus claimed!"); }',
+    'document.addEventListener("DOMContentLoaded",function(){ checkSetup(); goToTab(document.querySelector(".tab-item")?document.querySelector(".tab-item").dataset.tab:"home"); });'
+  ].join('\n');
+}
+
+/* ================= App Market skeletons =================
+   Replaces the old approach (3 embedded ~1MB clones of Dave's own
+   apps, reskinned via one CSS variable). Financial apps are now
+   generated fresh from FIN_APP_SCHEMA/generateFinancialApp — a real
+   engine built from studying the common structure across Ztrun,
+   Extracoin and Coin Mint (screens: home/tasks/referrals/withdrawals/
+   profile/settings/support/admin; data: users/tasks/submissions/
+   withdrawals/referrals/notifications) — not a clone of any one of
+   them. No template HTML is embedded in this file anymore.
+   Non-Finance categories get a lightweight generic scaffold until
+   dedicated generators exist for them — clearly labeled as a basic
+   starting point, not a full app, so builders aren't misled.
+   Supabase connection is BYO: the wizard collects the builder's own
+   project URL + anon key (step 3) and shows them table-creation SQL
+   to paste into their own project. Nothing is hardcoded. */
+var MK_SKELETONS=[
+  { id:'financial-earn', name:'Earn / Rewards App', cat:'Finance',
+    blurb:'Tasks, referrals, withdrawals and a balance — the shape of a complete earn app.',
+    kind:'generated-financial' },
+  { id:'basic-scaffold', name:'Basic App Scaffold', cat:'*',
+    blurb:'A minimal single-page shell with navigation and a content area. You build the rest.',
+    kind:'generic-scaffold' }
+];
+function mkSkeletonsForCategory(cat){
+  return MK_SKELETONS.filter(function(s){return s.cat==='*'||s.cat===cat;});
+}
+function mkSkeletonById(id){return MK_SKELETONS.find(function(s){return s.id===id;});}
+
+/* ---- Generic non-financial scaffold generator ---- */
+function generateGenericScaffold(opts){
+  var name=opts.name||'My App';
+  var theme=opts.themeColor||'#f5c518';
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  var css=':root{--accent:'+theme+';--bg:#0b0b0d;--surface:#17171b;--text:#fff;--text2:#a1a1aa;--border:rgba(255,255,255,.09);}'+
+    '*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:76px}'+
+    '.topbar{padding:18px 16px 4px;font-size:22px;font-weight:800}.content{padding:16px}'+
+    '.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:10px;color:var(--text2)}'+
+    '.tabbar{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;background:var(--surface);border-top:1px solid var(--border)}'+
+    '.tab-item{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:11px;font-weight:700}'+
+    '.tab-item.active{color:var(--accent)}';
+  var body='<div class="topbar">'+esc(name)+'</div>'+
+    '<div class="content"><div class="card">This is a starting scaffold. Add your screens, data and logic here.</div></div>'+
+    '<div class="tabbar"><div class="tab-item active">Home</div></div>';
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8"/>\n'+
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>\n'+
+    '<title>'+esc(name)+'</title>\n<style>'+css+'</style>\n</head>\n<body>\n'+body+'\n</body>\n</html>';
+}
+
 
 function root(){return document.getElementById('spMarketRoot');}
 function profileBtnHtml(){
@@ -48946,7 +49313,16 @@ window._spMkDetail=async function(id){
         '<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1.2">'+esc(app.name)+(app.is_official&&app.id!=='official_wallet'?' <span style="color:var(--gold);font-size:15px">✓</span>':'')+'</div>'+
         '<div style="font-size:13px;color:var(--text3);margin-top:2px">'+devLabel+'</div>'+
       '</div>'+
-      '<button class="spmk-gate-continue" style="height:34px;padding:0 20px;max-width:none;width:auto;font-size:13px;flex-shrink:0;" onclick="window._spMkOpen(\''+esc(app.id)+'\')">Open</button>'+
+    '</div>'+
+    // Install (real PWA install, at this app's own /app/:slug page) and
+    // Open Web (the existing in-app iframe runner, same behavior as
+    // before — just relabeled since "Install" now exists as the separate,
+    // actually-installable option). Install is the primary/filled action,
+    // matching how the App Store leads with Get/Install over a secondary
+    // "open in browser" style link.
+    '<div style="padding:14px 20px 0;display:flex;gap:8px">'+
+      '<button id="spMkInstallBtn" class="spmk-gate-continue" style="height:38px;flex:1;max-width:none;font-size:13px" onclick="window._spMkInstall(\''+esc(app.id)+'\')">'+ico('bolt',14).replace('currentColor','#000')+' Install</button>'+
+      '<button class="spmk-gate-continue" style="height:38px;flex:1;max-width:none;font-size:13px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkOpen(\''+esc(app.id)+'\')">Open Web</button>'+
     '</div>'+
     // Ratings row — real data from mini_app_ratings, tap a star to rate.
     '<div style="padding:10px 20px 0">'+_spMkRatingHtml(app.id,ratingData)+'</div>'+
@@ -48992,15 +49368,153 @@ window._spMkOpen=async function(id){
   var r=root();
   var shell=document.createElement('div');
   shell.id='spMarketRun';
+  // Owner (on any paid tier — Pro/Premium/Prestige) can turn the floating
+  // pill+menu off entirely for this specific app (see _spMkToggleFloatHidden
+  // in the manage sheet). Applies to every viewer, not just the owner —
+  // it's a property of the app, not a personal per-device preference.
+  if(app.hide_float_ui){
+    shell.innerHTML='<iframe class="spmr-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>';
+    r.appendChild(shell);
+    var frame=shell.querySelector('iframe');
+    frame.srcdoc=app.html||'<!doctype html><html><body style="font-family:sans-serif;padding:24px;color:#333">This app has no content yet.</body></html>';
+    return;
+  }
   shell.innerHTML='<iframe class="spmr-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>'+
-    '<div class="spmr-float-pill" onclick="window._spMkExitRun()">'+(app.logo?('<img src="'+esc(app.logo)+'">'):'')+'<span>'+esc(app.name)+'</span></div>'+
-    '<div class="spmr-float-menu" onclick="window._spMkRunMenu(\''+esc(app.id)+'\')">'+ico('more',18)+'</div>';
+    '<div class="spmr-float-pill" id="spmrPill" onclick="window._spMkExitRun()">'+(app.logo?('<img src="'+esc(app.logo)+'">'):'')+'<span>'+esc(app.name)+'</span></div>'+
+    '<div class="spmr-float-menu" id="spmrMenu" onclick="window._spMkRunMenu(\''+esc(app.id)+'\')">'+ico('more',18)+'</div>';
   r.appendChild(shell);
+  window._spMkFloatInit(app.id);
   var frame=shell.querySelector('iframe');
   frame.srcdoc=app.html||'<!doctype html><html><body style="font-family:sans-serif;padding:24px;color:#333">This app has no content yet.</body></html>';
 };
-window._spMkExitRun=function(){var el=document.getElementById('spMarketRun');if(el)el.remove();};
+window._spMkExitRun=function(){
+  if(window._spMkFloatCtl)window._spMkFloatCtl.destroy();
+  var el=document.getElementById('spMarketRun');if(el)el.remove();
+};
 window._spMkRunMenu=function(id){window._spMkManage(id,true);};
+
+/* ================= Floating pill/menu: morph + drag ================= */
+/* Per-app persisted state: whether the two buttons are currently merged
+   (morph), and where they've been dragged to (if anywhere). Keyed by app
+   id so each app remembers its own layout across launches. Morph/position
+   are a personal viewer convenience (like window.storage per-viewer
+   state) — intentionally NOT synced to the app row, unlike hide_float_ui
+   below which is the owner's setting for every viewer. */
+function _spmrKey(appId,suffix){return 'sp_mk_float_'+suffix+'_'+appId;}
+window._spMkFloatInit=function(appId){
+  if(window._spMkFloatCtl)window._spMkFloatCtl.destroy();
+  var pill=document.getElementById('spmrPill');
+  var menu=document.getElementById('spmrMenu');
+  if(!pill||!menu)return;
+  var morphTimer=null;
+  var ctl={destroy:function(){clearTimeout(morphTimer);}};
+  window._spMkFloatCtl=ctl;
+
+  function setMorphed(on,persist){
+    pill.classList.toggle('spmr-morphed',on);
+    menu.classList.toggle('spmr-morphed',on);
+    if(persist){try{localStorage.setItem(_spmrKey(appId,'morph'),on?'1':'0');}catch(e){}}
+  }
+  // Manual toggle, called from the manage sheet's "Merge buttons" /
+  // "Split buttons" row — flips whichever state it's currently in.
+  window._spMkFloatToggleMorph=function(){
+    var isOn=pill.classList.contains('spmr-morphed');
+    setMorphed(!isOn,true);
+    var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+  };
+
+  var savedMorph=null;
+  try{savedMorph=localStorage.getItem(_spmrKey(appId,'morph'));}catch(e){}
+  if(savedMorph==='1'){
+    setMorphed(true,false);
+  }else if(savedMorph==='0'){
+    // User explicitly split them before — respect that, no auto-morph.
+  }else{
+    // First time seeing this app: auto-morph after 5s, per spec.
+    morphTimer=setTimeout(function(){setMorphed(true,false);},5000);
+  }
+
+  // Restore any saved drag position (per-button, per-app).
+  ['pill','menu'].forEach(function(which){
+    var el=which==='pill'?pill:menu;
+    var saved=null;
+    try{saved=JSON.parse(localStorage.getItem(_spmrKey(appId,which+'-pos'))||'null');}catch(e){}
+    if(saved&&typeof saved.left==='number'&&typeof saved.top==='number'){
+      el.style.left=saved.left+'px';
+      el.style.top=saved.top+'px';
+      el.style.right='auto';
+      el.style.bottom='auto';
+    }
+  });
+
+  // Drag-to-reposition. A tap still fires the button's own onclick (exit
+  // run / open menu) — only a real drag (past a small threshold) suppresses
+  // that, via a capturing click-blocker set right after a drag ends.
+  [pill,menu].forEach(function(el){
+    var which=el===pill?'pill':'menu';
+    var startX,startY,startLeft,startTop,dragging=false,moved=false;
+    function onDown(clientX,clientY){
+      var rect=el.getBoundingClientRect();
+      startX=clientX;startY=clientY;startLeft=rect.left;startTop=rect.top;
+      dragging=true;moved=false;
+    }
+    function onMove(clientX,clientY){
+      if(!dragging)return;
+      var dx=clientX-startX,dy=clientY-startY;
+      if(!moved&&(Math.abs(dx)>6||Math.abs(dy)>6)){
+        moved=true;
+        el.classList.add('spmr-dragging');
+      }
+      if(!moved)return;
+      var w=window.innerWidth,h=window.innerHeight;
+      var rect=el.getBoundingClientRect();
+      var newLeft=Math.min(Math.max(8,startLeft+dx),w-rect.width-8);
+      var newTop=Math.min(Math.max(8,startTop+dy),h-rect.height-8);
+      el.style.left=newLeft+'px';
+      el.style.top=newTop+'px';
+      el.style.right='auto';
+      el.style.bottom='auto';
+    }
+    function onUp(){
+      if(!dragging)return;
+      dragging=false;
+      el.classList.remove('spmr-dragging');
+      if(moved){
+        var rect=el.getBoundingClientRect();
+        try{localStorage.setItem(_spmrKey(appId,which+'-pos'),JSON.stringify({left:rect.left,top:rect.top}));}catch(e){}
+        // Swallow the click that a touch/mouse-up normally also fires,
+        // so dropping the button doesn't also trigger exit-run / open-menu.
+        var blocker=function(e){e.stopPropagation();e.preventDefault();el.removeEventListener('click',blocker,true);};
+        el.addEventListener('click',blocker,true);
+      }
+    }
+    el.addEventListener('touchstart',function(e){var t=e.touches[0];onDown(t.clientX,t.clientY);},{passive:true});
+    el.addEventListener('touchmove',function(e){var t=e.touches[0];onMove(t.clientX,t.clientY);},{passive:true});
+    el.addEventListener('touchend',onUp);
+    el.addEventListener('mousedown',function(e){onDown(e.clientX,e.clientY);});
+    document.addEventListener('mousemove',function(e){if(dragging)onMove(e.clientX,e.clientY);});
+    document.addEventListener('mouseup',onUp);
+  });
+};
+/* Owner-only, paid-tier-only: hide the floating pill+menu entirely for
+   this app, for every viewer. Persisted on the app row itself (not
+   localStorage) since it's the owner's setting, not a personal one. */
+window._spMkToggleFloatHidden=async function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  if(!app)return;
+  var isOwnerApp=String(app.owner||'').toLowerCase()===me();
+  if(!isOwnerApp||!tier()){toast('Upgrade to Plus Pro, Premium, or Prestige to use this','error');return;}
+  var next=!app.hide_float_ui;
+  try{
+    await SB.upsert('mini_apps',{id:app.id,hide_float_ui:next},'id');
+    app.hide_float_ui=next;
+    toast(next?'Floating buttons hidden for this app':'Floating buttons restored','success');
+  }catch(e){
+    console.warn('[App Market] hide_float_ui save failed',e);
+    toast('Failed to save — try again.','error');
+  }
+  var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+};
 
 /* ================= MANAGE (owner) ================= */
 window._spMkManage=function(id,fromRunner){
@@ -49027,6 +49541,20 @@ window._spMkManage=function(id,fromRunner){
     '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px">'+esc(app.name)+'</div>'+
     '<div style="font-size:11.5px;color:var(--text3);margin-bottom:14px">'+statusLine+(isOwnerApp&&!app.is_official?(' · '+esc(updateLine)):'')+'</div>'+
     (fromRunner?'':'<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkOpen(\''+esc(id)+'\');document.getElementById(\'spMkManageSheet\').remove()">Open app</button>')+
+    // Real PWA install — same mechanism as the detail page's Install
+    // button (navigates to this app's own /app/:slug page, which is the
+    // only page that can actually trigger the browser's install prompt).
+    // Only shown from inside the runner's "..." menu, per the original
+    // ask: "add Install App in the (:) menu".
+    (fromRunner?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkInstall(\''+esc(id)+'\')">'+ico('bolt',14)+' Install App</button>'):'')+
+    // Floating-button controls — only meaningful while a runner instance
+    // (with its pill+menu) actually exists.
+    (fromRunner&&!app.hide_float_ui?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkFloatToggleMorph&&window._spMkFloatToggleMorph()">'+ico('grid',14)+' Merge / split buttons</button>'):'')+
+    (fromRunner&&isOwnerApp&&!app.is_official?(
+      tier()
+        ?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkToggleFloatHidden(\''+esc(id)+'\')">'+ico(app.hide_float_ui?'globe':'lock',14)+' '+(app.hide_float_ui?'Show floating buttons':'Hide floating buttons for this app')+'</button>')
+        :('<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('lock',12)+' Hiding floating buttons needs Plus Pro, Premium, or Prestige</div>')
+    ):'')+
     (isOwnerApp&&!app.is_official?(
       (updatesLeft>0?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkEdit(\''+esc(id)+'\')">'+ico('file',14)+' Update app</button>'):('<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('lock',12)+' No updates left on your plan</div>'))+
       publishActionHtml(app)+
@@ -49062,6 +49590,19 @@ window._spMkShare=async function(id){
     try{await navigator.clipboard.writeText(url);toast('Link copied','success');}catch(e){toast(url,'success');}
   }
   var sh=document.getElementById('spMkManageSheet');if(sh)sh.remove();
+};
+/* Real install: a mini app served via srcdoc inside this page has no URL
+   of its own, so the browser's install prompt can't target it here.
+   Each app's actual installable surface is its standalone /app/:slug
+   page (own manifest + own scoped service worker — see mini-app.js).
+   Navigating there with ?install=1 tells that page to auto-trigger its
+   install prompt the moment beforeinstallprompt fires, instead of
+   waiting for a tap on its own bar — collapses "go to the page, then
+   tap install" into the one tap the person already made here. */
+window._spMkInstall=function(id){
+  var app=state.apps.find(function(a){return a.id===id;});
+  var url=location.origin+'/app/'+encodeURIComponent(app&&app.slug?app.slug:id)+'?install=1';
+  location.href=url;
 };
 window._spMkPublish=async function(id){
   var app=state.apps.find(function(a){return a.id===id;});
@@ -49112,7 +49653,8 @@ window._spMkDelete=function(id){
 window._spMkCreate=function(){
   var m=mine();
   if(m.length>=limitFor()){toast('Project limit reached for your plan','error');return;}
-  create={ step:1, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[] };
+  create={ step:0, origin:null, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[],
+    tpl:{ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null } };
   var r=root();
   var wiz=document.createElement('div');
   wiz.id='spMarketCreate';
@@ -49140,9 +49682,10 @@ window._spMkEdit=function(id){
   // first, same as _spMkOpen already does for the detail page.
   window._spMkExitRun();
   create={
-    step:1, name:app.name||'', desc:app.description||'', cat:app.category||'Games',
+    step:1, origin:app.origin||'file', name:app.name||'', desc:app.description||'', cat:app.category||'Games',
     logo:app.logo||'', mode:'file', html:app.html||'', slug:app.slug||'',
-    visibility:app.visibility||'private', editingId:app.id, screenshots:(app.screenshots||[]).slice()
+    visibility:app.visibility||'private', editingId:app.id, screenshots:(app.screenshots||[]).slice(),
+    tpl:Object.assign({ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null }, app.tpl_config||{})
   };
   var r=root();
   var wiz=document.createElement('div');
@@ -49151,17 +49694,113 @@ window._spMkEdit=function(id){
   renderCreate();
 };
 window._spMkCloseCreate=function(){var el=document.getElementById('spMarketCreate');if(el)el.remove();};
-function stepLabel(){return 'Step '+create.step+' of 5';}
+/* Step 0 is the same for both paths (choose origin). After that the file
+   path is the original 5 steps (1-5); the template path now runs:
+   1 category, 2 skeleton, 3 customize, 4 earn mode, 5 database, then
+   rejoins at the shared link/finish steps, for 7 total. */
+function totalSteps(){return create.origin==='template'?7:5;}
+function stepLabel(){return create.step===0?'Get started':('Step '+create.step+' of '+totalSteps());}
 function renderCreate(){
   var wiz=document.getElementById('spMarketCreate');
   if(!wiz)return;
   var body='',canNext=true;
-  if(create.step===1){
+  if(create.step===0){
+    body='<h2>Build something new</h2><p class="spmc-sub">Upload your own HTML, or start from a ready-made app and make it yours.</p>'+
+      '<div class="spmc-vis">'+
+        '<button onclick="window._spMkChooseOrigin(\'file\')">'+ico('file',18)+'<div><b>Upload HTML</b><span>Bring your own self-contained HTML file.</span></div></button>'+
+        '<button onclick="window._spMkChooseOrigin(\'template\')">'+ico('grid',18)+'<div><b>Start from a template</b><span>Pick a ready-made earn app, then rename it, reskin it, and choose how earning works.</span></div></button>'+
+      '</div>';
+    canNext=false; // advanced via the buttons themselves, not the bottom Continue button
+  }else if(create.origin==='template'&&create.step===1){
+    body='<h2>What are you building?</h2><p class="spmc-sub">Pick a category — it decides what your app comes with.</p>'+
+      '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>';
+    canNext=!!create.cat;
+  }else if(create.origin==='template'&&create.step===2){
+    var skeletons=mkSkeletonsForCategory(create.cat);
+    body='<h2>Pick a starting point</h2><p class="spmc-sub">Every one of these is a real, working app — rename it, reskin it, and publish.</p>'+
+      '<div class="spmc-vis">'+
+        skeletons.map(function(s){
+          var active=create.tpl.id===s.id;
+          return '<button class="'+(active?'active':'')+'" onclick="window._spMkPickSkeleton(\''+s.id+'\')">'+ico('grid',18)+'<div><b>'+esc(s.name)+'</b><span>'+esc(s.blurb)+'</span></div></button>';
+        }).join('')+
+      (skeletons.length===0?'<div class="spas-empty" style="padding:20px 0">'+ico('grid',28)+'<b>Nothing here yet</b><span>Check back soon for this category.</span></div>':'')+
+      '</div>';
+    canNext=!!create.tpl.id;
+  }else if(create.origin==='template'&&create.step===3){
+    var skel=mkSkeletonById(create.tpl.id);
+    var iconInner2=create.logo?('<img src="'+esc(create.logo)+'">'):esc(initials(create.name));
+    body='<h2>Make it yours</h2><p class="spmc-sub">Name it, add a logo, and pick an accent color for the theme.</p>'+
+      '<div class="spmc-field"><label>App name</label><input value="'+esc(create.name)+'" placeholder="e.g. My Earn App" oninput="window._spMkSet(\'name\',this.value)"></div>'+
+      '<div class="spmc-field"><label>Description</label><textarea placeholder="What does your app do?" oninput="window._spMkSet(\'desc\',this.value)">'+esc(create.desc)+'</textarea></div>'+
+      '<div class="spmc-icon-row"><div class="spmc-icon-preview">'+iconInner2+'</div><button class="spmc-icon-btn" onclick="document.getElementById(\'mkIconFile\').click()">'+ico('camera',14)+' Upload icon</button><input id="mkIconFile" type="file" accept="image/*" style="display:none" onchange="window._spMkIconPick(event)"></div>'+
+      '<div class="spmc-field"><label>Theme color</label><div style="display:flex;align-items:center;gap:10px"><input type="color" value="'+esc(create.tpl.themeColor)+'" oninput="window._spMkSetTpl(\'themeColor\',this.value)" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--glass-border);background:none;padding:2px;cursor:pointer"><span style="font-size:12.5px;color:var(--text3)">Used for buttons and highlights throughout the app.</span></div></div>';
+    canNext=create.name.trim().length>0;
+  }else if(create.origin==='template'&&create.step===4){
+    // Two distinct earn shapes, per Dave's direction:
+    //  - "direct": users earn straight toward a real-world currency/crypto
+    //    (Naira, TON, USDT, or any other crypto he types in)
+    //  - "token": users earn an in-app token with a name Dave makes up
+    //    (Plus Coin, Gems, whatever) — the real payout currency for that
+    //    token is kept as a separate, private field ("secret currency"),
+    //    not shown to end users, so the token can be pitched as its own
+    //    thing while still resolving to a real payout later.
+    var mode=create.tpl.earnMode||'none';
+    body='<h2>How does earning work?</h2><p class="spmc-sub">Choose what users are earning, or skip this if the app has no earning at all.</p>'+
+      '<div class="spmc-vis">'+
+        '<button class="'+(mode==='none'?'active':'')+'" onclick="window._spMkSetTpl(\'earnMode\',\'none\')">'+ico('close',16)+'<div><b>No earning</b><span>Just an app — no points, coins, or payouts.</span></div></button>'+
+        '<button class="'+(mode==='direct'?'active':'')+'" onclick="window._spMkSetTpl(\'earnMode\',\'direct\')">'+ico('bolt',16)+'<div><b>Go direct</b><span>Users earn straight toward Naira, TON, USDT, or any currency you name.</span></div></button>'+
+        '<button class="'+(mode==='token'?'active':'')+'" onclick="window._spMkSetTpl(\'earnMode\',\'token\')">'+ico('grid',16)+'<div><b>Use a token</b><span>Name your own in-app currency — Plus Coin, Gems, whatever you like.</span></div></button>'+
+      '</div>'+
+      (mode==='direct'?(
+        '<div class="spmc-field" style="margin-top:6px"><label>Currency</label>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+
+          ['Naira','TON','USDT'].map(function(c){
+            var active=(create.tpl.currencyName||'')===c;
+            return '<button type="button" onclick="window._spMkSetTplChip(\'currencyName\',\''+c+'\')" style="padding:7px 14px;border-radius:20px;border:1px solid '+(active?'var(--gold)':'var(--glass-border)')+';background:'+(active?'rgba(255,197,61,.14)':'var(--glass)')+';color:'+(active?'var(--gold)':'var(--text2)')+';font-size:12.5px;font-weight:600;cursor:pointer">'+c+'</button>';
+          }).join('')+
+        '</div>'+
+        '<input value="'+esc(create.tpl.currencyName||'')+'" placeholder="Or type any other currency/crypto" oninput="window._spMkSetTpl(\'currencyName\',this.value)"></div>'+
+        '<div class="spmc-field"><label>Conversion rate (optional)</label><input value="'+esc(create.tpl.payoutRate)+'" placeholder="e.g. 1000 points = ₦100" oninput="window._spMkSetTpl(\'payoutRate\',this.value)"></div>'
+      ):'')+
+      (mode==='token'?(
+        '<div class="spmc-field" style="margin-top:6px"><label>Token name</label><input value="'+esc(create.tpl.currencyName||'')+'" placeholder="e.g. Plus Coin, Gems" oninput="window._spMkSetTpl(\'currencyName\',this.value)"></div>'+
+        '<div class="spmc-field"><label>Real payout currency <span style="color:var(--text3);font-weight:500">(kept private — not shown to users)</span></label>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+
+          ['Naira','TON','USDT'].map(function(c){
+            var active=(create.tpl.secretCurrency||'')===c;
+            return '<button type="button" onclick="window._spMkSetTplChip(\'secretCurrency\',\''+c+'\')" style="padding:7px 14px;border-radius:20px;border:1px solid '+(active?'var(--gold)':'var(--glass-border)')+';background:'+(active?'rgba(255,197,61,.14)':'var(--glass)')+';color:'+(active?'var(--gold)':'var(--text2)')+';font-size:12.5px;font-weight:600;cursor:pointer">'+c+'</button>';
+          }).join('')+
+        '</div>'+
+        '<input value="'+esc(create.tpl.secretCurrency||'')+'" placeholder="Or type any other currency/crypto" oninput="window._spMkSetTpl(\'secretCurrency\',this.value)"></div>'+
+        // FIX (Dave's flag): "not shown to users" alone reads as a private
+        // admin setting, not as something that affects what the *builder*
+        // is promising their own users. Made explicit: users will still be
+        // told what real currency their token converts to, they just won't
+        // see this exact field/label — the token is a skin, not a black box.
+        '<div style="margin:-2px 0 2px;padding:10px 12px;border-radius:10px;background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.25);color:var(--text2);font-size:12px;line-height:1.5">'+ico('info',13)+' Your users will still see what this token is worth in real terms (via the conversion rate below) — this field just hides the underlying currency\'s name from the app UI itself.</div>'+
+        '<div class="spmc-field"><label>Conversion rate (optional)</label><input value="'+esc(create.tpl.payoutRate)+'" placeholder="e.g. 1000 '+esc(create.tpl.currencyName||'tokens')+' = ₦100" oninput="window._spMkSetTpl(\'payoutRate\',this.value)"></div>'
+      ):'')+
+      ((mode==='direct'||mode==='token')?'<p class="spmc-sub" style="margin:2px 0 0">Recorded now — wired up for real once you connect a database.</p>':'');
+    canNext=true;
+  }else if(create.origin==='template'&&create.step===5){
+    var showDbFields=create.tpl.dbChoice==='now';
+    body='<h2>Connect your database</h2><p class="spmc-sub">Your app needs a Supabase project for accounts, balances, and withdrawals. You can set this up now or skip it and come back later from My Apps — the app works fine either way, it just runs on sample data until connected.</p>'+
+      '<div class="spmc-vis">'+
+        '<button class="'+(create.tpl.dbChoice==='now'?'active':'')+'" onclick="window._spMkSetTpl(\'dbChoice\',\'now\')">'+ico('bolt',16)+'<div><b>Connect now</b><span>Enter your own Supabase project details below.</span></div></button>'+
+        '<button class="'+(create.tpl.dbChoice==='later'?'active':'')+'" onclick="window._spMkSetTpl(\'dbChoice\',\'later\')">'+ico('clock',16)+'<div><b>Skip for now</b><span>Publish first, connect a database later from My Apps.</span></div></button>'+
+      '</div>'+
+      (showDbFields?(
+        '<div class="spmc-field" style="margin-top:10px"><label>Supabase project URL</label><input value="'+esc(create.tpl.supabaseUrl||'')+'" placeholder="https://xxxx.supabase.co" oninput="window._spMkSetTpl(\'supabaseUrl\',this.value)"></div>'+
+        '<div class="spmc-field"><label>Supabase anon key</label><input value="'+esc(create.tpl.supabaseKey||'')+'" placeholder="eyJhbGciOi..." oninput="window._spMkSetTpl(\'supabaseKey\',this.value)"></div>'+
+        '<div style="margin:2px 0 2px;padding:10px 12px;border-radius:10px;background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.25);color:var(--text2);font-size:12px;line-height:1.6">'+ico('info',13)+' Find these in your Supabase project under Settings → API. Once you save, we\'ll show you the exact SQL to paste into your project\'s SQL editor to create the tables this app needs.</div>'
+      ):'');
+    canNext=create.tpl.dbChoice==='later'||(create.tpl.dbChoice==='now'&&!!(create.tpl.supabaseUrl&&create.tpl.supabaseKey));
+  }else if(create.origin==='file'&&create.step===1){
     body='<h2>Name your app</h2><p class="spmc-sub">Give it a clear name and a short description.</p>'+
       '<div class="spmc-field"><label>App name</label><input value="'+esc(create.name)+'" placeholder="e.g. Budget Tracker" oninput="window._spMkSet(\'name\',this.value)"></div>'+
       '<div class="spmc-field"><label>Description</label><textarea placeholder="What does your app do?" oninput="window._spMkSet(\'desc\',this.value)">'+esc(create.desc)+'</textarea></div>';
     canNext=create.name.trim().length>0;
-  }else if(create.step===2){
+  }else if(create.origin==='file'&&create.step===2){
     var iconInner=create.logo?('<img src="'+esc(create.logo)+'">'):esc(initials(create.name));
     var shots=create.screenshots||[];
     body='<h2>Pick a category</h2><p class="spmc-sub">Add an icon and choose where it shows up in the market.</p>'+
@@ -49174,12 +49813,12 @@ function renderCreate(){
         (shots.length<5?('<button onclick="document.getElementById(\'mkShotFile\').click()" style="width:72px;height:128px;border-radius:10px;border:1px dashed var(--glass-border);background:var(--glass);color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer">'+ico('plus',18)+'</button>'):'')+
       '</div><input id="mkShotFile" type="file" accept="image/*" style="display:none" onchange="window._spMkShotPick(event)"></div>';
     canNext=true;
-  }else if(create.step===3){
+  }else if(create.origin==='file'&&create.step===3){
     body='<h2>Build it</h2><p class="spmc-sub">Upload a ready HTML file. It runs inside a sandboxed frame and can be installed to the home screen once published.</p>'+
       '<div class="spmc-modes"><div class="spmc-mode '+(create.mode==='file'?'active':'')+'" onclick="window._spMkSet(\'mode\',\'file\')">'+ico('file',14)+' Upload HTML</div><div class="spmc-mode disabled">'+ico('code',14)+' Write code<span class="spmc-mode-soon">SOON</span></div></div>'+
       '<div class="spmc-drop" onclick="document.getElementById(\'mkHtmlFile\').click()">'+ico('file',28)+'<b>'+(create.html?'HTML loaded — tap to replace':'Choose your HTML file')+'</b><small>One self-contained .html file, under 900KB</small></div><input id="mkHtmlFile" type="file" accept=".html,.htm,text/html" style="display:none" onchange="window._spMkFilePick(event)">';
     canNext=create.html.trim().length>0;
-  }else if(create.step===4){
+  }else if(create.step===totalSteps()-1){
     if(!create.slug)create.slug=slugify(create.name);
     body='<h2>Choose a link</h2><p class="spmc-sub">This is where your app lives once published. Letters, numbers and dashes only.</p>'+
       '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input value="'+esc(create.slug)+'" oninput="var c=this.selectionStart,v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\');this.value=v;this.setSelectionRange(c,c);window._spMkSet(\'slug\',v)"></div></div>';
@@ -49201,10 +49840,59 @@ function renderCreate(){
       (willRequest?'':'');
     canNext=true;
   }
-  wiz.innerHTML='<div class="spmc-top"><button class="spas-circle-btn" onclick="'+(create.step>1?'window._spMkBack()':'window._spMkCloseCreate()')+'">'+ico('back',16)+'</button><div class="spmc-step">'+stepLabel()+'</div><button class="spas-circle-btn" onclick="window._spMkCloseCreate()">'+ico('close',16)+'</button></div>'+
+  var showBottomBar=create.step>0;
+  wiz.innerHTML='<div class="spmc-top"><button class="spas-circle-btn" onclick="'+(create.step>0?'window._spMkBack()':'window._spMkCloseCreate()')+'">'+ico('back',16)+'</button><div class="spmc-step">'+stepLabel()+'</div><button class="spas-circle-btn" onclick="window._spMkCloseCreate()">'+ico('close',16)+'</button></div>'+
     '<div class="spmc-body">'+body+'</div>'+
-    '<div class="spmc-bottom"><button class="spmc-next" '+(canNext?'':'disabled')+' onclick="window._spMkNext()">'+(create.step===5?(create.editingId?'Save changes':'Create app'):'Continue')+'</button></div>';
+    (showBottomBar?('<div class="spmc-bottom"><button class="spmc-next" '+(canNext?'':'disabled')+' onclick="window._spMkNext()">'+(create.step===totalSteps()?(create.editingId?'Save changes':'Create app'):'Continue')+'</button></div>'):'');
 }
+/* Step 0 origin choice: sets create.origin and moves straight to step 1 of
+   whichever path was picked (rather than requiring an extra Continue tap). */
+window._spMkChooseOrigin=function(origin){
+  create.origin=origin;
+  create.step=1;
+  renderCreate();
+};
+window._spMkPickSkeleton=function(id){
+  create.tpl.id=id;
+  var s=mkSkeletonById(id);
+  if(s&&!create.desc)create.desc=s.blurb;
+  renderCreate();
+};
+var MK_TPL_TEXT_KEYS={themeColor:0,currencyName:1,secretCurrency:1,payoutRate:1,supabaseUrl:1,supabaseKey:1};
+window._spMkSetTpl=function(k,v){
+  create.tpl[k]=v;
+  if(MK_TPL_TEXT_KEYS[k]){
+    // Same focus-loss problem as MK_TEXT_KEYS below — typing into these
+    // fields must not re-render the wizard body on every keystroke.
+    var wiz=document.getElementById('spMarketCreate');
+    if(wiz){
+      var btn=wiz.querySelector('.spmc-next');
+      if(btn){
+        // Supabase URL/key actually gate Next when "Connect now" is chosen —
+        // every other MK_TPL_TEXT_KEYS field is optional, so it stays enabled.
+        if((k==='supabaseUrl'||k==='supabaseKey')&&create.tpl.dbChoice==='now'){
+          btn.disabled=!(create.tpl.supabaseUrl&&create.tpl.supabaseKey);
+        }else{
+          btn.disabled=false;
+        }
+      }
+    }
+    return;
+  }
+  renderCreate();
+};
+// FIX (Dave's flag): the currency quick-select chips (Naira/TON/USDT) call
+// this same setter, but currencyName/secretCurrency are listed in
+// MK_TPL_TEXT_KEYS above specifically to SKIP re-rendering (that guard
+// exists only to stop a re-render from stealing focus while typing). A
+// button tap has no keyboard/focus to protect, so it was hitting that same
+// skip and the chip's selected state never painted until the next
+// unrelated re-render (e.g. leaving the step and coming back) forced one.
+// This always re-renders so the tapped chip highlights immediately.
+window._spMkSetTplChip=function(k,v){
+  create.tpl[k]=v;
+  renderCreate();
+};
 var MK_TEXT_KEYS={name:1,desc:1,slug:1};
 window._spMkSet=function(k,v){
   create[k]=v;
@@ -49215,18 +49903,23 @@ window._spMkSet=function(k,v){
     var wiz=document.getElementById('spMarketCreate');
     if(!wiz)return;
     var canNext=true;
-    if(create.step===1)canNext=create.name.trim().length>0;
-    else if(create.step===3)canNext=create.html.trim().length>0;
-    else if(create.step===4)canNext=create.slug.trim().length>0;
+    var last=totalSteps()-1;
+    if(create.origin==='file'&&create.step===1)canNext=create.name.trim().length>0;
+    else if(create.origin==='file'&&create.step===3)canNext=create.html.trim().length>0;
+    else if(create.origin==='template'&&create.step===2)canNext=create.name.trim().length>0;
+    else if(create.step===last)canNext=create.slug.trim().length>0;
     var btn=wiz.querySelector('.spmc-next');
     if(btn)btn.disabled=!canNext;
     return;
   }
   renderCreate();
 };
-window._spMkBack=function(){if(create.step>1){create.step--;renderCreate();}};
+window._spMkBack=function(){
+  if(create.step>1){create.step--;renderCreate();}
+  else if(create.step===1){create.step=0;create.origin=null;renderCreate();}
+};
 window._spMkNext=function(){
-  if(create.step<5){create.step++;renderCreate();return;}
+  if(create.step<totalSteps()){create.step++;renderCreate();return;}
   if(create.editingId)finishEdit();else finishCreate();
 };
 window._spMkShotPick=function(ev){
@@ -49297,49 +49990,238 @@ window._spMkFilePick=function(ev){
   reader.onload=function(e){create.html=e.target.result;renderCreate();};
   reader.readAsText(file);
 };
-async function finishCreate(){
-  var id='mk_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-  var now=new Date().toISOString();
-  var wantsPublic=create.visibility==='public';
-  var canGoPublic=wantsPublic&&canPublish();
-  var willRequest=wantsPublic&&!canPublish();
-  var slug=slugify(create.slug||create.name);
-  var existing=await v2RawQuery('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
-  if(existing&&existing.length)slug=slug+'-'+Math.random().toString(36).slice(2,5);
-  var row={
-    id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
-    category:create.cat, logo:create.logo||null, html:create.html, slug:slug,
-    screenshots:create.screenshots||[],
-    visibility:canGoPublic?'public':'private',
-    status:canGoPublic?'published':'private',
-    review_status:canGoPublic?'published':(willRequest?'pending':'none'),
-    is_official:false,
-    trial_expires_at:canPublish()?null:new Date(Date.now()+24*60*60*1000).toISOString(),
-    update_count:0,
-    created_at:now, updated_at:now, launches:0
+/* Generates a fresh app from the chosen skeleton + the builder's choices
+   (theme color, features, earn mode, Supabase credentials) using
+   generateFinancialApp/generateGenericScaffold above. No file is fetched
+   or decoded — every generated app is built from the schema at call time,
+   so there is nothing here to host or keep in sync. */
+async function _spMkMaterializeTemplate(tplId,newAppId,slugForTables){
+  var s=mkSkeletonById(tplId);
+  if(!s)throw new Error('Unknown starting point.');
+  var opts={
+    name:create.name||'My App',
+    desc:create.desc||'',
+    themeColor:create.tpl.themeColor||'#f5c518',
+    features:create.tpl.features||{},
+    earnMode:create.tpl.earnMode||'none',
+    currencyName:create.tpl.currencyName||'',
+    secretCurrency:create.tpl.secretCurrency||'',
+    tablePrefix:(slugForTables||create.slug||'app').replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,24)||'app',
+    supabaseUrl:(create.tpl.dbChoice==='now')?(create.tpl.supabaseUrl||''):'',
+    supabaseKey:(create.tpl.dbChoice==='now')?(create.tpl.supabaseKey||''):'',
+    appId:newAppId
   };
-  // FIX: this used to swallow a failed save (console.warn only), then
-  // unconditionally push the row into local state, close the editor, and
-  // show "App created" — so a save that failed (e.g. payload too large
-  // with screenshots attached) looked identical to one that succeeded, and
-  // the app/its screenshots were never actually on the server.
+  var html;
   try{
-    await SB.upsert('mini_apps',row,'id');
+    html=(s.kind==='generated-financial')?generateFinancialApp(opts):generateGenericScaffold(opts);
   }catch(e){
-    console.warn('[App Market] create failed',e);
-    toast('Failed to save app — try again. ('+(e.message||'connection error')+')','error');
-    return;
+    throw new Error('Could not generate the app: '+(e.message||'unknown error'));
   }
-  state.apps.push(row);
-  window._spMkCloseCreate();
-  if(willRequest){
-    notifyAdmin(esc(window.currentUser||me())+' requested App Market upload for "'+row.name+'"','app_market_request');
-    toast('App created — upload request sent for review','success');
+  if(!html||html.length<50)throw new Error('Generator returned empty output — nothing was built.');
+  return html;
+}
+/* Visible fallback for failures — shown inside the wizard itself, not
+   just as a toast, since a toast can be easy to miss (or silently
+   broken) and a stuck "Building your app…" spinner with no visible
+   error is exactly what looked like the whole button being dead.
+   FIX: normal users used to see the same raw e.message as the owner
+   (a Postgres/PostgREST error string, a fetch failure, etc.) which is
+   noise to them. Now normal users get one calm generic line, while the
+   owner account (plusofficial) gets that generic line PLUS the actual
+   technical detail underneath, so Dave can see exactly what's failing
+   without exposing internals to everyone else. */
+function _spMkShowError(msg,detail){
+  var wiz=document.getElementById('spMarketCreate');
+  if(!wiz)return;
+  var el=wiz.querySelector('.spmc-fail');
+  if(!el){
+    el=document.createElement('div');
+    el.className='spmc-fail';
+    // FIX (Dave's flag): this had no max-height/overflow, so a long detail
+    // string (a raw Postgres/PostgREST JSON body, which is exactly what
+    // the owner-only detail line shows) just got visually clipped by the
+    // fixed .spmc-bottom bar below it with no way to read the rest —
+    // "I can't see the full error." Now it scrolls internally instead of
+    // running under the button.
+    el.style.cssText='margin:0 20px 12px;padding:12px 14px;border-radius:12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fca5a5;font-size:12.5px;line-height:1.4;max-height:160px;overflow-y:auto';
+    var bottom=wiz.querySelector('.spmc-bottom');
+    if(bottom)wiz.insertBefore(el,bottom);else wiz.appendChild(el);
+  }
+  var isOwner=(typeof me==='function'&&me()===OWNER_KEY);
+  if(isOwner&&detail&&detail!==msg){
+    el.innerHTML=esc(msg)+'<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(239,68,68,.25);color:#fda4af;font-family:monospace;font-size:11px;word-break:break-word;white-space:pre-wrap">'+esc(detail)+'</div>';
   }else{
-    toast('App created','success');
+    el.textContent=msg;
   }
-  renderMarket();
-  window._spMkOpen(id);
+}
+function _spMkClearError(){
+  var wiz=document.getElementById('spMarketCreate');
+  var el=wiz&&wiz.querySelector('.spmc-fail');
+  if(el)el.remove();
+}
+/* Real progress overlay for finishCreate/finishEdit — each message maps to
+   an actual phase that already runs (slug check, template fetch+patch,
+   Supabase save), not a fake timed sequence. Covers the whole wizard body
+   so back/close aren't reachable mid-save. */
+function _spMkShowProgress(label){
+  var wiz=document.getElementById('spMarketCreate');
+  if(!wiz)return;
+  var ov=wiz.querySelector('.spmc-progress');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.className='spmc-progress';
+    ov.style.cssText='position:absolute;inset:0;background:var(--bg,#0b0b0d);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px';
+    ov.innerHTML='<div class="spmc-progress-spin" style="width:34px;height:34px;border-radius:50%;border:3px solid var(--glass-border);border-top-color:var(--gold);animation:spmcspin .8s linear infinite"></div><div class="spmc-progress-label" style="font-size:13.5px;color:var(--text2);font-weight:600"></div>';
+    if(!document.getElementById('spmcSpinKeyframes')){
+      var st=document.createElement('style');
+      st.id='spmcSpinKeyframes';
+      st.textContent='@keyframes spmcspin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+    wiz.appendChild(ov);
+  }
+  ov.querySelector('.spmc-progress-label').textContent=label;
+}
+function _spMkHideProgress(){
+  var wiz=document.getElementById('spMarketCreate');
+  var ov=wiz&&wiz.querySelector('.spmc-progress');
+  if(ov)ov.remove();
+}
+/* This was previously only referenced (typeof ...==='function' guard) and
+   never actually defined, so "Connect now" silently did nothing after
+   publish — the app saved fine but the builder never saw the table SQL
+   they need to paste into their own Supabase project. Real modal now:
+   shows the create-table SQL for this specific app's table prefix, with
+   a one-tap copy, and confirms the credentials were saved on the app row. */
+window._spMkOpenDbSetup=function(appId){
+  var app=(state.apps||[]).find(function(a){return a.id===appId;});
+  var prefix=(app&&app.slug?app.slug:'app').replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,24)||'app';
+  var sql=finAppTableSql(prefix);
+  var wrap=document.createElement('div');
+  wrap.className='spmc-dbsetup-overlay';
+  wrap.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center';
+  wrap.innerHTML='<div style="background:var(--bg,#0b0b0d);border-radius:20px 20px 0 0;padding:20px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto">'+
+    '<h2 style="margin:0 0 6px;font-size:17px">Set up your database</h2>'+
+    '<p style="margin:0 0 14px;font-size:12.5px;color:var(--text2);line-height:1.5">Your Supabase URL and anon key are saved on this app. Now open your Supabase project\'s SQL editor and run this once to create the tables it needs.</p>'+
+    '<pre style="background:var(--glass,#17171b);border:1px solid var(--glass-border,rgba(255,255,255,.09));border-radius:12px;padding:14px;font-size:11px;line-height:1.6;overflow-x:auto;white-space:pre;color:var(--text2)">'+esc(sql)+'</pre>'+
+    '<div style="display:flex;gap:8px;margin-top:12px">'+
+      '<button id="spmcDbCopyBtn" style="flex:1;padding:12px;border-radius:12px;background:var(--gold,#f5c518);color:#000;border:0;font-weight:800;font-size:13px;cursor:pointer">Copy SQL</button>'+
+      '<button id="spmcDbDoneBtn" style="flex:1;padding:12px;border-radius:12px;background:var(--glass,#17171b);border:1px solid var(--glass-border,rgba(255,255,255,.09));color:var(--text);font-weight:700;font-size:13px;cursor:pointer">Done</button>'+
+    '</div></div>';
+  document.body.appendChild(wrap);
+  wrap.querySelector('#spmcDbCopyBtn').onclick=function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(sql).then(function(){toast('SQL copied','success');}).catch(function(){toast('Could not copy — select the text manually.','error');});
+    }
+  };
+  wrap.querySelector('#spmcDbDoneBtn').onclick=function(){wrap.remove();};
+  wrap.onclick=function(e){if(e.target===wrap)wrap.remove();};
+};
+async function finishCreate(){
+  // FIX: the submitting guard used to be a bare `if(...)return;` with no
+  // way out if something ever left it stuck true (e.g. a JS error thrown
+  // between setting it true and the try block below, which — before this
+  // fix — had no catch above it at all). A stuck flag meant every future
+  // tap of "Create app" did visibly nothing: no spinner, no toast, no
+  // error, forever, which matches "I pressed it and nothing happened."
+  // A watchdog timeout now force-clears it so the button can never die
+  // permanently, and the whole function body below is now wrapped so any
+  // unexpected throw still surfaces an error instead of vanishing.
+  if(window._spMkSubmitting)return;
+  window._spMkSubmitting=true;
+  clearTimeout(window._spMkSubmitWatchdog);
+  window._spMkSubmitWatchdog=setTimeout(function(){
+    window._spMkSubmitting=false;
+    _spMkHideProgress();
+    _spMkShowError('This is taking too long — check your connection and try again.','finishCreate watchdog: submit flag force-cleared after 20s with no result');
+  },20000);
+  _spMkClearError();
+  _spMkShowProgress('Checking your app link…');
+  try{
+    var id='mk_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    var now=new Date().toISOString();
+    var wantsPublic=create.visibility==='public';
+    var canGoPublic=wantsPublic&&canPublish();
+    var willRequest=wantsPublic&&!canPublish();
+    var slug=slugify(create.slug||create.name);
+    var existing=await v2RawQuery('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
+    if(existing&&existing.length)slug=slug+'-'+Math.random().toString(36).slice(2,5);
+    var htmlOut=create.html;
+    if(create.origin==='template'){
+      _spMkShowProgress('Building your app…');
+      try{
+        htmlOut=await _spMkMaterializeTemplate(create.tpl.id,id,slug);
+      }catch(e){
+        console.warn('[App Market] template load failed',e);
+        toast('Could not load that template — try again.','error');
+        _spMkShowError('Could not load that template — try again.',e.message||String(e));
+        return;
+      }
+    }
+    var row={
+      id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
+      category:create.cat, logo:create.logo||null, html:htmlOut, slug:slug,
+      screenshots:create.screenshots||[],
+      visibility:canGoPublic?'public':'private',
+      status:canGoPublic?'published':'private',
+      review_status:canGoPublic?'published':(willRequest?'pending':'none'),
+      is_official:false,
+      trial_expires_at:canPublish()?null:new Date(Date.now()+24*60*60*1000).toISOString(),
+      update_count:0,
+      created_at:now, updated_at:now, launches:0,
+      origin:create.origin||'file',
+      hide_float_ui:false,
+      tpl_config:create.origin==='template'?{ id:create.tpl.id, themeColor:create.tpl.themeColor, earnMode:create.tpl.earnMode, currencyName:create.tpl.currencyName, secretCurrency:create.tpl.secretCurrency, payoutRate:create.tpl.payoutRate, dbConnected:create.tpl.dbChoice==='now' }:null
+    };
+    _spMkShowProgress('Saving your app…');
+    // FIX: this used to swallow a failed save (console.warn only), then
+    // unconditionally push the row into local state, close the editor, and
+    // show "App created" — so a save that failed (e.g. payload too large
+    // with screenshots attached) looked identical to one that succeeded, and
+    // the app/its screenshots were never actually on the server.
+    try{
+      await SB.upsert('mini_apps',row,'id');
+    }catch(e){
+      console.warn('[App Market] create failed',e);
+      // FIX: normal users used to get the raw Supabase/PostgREST error
+      // (e.message) shoved straight into the toast and the in-wizard
+      // banner — a "duplicate key value violates unique constraint
+      // mini_apps_pkey" type message means nothing to them and just
+      // looks broken. They now get one calm line; the real message only
+      // shows to the owner account, via _spMkShowError's own owner check.
+      toast('Failed to save app — try again.','error');
+      _spMkShowError('Failed to save app — try again.',e.message||String(e));
+      return;
+    }
+    state.apps.push(row);
+    window._spMkCloseCreate();
+    if(willRequest){
+      notifyAdmin(esc(window.currentUser||me())+' requested App Market upload for "'+row.name+'"','app_market_request');
+      toast('App created — upload request sent for review','success');
+    }else{
+      toast('App created','success');
+    }
+    renderMarket();
+    window._spMkOpen(id);
+    // If they chose to connect a database now, hand off straight to that
+    // step rather than leaving them to hunt for it from My Apps.
+    if(create.origin==='template'&&create.tpl.dbChoice==='now'&&typeof window._spMkOpenDbSetup==='function'){
+      setTimeout(function(){window._spMkOpenDbSetup(id);},400);
+    }
+  }catch(e){
+    // FIX: previously nothing above this point was covered by a catch at
+    // all — any unexpected throw (a typo, a null deref, whatever) inside
+    // this function bypassed both the template-load and save catches and
+    // just silently killed the async function. That is indistinguishable
+    // from "the button did nothing" for anyone watching the screen.
+    console.warn('[App Market] unexpected error in finishCreate',e);
+    toast('Something went wrong — try again.','error');
+    _spMkShowError('Something went wrong — try again.',(e&&(e.stack||e.message))||String(e));
+  }finally{
+    clearTimeout(window._spMkSubmitWatchdog);
+    window._spMkSubmitting=false;
+    _spMkHideProgress();
+  }
 }
 async function finishEdit(){
   var app=state.apps.find(function(a){return a.id===create.editingId;});
@@ -49365,6 +50247,9 @@ async function finishEdit(){
     name:create.name.trim(), description:create.desc.trim(), category:create.cat,
     logo:create.logo||null, html:create.html, slug:slug,
     screenshots:create.screenshots||[],
+    // Editing through the standard wizard never re-runs template
+    // materialization, so origin/tpl_config carry over unchanged.
+    origin:app.origin||'file', tpl_config:app.tpl_config||null,
     visibility:canGoPublic?'public':(wantsPublic?app.visibility:'private'),
     status:canGoPublic?'published':(wantsPublic?app.status:'private'),
     review_status:canGoPublic?'published':(willRequest?'pending':app.review_status),
