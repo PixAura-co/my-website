@@ -48507,6 +48507,7 @@ var state={ tab:(function(){try{return localStorage.getItem('sp_mk_last_tab')||'
    MK_SKELETONS below). All the existing fields keep meaning what they
    meant before; template-only fields are grouped under create.tpl. */
 var create={ step:0, origin:null, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[],
+  uploadFiles:[], addSSO:false, codeFiles:null,
   tpl:{ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null, features:{}, supabaseUrl:'', supabaseKey:'' }
 };
 
@@ -49380,7 +49381,7 @@ window._spMkOpen=async function(id){
     return;
   }
   shell.innerHTML='<iframe class="spmr-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" referrerpolicy="no-referrer"></iframe>'+
-    '<div class="spmr-float-pill" id="spmrPill" onclick="window._spMkExitRun()">'+(app.logo?('<img src="'+esc(app.logo)+'">'):'')+'<span>'+esc(app.name)+'</span></div>'+
+    '<div class="spmr-float-pill" id="spmrPill" onclick="window._spMkFloatPillTap(\''+esc(app.id)+'\')">'+(app.logo?('<img src="'+esc(app.logo)+'">'):'')+'<span>'+esc(app.name)+'</span></div>'+
     '<div class="spmr-float-menu" id="spmrMenu" onclick="window._spMkRunMenu(\''+esc(app.id)+'\')">'+ico('more',18)+'</div>';
   r.appendChild(shell);
   window._spMkFloatInit(app.id);
@@ -49390,6 +49391,19 @@ window._spMkOpen=async function(id){
 window._spMkExitRun=function(){
   if(window._spMkFloatCtl)window._spMkFloatCtl.destroy();
   var el=document.getElementById('spMarketRun');if(el)el.remove();
+};
+// The pill's tap target does double duty depending on merge state: split,
+// it's still "tap to exit" (original behavior); merged, it visually IS
+// the combined button (see ::after dots), so tapping it has to open the
+// run menu instead — that's the bug Dave flagged: merging only changed
+// how it looked, not what tapping it actually did.
+window._spMkFloatPillTap=function(appId){
+  var pill=document.getElementById('spmrPill');
+  if(pill&&pill.classList.contains('spmr-morphed')){
+    window._spMkRunMenu(appId);
+  }else{
+    window._spMkExitRun();
+  }
 };
 window._spMkRunMenu=function(id){window._spMkManage(id,true);};
 
@@ -49550,6 +49564,11 @@ window._spMkManage=function(id,fromRunner){
     // Floating-button controls — only meaningful while a runner instance
     // (with its pill+menu) actually exists.
     (fromRunner&&!app.hide_float_ui?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkFloatToggleMorph&&window._spMkFloatToggleMorph()">'+ico('grid',14)+' Merge / split buttons</button>'):'')+
+    // Viewer-facing actions — available to anyone in the runner, not just
+    // the owner. Dave flagged the "..." menu had nothing for a regular
+    // visitor besides Install App.
+    (fromRunner?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShare(\''+esc(id)+'\')">'+ico('share',14)+' Share link</button>'):'')+
+    (fromRunner?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="document.getElementById(\'spMkManageSheet\').remove();window._spMkExitRun()">'+ico('back',14)+' Back to App Market</button>'):'')+
     (fromRunner&&isOwnerApp&&!app.is_official?(
       tier()
         ?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkToggleFloatHidden(\''+esc(id)+'\')">'+ico(app.hide_float_ui?'globe':'lock',14)+' '+(app.hide_float_ui?'Show floating buttons':'Hide floating buttons for this app')+'</button>')
@@ -49558,7 +49577,6 @@ window._spMkManage=function(id,fromRunner){
     (isOwnerApp&&!app.is_official?(
       (updatesLeft>0?('<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkEdit(\''+esc(id)+'\')">'+ico('file',14)+' Update app</button>'):('<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0;margin-bottom:8px">'+ico('lock',12)+' No updates left on your plan</div>'))+
       publishActionHtml(app)+
-      '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShare(\''+esc(id)+'\')">'+ico('share',14)+' Share link</button>'+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;margin-bottom:8px;background:var(--glass);color:var(--text);border:1px solid var(--glass-border)" onclick="window._spMkShowSSOCode(\''+esc(id)+'\')">'+ico('bolt',14)+' Continue-with-Plus code</button>'+
       '<button class="spmk-gate-continue" style="height:44px;max-width:none;background:rgba(255,69,58,.12);color:#ff453a" onclick="window._spMkDelete(\''+esc(id)+'\')">'+ico('trash',14)+' Delete app</button>'
     ):(app.is_official?'<div style="font-size:11.5px;color:var(--text3);text-align:center;padding:10px 0">'+ico('lock',12)+' Official app — cannot be removed</div>':''))+
@@ -49654,7 +49672,8 @@ window._spMkCreate=function(){
   var m=mine();
   if(m.length>=limitFor()){toast('Project limit reached for your plan','error');return;}
   create={ step:0, origin:null, name:'', desc:'', cat:'Games', logo:'', mode:'file', html:'', slug:'', visibility:'private', editingId:null, screenshots:[],
-    tpl:{ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null } };
+    uploadFiles:[], addSSO:false, codeFiles:null,
+    tpl:{ id:null, themeColor:'#f5c518', earnMode:'none', currencyName:'', secretCurrency:'', payoutRate:'', dbChoice:null, features:{}, supabaseUrl:'', supabaseKey:'' } };
   var r=root();
   var wiz=document.createElement('div');
   wiz.id='spMarketCreate';
@@ -49705,12 +49724,22 @@ function renderCreate(){
   if(!wiz)return;
   var body='',canNext=true;
   if(create.step===0){
-    body='<h2>Build something new</h2><p class="spmc-sub">Upload your own HTML, or start from a ready-made app and make it yours.</p>'+
+    body='<h2>Build something new</h2><p class="spmc-sub">Upload your own app files — HTML, JS, CSS — and we\'ll bundle them into one working app.</p>'+
       '<div class="spmc-vis">'+
-        '<button onclick="window._spMkChooseOrigin(\'file\')">'+ico('file',18)+'<div><b>Upload HTML</b><span>Bring your own self-contained HTML file.</span></div></button>'+
-        '<button onclick="window._spMkChooseOrigin(\'template\')">'+ico('grid',18)+'<div><b>Start from a template</b><span>Pick a ready-made earn app, then rename it, reskin it, and choose how earning works.</span></div></button>'+
+        '<button onclick="window._spMkChooseOrigin(\'file\')">'+ico('file',18)+'<div><b>Upload your code</b><span>HTML, JS and CSS files — bundled automatically into one app.</span></div></button>'+
+        // Template/generator path is admin-only now — the code stays (nothing
+        // deleted, per Dave's instruction not to waste it) but regular
+        // builders only ever see the real upload path from here on.
+        (isAdmin()?('<button onclick="window._spMkChooseOrigin(\'template\')">'+ico('grid',18)+'<div><b>Start from a template</b><span style="color:var(--gold)">Admin only</span></div></button>'):'')+
       '</div>';
     canNext=false; // advanced via the buttons themselves, not the bottom Continue button
+  }else if(create.origin==='template'&&!isAdmin()){
+    // Defensive: if someone reaches this branch without admin (stale link,
+    // back-button into an old step, etc.) bounce them to the real flow
+    // instead of rendering a wizard path they shouldn't have access to.
+    create.origin='file';create.step=1;
+    body='';canNext=false;
+    setTimeout(renderCreate,0);
   }else if(create.origin==='template'&&create.step===1){
     body='<h2>What are you building?</h2><p class="spmc-sub">Pick a category — it decides what your app comes with.</p>'+
       '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>';
@@ -49796,14 +49825,70 @@ function renderCreate(){
       ):'');
     canNext=create.tpl.dbChoice==='later'||(create.tpl.dbChoice==='now'&&!!(create.tpl.supabaseUrl&&create.tpl.supabaseKey));
   }else if(create.origin==='file'&&create.step===1){
-    body='<h2>Name your app</h2><p class="spmc-sub">Give it a clear name and a short description.</p>'+
-      '<div class="spmc-field"><label>App name</label><input value="'+esc(create.name)+'" placeholder="e.g. Budget Tracker" oninput="window._spMkSet(\'name\',this.value)"></div>'+
-      '<div class="spmc-field"><label>Description</label><textarea placeholder="What does your app do?" oninput="window._spMkSet(\'desc\',this.value)">'+esc(create.desc)+'</textarea></div>';
-    canNext=create.name.trim().length>0;
+    var files=create.uploadFiles||[];
+    var built=!!create.html;
+    var detected=create.buildReport;
+    var codeMode=create.mode==='code';
+    body='<h2>Build your app</h2><p class="spmc-sub">Upload files or write code directly — either way, tap Build and we\'ll bundle it, pull your app\'s name and description from the code, and check whether it already talks to a database.</p>'+
+      '<div class="spmc-modes"><div class="spmc-mode '+(!codeMode?'active':'')+'" onclick="window._spMkSet(\'mode\',\'file\')">'+ico('file',14)+' Upload files</div><div class="spmc-mode '+(codeMode?'active':'')+'" onclick="window._spMkSetCodeMode()">'+ico('code',14)+' Write code</div></div>'+
+      (codeMode?_spMkCodeEditorHtml():(
+        '<div class="spmc-drop" onclick="document.getElementById(\'mkHtmlFile\').click()">'+ico('file',28)+'<b>'+(files.length?('Tap to add more files ('+files.length+' loaded)'):'Choose files')+'</b><small>.html, .js, .css — select multiple at once</small></div>'+
+        '<input id="mkHtmlFile" type="file" multiple accept=".html,.htm,.js,.css,text/html,text/javascript,text/css" style="display:none" onchange="window._spMkFilesPick(event)">'+
+        (files.length?(
+          '<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">'+
+          files.map(function(f,i){
+            return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:10px">'+
+              ico(f.name.endsWith('.js')?'code':(f.name.endsWith('.css')?'grid':'file'),14)+
+              '<span style="flex:1;font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(f.isEntry?' <b style="color:var(--gold)">· entry</b>':'')+'</span>'+
+              '<span style="font-size:11px;color:var(--text3)">'+Math.round(f.content.length/1024)+'KB</span>'+
+              (files.length>1?('<button onclick="window._spMkRemoveUploadFile('+i+')" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.08);border:0;color:var(--text3);cursor:pointer;font-size:12px">✕</button>'):'')+
+            '</div>';
+          }).join('')+
+          '</div>'
+        ):'')+
+        (files.length>1?(
+          '<div class="spmc-field" style="margin-top:14px"><label>Entry HTML file</label><select onchange="window._spMkSetEntryFile(this.value)">'+
+            files.filter(function(f){return /\.html?$/i.test(f.name);}).map(function(f){return '<option value="'+esc(f.name)+'" '+(f.isEntry?'selected':'')+'>'+esc(f.name)+'</option>';}).join('')+
+          '</select></div>'
+        ):'')
+      ))+
+      (codeMode?(
+        '<button class="spmc-next" style="margin-top:16px" onclick="window._spMkBuild()">'+ico('bolt',15).replace('currentColor','#000')+' Build</button>'
+      ):(files.some(function(f){return f.isEntry;})?(
+        '<button class="spmc-next" style="margin-top:16px" onclick="window._spMkBuild()">'+ico('bolt',15).replace('currentColor','#000')+' Build</button>'
+      ):''))+
+      (built?(
+        '<div style="margin-top:16px;padding:14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="color:#30d158">'+ico('check',16)+'</span><b style="font-size:13.5px;color:var(--text)">Built successfully</b></div>'+
+          '<div style="font-size:12px;color:var(--text2);line-height:1.7">'+
+            '<div>Name: <b style="color:var(--text)">'+esc(create.name||'(untitled)')+'</b> <span style="color:var(--text3)">— editable next step</span></div>'+
+            '<div>Category: <b style="color:var(--text)">'+esc(create.cat)+'</b></div>'+
+            '<div>'+(detected&&detected.hasDatabase?('Database: <b style="color:var(--text)">Already connected'+(detected.dbKind?(' ('+esc(detected.dbKind)+')'):'')+'</b>'):'Database: <b style="color:var(--gold)">None detected</b>')+'</div>'+
+            '<div>Sign-in: <b style="color:var(--text)">"Continue with Social Plus" added automatically</b></div>'+
+          '</div>'+
+        '</div>'
+      ):'')+
+      (detected&&!detected.hasDatabase?(
+        '<div class="spmc-field" style="margin-top:12px;padding:14px;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.25);border-radius:14px">'+
+          '<b style="font-size:13px;color:var(--text)">'+ico('bolt',13)+' No database detected</b>'+
+          '<p class="spmc-sub" style="margin:6px 0 10px">Your code doesn\'t appear to connect to a database yet. Want to add Supabase now? You can also skip this and connect one later from My Apps.</p>'+
+          '<div class="spmc-vis">'+
+            '<button class="'+(create.tpl.dbChoice==='now'?'active':'')+'" onclick="window._spMkSetTpl(\'dbChoice\',\'now\')">'+ico('bolt',16)+'<div><b>Connect now</b><span>Enter your Supabase project details.</span></div></button>'+
+            '<button class="'+(create.tpl.dbChoice==='later'||!create.tpl.dbChoice?'active':'')+'" onclick="window._spMkSetTpl(\'dbChoice\',\'later\')">'+ico('clock',16)+'<div><b>Skip for now</b><span>Connect later from My Apps.</span></div></button>'+
+          '</div>'+
+          (create.tpl.dbChoice==='now'?(
+            '<div class="spmc-field" style="margin-top:10px"><label>Supabase project URL</label><input value="'+esc(create.tpl.supabaseUrl||'')+'" placeholder="https://xxxx.supabase.co" oninput="window._spMkSetTpl(\'supabaseUrl\',this.value)"></div>'+
+            '<div class="spmc-field"><label>Supabase anon key</label><input value="'+esc(create.tpl.supabaseKey||'')+'" placeholder="eyJhbGciOi..." oninput="window._spMkSetTpl(\'supabaseKey\',this.value)"></div>'
+          ):'')+
+        '</div>'
+      ):'');
+    canNext=built;
   }else if(create.origin==='file'&&create.step===2){
     var iconInner=create.logo?('<img src="'+esc(create.logo)+'">'):esc(initials(create.name));
     var shots=create.screenshots||[];
-    body='<h2>Pick a category</h2><p class="spmc-sub">Add an icon and choose where it shows up in the market.</p>'+
+    body='<h2>Review your app</h2><p class="spmc-sub">Pulled from your code — change anything that\'s not quite right.</p>'+
+      '<div class="spmc-field"><label>App name</label><input value="'+esc(create.name)+'" placeholder="e.g. Budget Tracker" oninput="window._spMkSet(\'name\',this.value)"></div>'+
+      '<div class="spmc-field"><label>Description</label><textarea placeholder="What does your app do?" oninput="window._spMkSet(\'desc\',this.value)">'+esc(create.desc)+'</textarea></div>'+
       '<div class="spmc-icon-row"><div class="spmc-icon-preview">'+iconInner+'</div><button class="spmc-icon-btn" onclick="document.getElementById(\'mkIconFile\').click()">'+ico('camera',14)+' Upload icon</button><input id="mkIconFile" type="file" accept="image/*" style="display:none" onchange="window._spMkIconPick(event)"></div>'+
       '<div class="spmc-cats">'+MK_CATS.map(function(c){return '<div class="spmc-cat '+(create.cat===c?'active':'')+'" onclick="window._spMkSet(\'cat\',\''+c+'\')">'+esc(c)+'</div>';}).join('')+'</div>'+
       '<div class="spmc-field" style="margin-top:18px"><label>Screenshots <span style="color:var(--text3);font-weight:500">(optional)</span></label>'+
@@ -49812,16 +49897,11 @@ function renderCreate(){
         shots.map(function(s,i){return '<div style="position:relative;width:72px;height:128px;border-radius:10px;overflow:hidden;border:1px solid var(--glass-border)"><img src="'+esc(s)+'" style="width:100%;height:100%;object-fit:cover;display:block"><button onclick="window._spMkRemoveShot('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:11px;cursor:pointer;line-height:1">✕</button></div>';}).join('')+
         (shots.length<5?('<button onclick="document.getElementById(\'mkShotFile\').click()" style="width:72px;height:128px;border-radius:10px;border:1px dashed var(--glass-border);background:var(--glass);color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer">'+ico('plus',18)+'</button>'):'')+
       '</div><input id="mkShotFile" type="file" accept="image/*" style="display:none" onchange="window._spMkShotPick(event)"></div>';
-    canNext=true;
-  }else if(create.origin==='file'&&create.step===3){
-    body='<h2>Build it</h2><p class="spmc-sub">Upload a ready HTML file. It runs inside a sandboxed frame and can be installed to the home screen once published.</p>'+
-      '<div class="spmc-modes"><div class="spmc-mode '+(create.mode==='file'?'active':'')+'" onclick="window._spMkSet(\'mode\',\'file\')">'+ico('file',14)+' Upload HTML</div><div class="spmc-mode disabled">'+ico('code',14)+' Write code<span class="spmc-mode-soon">SOON</span></div></div>'+
-      '<div class="spmc-drop" onclick="document.getElementById(\'mkHtmlFile\').click()">'+ico('file',28)+'<b>'+(create.html?'HTML loaded — tap to replace':'Choose your HTML file')+'</b><small>One self-contained .html file, under 900KB</small></div><input id="mkHtmlFile" type="file" accept=".html,.htm,text/html" style="display:none" onchange="window._spMkFilePick(event)">';
-    canNext=create.html.trim().length>0;
+    canNext=create.name.trim().length>0;
   }else if(create.step===totalSteps()-1){
     if(!create.slug)create.slug=slugify(create.name);
     body='<h2>Choose a link</h2><p class="spmc-sub">This is where your app lives once published. Letters, numbers and dashes only.</p>'+
-      '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input value="'+esc(create.slug)+'" oninput="var c=this.selectionStart,v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\');this.value=v;this.setSelectionRange(c,c);window._spMkSet(\'slug\',v)"></div></div>';
+      '<div class="spmc-field"><label>App link</label><div class="spmc-slug-row"><span>plusng.com.ng/app/</span><input id="spMkSlugInput" name="spmk_app_slug" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="'+esc(create.slug)+'" oninput="var c=this.selectionStart,v=this.value.toLowerCase().replace(/[^a-z0-9-]/g,\'\');this.value=v;this.setSelectionRange(c,c);window._spMkSet(\'slug\',v)"></div></div>';
     canNext=create.slug.trim().length>0;
   }else{
     var willRequest=!canPublish();
@@ -49904,8 +49984,7 @@ window._spMkSet=function(k,v){
     if(!wiz)return;
     var canNext=true;
     var last=totalSteps()-1;
-    if(create.origin==='file'&&create.step===1)canNext=create.name.trim().length>0;
-    else if(create.origin==='file'&&create.step===3)canNext=create.html.trim().length>0;
+    if(create.origin==='file'&&create.step===2)canNext=create.name.trim().length>0;
     else if(create.origin==='template'&&create.step===2)canNext=create.name.trim().length>0;
     else if(create.step===last)canNext=create.slug.trim().length>0;
     var btn=wiz.querySelector('.spmc-next');
@@ -49981,14 +50060,309 @@ window._spMkIconPick=function(ev){
   };
   reader.readAsDataURL(file);
 };
-window._spMkFilePick=function(ev){
-  var file=ev.target.files&&ev.target.files[0];
-  if(!file)return;
+/* ================= Real multi-file upload + bundler ================= */
+/* Reads every selected file as text, picks (or lets the builder pick) an
+   entry HTML file, then inlines any <script src="..."> / <link rel=
+   "stylesheet" href="..."> in that HTML that matches an uploaded file's
+   name — turning a real multi-file project into the one self-contained
+   HTML string the rest of the App Market (runner, standalone /app/:slug
+   page, install manifest) already expects. This is a genuine build step,
+   not a rename: nothing here fabricates content, it only inlines what the
+   builder actually uploaded and references. */
+window._spMkFilesPick=function(ev){
+  var picked=Array.from(ev.target.files||[]);
   ev.target.value='';
-  if(file.size>900*1024){toast('File too large — keep it under 900KB','error');return;}
-  var reader=new FileReader();
-  reader.onload=function(e){create.html=e.target.result;renderCreate();};
-  reader.readAsText(file);
+  if(!picked.length)return;
+  var tooBig=picked.find(function(f){return f.size>2*1024*1024;});
+  if(tooBig){toast('"'+tooBig.name+'" is over 2MB per file — keep individual files smaller.','error');return;}
+  var totalAfter=(create.uploadFiles||[]).reduce(function(s,f){return s+f.content.length;},0)+picked.reduce(function(s,f){return s+f.size;},0);
+  if(totalAfter>6*1024*1024){toast('Total upload is getting too large — keep the whole project under ~6MB.','error');return;}
+  Promise.all(picked.map(function(f){
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(e){resolve({name:f.name,content:e.target.result});};
+      reader.onerror=function(){reject(new Error('Could not read '+f.name));};
+      reader.readAsText(f);
+    });
+  })).then(function(loaded){
+    create.uploadFiles=(create.uploadFiles||[]).concat(loaded);
+    // Auto-pick an entry file if none chosen yet: prefer index.html, else
+    // the first .html/.htm file, else leave unset (bundling can't proceed
+    // without one — canNext stays false until it's picked).
+    var hasEntry=create.uploadFiles.some(function(f){return f.isEntry;});
+    if(!hasEntry){
+      var idx=create.uploadFiles.find(function(f){return /^index\.html?$/i.test(f.name);});
+      var anyHtml=create.uploadFiles.find(function(f){return /\.html?$/i.test(f.name);});
+      var pick=idx||anyHtml;
+      if(pick)pick.isEntry=true;
+    }
+    _spMkRebundle();
+    renderCreate();
+  }).catch(function(e){
+    toast(e.message||'Could not read one of those files.','error');
+  });
+};
+window._spMkSetEntryFile=function(name){
+  (create.uploadFiles||[]).forEach(function(f){f.isEntry=(f.name===name);});
+  _spMkRebundle();
+  renderCreate();
+};
+window._spMkRemoveUploadFile=function(i){
+  var removed=(create.uploadFiles||[])[i];
+  create.uploadFiles.splice(i,1);
+  if(removed&&removed.isEntry){
+    var anyHtml=create.uploadFiles.find(function(f){return /\.html?$/i.test(f.name);});
+    if(anyHtml)anyHtml.isEntry=true;
+  }
+  _spMkRebundle();
+  renderCreate();
+};
+/* The actual bundle step: take the entry HTML, find local <script src>
+   and <link rel=stylesheet href> tags that match an uploaded file by
+   name (exact match or matching basename, so "./js/app.js" matches an
+   uploaded "app.js"), and replace each tag with the real inlined content.
+   Anything that doesn't match an uploaded file (an external CDN script,
+   a remote font) is left exactly as-is, since that's a real external
+   reference, not something to bundle. */
+function _spMkRebundle(){
+  var files=create.uploadFiles||[];
+  var entry=files.find(function(f){return f.isEntry;});
+  if(!entry){create.html='';return;}
+  var html=entry.content;
+  function findByRef(ref){
+    var base=ref.split('/').pop().split('?')[0].split('#')[0];
+    return files.find(function(f){return f.name===ref||f.name===base;});
+  }
+  html=html.replace(/<script\b([^>]*)\bsrc=["']([^"']+)["']([^>]*)><\/script>/gi,function(m,pre,src,post){
+    if(/^(https?:)?\/\//i.test(src))return m; // remote — leave alone
+    var f=findByRef(src);
+    if(!f)return m; // referenced but not uploaded — leave as a normal (broken) tag rather than silently dropping it
+    return '<script'+pre+post+'>'+f.content+'<\/script>';
+  });
+  html=html.replace(/<link\b([^>]*)\brel=["']stylesheet["']([^>]*)\bhref=["']([^"']+)["']([^>]*)\/?>/gi,function(m,pre,mid,href,post){
+    if(/^(https?:)?\/\//i.test(href))return m;
+    var f=findByRef(href);
+    if(!f)return m;
+    return '<style>'+f.content+'</style>';
+  });
+  // Same tag, attributes in the other order (href before rel).
+  html=html.replace(/<link\b([^>]*)\bhref=["']([^"']+)["']([^>]*)\brel=["']stylesheet["']([^>]*)\/?>/gi,function(m,pre,href,mid,post){
+    if(/^(https?:)?\/\//i.test(href))return m;
+    var f=findByRef(href);
+    if(!f)return m;
+    return '<style>'+f.content+'</style>';
+  });
+  if(create.addSSO){
+    // Inject the pill + snippet right before </body> if not already present,
+    // so re-running Build (e.g. after adding more files) stays idempotent.
+    if(html.indexOf('PLUS_APP_ID')===-1){
+      var pillHtml='<button id="__plusSSOBtn" style="display:flex;align-items:center;gap:8px;justify-content:center;width:100%;max-width:320px;margin:12px auto;padding:12px 18px;border-radius:100px;background:#fff;color:#111;border:1px solid #e2e2e2;font:700 14px -apple-system,sans-serif;cursor:pointer">Continue with Social Plus</button>';
+      var script='<script>(function(){function onResult(ev){if(!ev.data||ev.data.type!=="plus-sso-result")return;if(ev.data.status==="no-account"||ev.data.status==="consent-needed"){window.parent.postMessage({type:"plus-sso-signup",appId:"__PLUS_APP_ID__",reason:ev.data.status},"*");return;}window.removeEventListener("message",onResult);if(ev.data.status==="authorized"){window.PlusUser=ev.data.user;document.dispatchEvent(new CustomEvent("plus-signed-in",{detail:ev.data}));var b=document.getElementById("__plusSSOBtn");if(b)b.style.display="none";}}window.addEventListener("message",onResult);function requestLogin(){var msg={type:"plus-sso-request",appId:"__PLUS_APP_ID__"};if(window.parent&&window.parent!==window){window.parent.postMessage(msg,"*");}else{window.postMessage(msg,"*");}}window.continueWithPlus=requestLogin;var btn=document.getElementById("__plusSSOBtn");if(btn)btn.addEventListener("click",requestLogin);})();<\/script>';
+      html=html.replace(/<\/body>/i,pillHtml+script+'</body>');
+      if(html.indexOf('</body>')===-1)html+=pillHtml+script; // no </body> tag at all — append at the end rather than silently dropping the feature
+    }
+  }
+  create.html=html;
+}
+/* Pulls whatever signal exists in the entry HTML to prefill name/
+   description — <title>, <meta name=description>, first <h1>. Only used
+   to fill in fields the builder hasn't already set themselves (see
+   _spMkBuild below), never overwrites something they typed. */
+function _spMkExtractMeta(html){
+  var out={name:'',desc:''};
+  var t=html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  if(t&&t[1].trim())out.name=t[1].trim().slice(0,60);
+  var d=html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)||
+        html.match(/<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i);
+  if(d&&d[1].trim())out.desc=d[1].trim().slice(0,200);
+  if(!out.name){
+    var h1=html.match(/<h1[^>]*>([^<]*)<\/h1>/i);
+    if(h1&&h1[1].trim())out.name=h1[1].trim().replace(/<[^>]+>/g,'').slice(0,60);
+  }
+  return out;
+}
+/* Scans every uploaded file's raw text for known database connection
+   patterns. Deliberately broad — Supabase, Firebase, generic REST/GraphQL
+   API calls, MongoDB — since the ask was "check generally", not just for
+   Supabase specifically. A match means the app already talks to SOME
+   backend, so the wizard shouldn't push its own database step on top. */
+function _spMkDetectDatabase(files){
+  var text=(files||[]).map(function(f){return f.content;}).join('\n');
+  var checks=[
+    {kind:'Supabase',re:/supabase\.co|createClient\s*\(|@supabase\/supabase-js/i},
+    {kind:'Firebase',re:/firebaseapp\.com|firebase(app)?\.initializeApp|firestore\(\)/i},
+    {kind:'MongoDB',re:/mongodb(\+srv)?:\/\/|mongoose\.connect/i},
+    {kind:'MySQL/Postgres',re:/postgres(ql)?:\/\/|mysql:\/\/|new Pool\(|createConnection\(/i},
+    {kind:'a REST API',re:/fetch\(\s*["'`]https?:\/\/(?!.*\b(fonts|cdnjs|jsdelivr|unpkg)\b)/i},
+    {kind:'a GraphQL API',re:/graphql|ApolloClient/i}
+  ];
+  for(var i=0;i<checks.length;i++){
+    if(checks[i].re.test(text))return {hasDatabase:true,dbKind:checks[i].kind};
+  }
+  return {hasDatabase:false,dbKind:null};
+}
+/* The single "Build" action: bundles the uploaded files, extracts name/
+   description from the code (filling only whatever the builder left
+   blank), detects whether a database is already wired up, and always
+   injects the "Continue with Social Plus" pill — informing the builder
+   afterward rather than asking permission first, per Dave's direction. */
+/* ================= In-browser code editor ("Write code") =================
+   Three tabs (HTML/CSS/JS), each a real CodeMirror instance once loaded —
+   lazy-loaded from cdnjs only when this mode is actually opened, so it
+   costs nothing for builders who only ever use Upload. Content lives in
+   create.codeFiles = {html, css, js}; Build assembles these into one
+   document (wrapping CSS in <style>, JS in <script>) exactly the way the
+   file-upload bundler would if those had been separate uploaded files —
+   same pipeline downstream, just a different way of getting the source in. */
+var CM_CDN_BASE='https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16';
+window._spMkCodeMirrors={}; // {html:cmInstance, css:cmInstance, js:cmInstance}
+window._spMkCodeTab='html';
+function _spMkCodeEditorHtml(){
+  if(!create.codeFiles){
+    create.codeFiles={
+      html:'<!doctype html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>My App</title>\n</head>\n<body>\n  <h1>Hello!</h1>\n</body>\n</html>',
+      css:'body {\n  font-family: sans-serif;\n  padding: 20px;\n}',
+      js:'console.log("app started");'
+    };
+  }
+  var tab=window._spMkCodeTab;
+  return '<div class="spmc-code-tabs" style="display:flex;gap:6px;margin:14px 0 8px">'+
+      ['html','css','js'].map(function(t){
+        return '<button onclick="window._spMkSwitchCodeTab(\''+t+'\')" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--glass-border);background:'+(tab===t?'var(--text)':'var(--glass)')+';color:'+(tab===t?'var(--bg)':'var(--text2)')+';font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase">'+t+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div id="spMkCodeEditorHost" style="border-radius:14px;overflow:hidden;border:1px solid var(--glass-border);height:280px"></div>'+
+    '<p class="spmc-sub" style="margin-top:8px">Your CSS and JS are automatically linked into the HTML — no need to add &lt;style&gt; or &lt;script&gt; tags yourself.</p>';
+}
+window._spMkSetCodeMode=function(){
+  create.mode='code';
+  renderCreate();
+  setTimeout(_spMkEnsureCM,0);
+};
+window._spMkSwitchCodeTab=function(t){
+  // Save current tab's content before switching, same as a normal editor.
+  var cur=window._spMkCodeMirrors[window._spMkCodeTab];
+  if(cur)create.codeFiles[window._spMkCodeTab]=cur.getValue();
+  window._spMkCodeTab=t;
+  renderCreate();
+  setTimeout(_spMkEnsureCM,0);
+};
+var _spMkCMLoading=null;
+function _spMkLoadCM(){
+  if(window.CodeMirror)return Promise.resolve();
+  if(_spMkCMLoading)return _spMkCMLoading;
+  _spMkCMLoading=new Promise(function(resolve,reject){
+    var css=document.createElement('link');
+    css.rel='stylesheet';css.href=CM_CDN_BASE+'/codemirror.min.css';
+    document.head.appendChild(css);
+    var themeCss=document.createElement('link');
+    themeCss.rel='stylesheet';themeCss.href=CM_CDN_BASE+'/theme/material-darker.min.css';
+    document.head.appendChild(themeCss);
+    var core=document.createElement('script');
+    core.src=CM_CDN_BASE+'/codemirror.min.js';
+    core.onload=function(){
+      var modes=['xml','javascript','css','htmlmixed'].map(function(m){
+        return new Promise(function(res){
+          var s=document.createElement('script');
+          s.src=CM_CDN_BASE+'/mode/'+m+'/'+m+'.min.js';
+          s.onload=res;s.onerror=res; // don't hard-fail the whole editor over one mode file
+          document.head.appendChild(s);
+        });
+      });
+      Promise.all(modes).then(resolve);
+    };
+    core.onerror=function(){reject(new Error('Could not load the code editor — check your connection.'));};
+    document.head.appendChild(core);
+  });
+  return _spMkCMLoading;
+}
+function _spMkEnsureCM(){
+  var host=document.getElementById('spMkCodeEditorHost');
+  if(!host)return; // not on this step/mode anymore
+  _spMkLoadCM().then(function(){
+    var host2=document.getElementById('spMkCodeEditorHost');
+    if(!host2)return; // navigated away while loading
+    var tab=window._spMkCodeTab;
+    var modeMap={html:'htmlmixed',css:'css',js:'javascript'};
+    if(!window._spMkCodeMirrors[tab]){
+      host2.innerHTML='';
+      window._spMkCodeMirrors[tab]=window.CodeMirror(host2,{
+        value:create.codeFiles[tab]||'',
+        mode:modeMap[tab],
+        theme:'material-darker',
+        lineNumbers:true,
+        viewportMargin:Infinity,
+        tabSize:2
+      });
+      window._spMkCodeMirrors[tab].setSize('100%','280px');
+    }else if(host2.firstChild!==window._spMkCodeMirrors[tab].getWrapperElement()){
+      // Switched tabs — this CM instance exists but isn't currently mounted
+      // in the (freshly re-rendered) host div. Re-attach rather than
+      // recreate, so its undo history/scroll position survive tab-switching.
+      host2.innerHTML='';
+      host2.appendChild(window._spMkCodeMirrors[tab].getWrapperElement());
+      window._spMkCodeMirrors[tab].refresh();
+    }
+  }).catch(function(e){
+    toast(e.message||'Could not load the code editor.','error');
+  });
+}
+window._spMkBuild=function(){
+  var files;
+  if(create.mode==='code'){
+    // Flush whatever tab is currently focused so its latest edits are
+    // captured before assembling — switching tabs already does this, but
+    // the builder might hit Build without switching away from the last
+    // tab they typed in.
+    var cur=window._spMkCodeMirrors[window._spMkCodeTab];
+    if(cur)create.codeFiles[window._spMkCodeTab]=cur.getValue();
+    var cf=create.codeFiles||{html:'',css:'',js:''};
+    if(!cf.html||!cf.html.trim()){toast('Write some HTML first.','error');return;}
+    // Same shape _spMkRebundle already expects (an entry HTML file plus
+    // sibling files it can reference) — using virtual filenames here means
+    // the exact same bundling/inlining code path handles both Upload and
+    // Write-code, rather than duplicating that logic.
+    files=[{name:'index.html',isEntry:true,content:cf.html}];
+    if(cf.css&&cf.css.trim())files.push({name:'style.css',content:cf.css});
+    if(cf.js&&cf.js.trim())files.push({name:'app.js',content:cf.js});
+    // Auto-link the CSS/JS into the HTML if the builder didn't reference
+    // them explicitly themselves — matches the "no need to add <style>/
+    // <script> tags yourself" promise shown under the editor. Inserted
+    // right before </body> (or appended at the end if there's no </body>
+    // tag at all) rather than split between <head>/<body>, since that's
+    // simpler and works identically either way.
+    var needsCssLink=cf.css&&cf.css.trim()&&!/style\.css/.test(cf.html);
+    var needsJsLink=cf.js&&cf.js.trim()&&!/app\.js/.test(cf.html);
+    if(needsCssLink||needsJsLink){
+      var fullInject=(needsCssLink?'<link rel="stylesheet" href="style.css">\n':'')+(needsJsLink?'<script src="app.js"><\/script>\n':'');
+      files[0].content=/<\/body>/i.test(files[0].content)
+        ? files[0].content.replace(/<\/body>/i,fullInject+'</body>')
+        : files[0].content+fullInject;
+    }
+    create.uploadFiles=files; // keep in sync so the review/back-navigation shows something sensible
+  }else{
+    files=create.uploadFiles||[];
+    if(!files.some(function(f){return f.isEntry;})){toast('Pick an entry HTML file first.','error');return;}
+  }
+  create.addSSO=true; // always on now — no longer a pre-build choice
+  _spMkRebundle();
+  if(!create.html){toast('Could not build — check your entry file.','error');return;}
+  var meta=_spMkExtractMeta(create.html);
+  if(!create.name.trim()&&meta.name)create.name=meta.name;
+  if(!create.desc.trim()&&meta.desc)create.desc=meta.desc;
+  // Very light category guess from filenames/content keywords — the
+  // builder can still change it via the category step, this just avoids
+  // leaving it on the arbitrary "Games" default when a better guess exists.
+  if(create.cat==='Games'){
+    var t=(create.name+' '+create.desc+' '+files.map(function(f){return f.content;}).join(' ')).toLowerCase();
+    if(/wallet|withdraw|earn|balance|referral/.test(t))create.cat='Finance';
+    else if(/lesson|course|quiz|learn|study/.test(t))create.cat='Education';
+    else if(/chat|post|feed|follow|profile/.test(t))create.cat='Social';
+    else if(/tool|convert|calculator|utility/.test(t))create.cat='Utilities';
+  }
+  create.buildReport=_spMkDetectDatabase(files);
+  renderCreate();
+  toast('Built — "Continue with Social Plus" was added automatically.','success');
 };
 /* Generates a fresh app from the chosen skeleton + the builder's choices
    (theme color, features, earn mode, Supabase credentials) using
@@ -50144,6 +50518,13 @@ async function finishCreate(){
     var canGoPublic=wantsPublic&&canPublish();
     var willRequest=wantsPublic&&!canPublish();
     var slug=slugify(create.slug||create.name);
+    // DIAGNOSTIC (Dave flagged: typed slug sometimes saves as the
+    // name-derived slug instead). Nothing found wrong in the surrounding
+    // logic on inspection — this makes the actual values visible if it
+    // happens again, instead of having to guess blind a second time.
+    if(create.slug&&slugify(create.slug)!==slug){
+      console.warn('[App Market] slug mismatch at save: typed="'+create.slug+'" computed="'+slug+'" name="'+create.name+'"');
+    }
     var existing=await v2RawQuery('mini_apps','?slug=eq.'+encodeURIComponent(slug)+'&select=id&limit=1').catch(function(){return [];});
     if(existing&&existing.length)slug=slug+'-'+Math.random().toString(36).slice(2,5);
     var htmlOut=create.html;
@@ -50157,6 +50538,12 @@ async function finishCreate(){
         _spMkShowError('Could not load that template — try again.',e.message||String(e));
         return;
       }
+    }
+    // Real app id now exists — swap in the placeholder the "Continue with
+    // Social Plus" pill was bundled with (uploaded apps) so its postMessage
+    // handshake carries the actual id instead of a dummy string.
+    if(htmlOut&&htmlOut.indexOf('__PLUS_APP_ID__')!==-1){
+      htmlOut=htmlOut.replace(/__PLUS_APP_ID__/g,id);
     }
     var row={
       id:id, owner:me(), name:create.name.trim(), description:create.desc.trim(),
