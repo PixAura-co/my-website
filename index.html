@@ -1231,7 +1231,7 @@ body.light-mode .settings-btn:hover { background:rgba(0,0,0,0.12); }
    LIGHT MODE
 ═══════════════════════════════ */
 /* Always-dark surfaces keep the light accent tokens even when the app is in light mode */
-#splashOnboard,#streakShareOverlay,.streak-share-card,#dailySummaryOverlay,.lightbox,#spMergedMiniAppRoot,#spMergedMiniBar,#spMergedMiniLoading,#spMergedMiniSheet,#spMarketRun,.spmr-float-pill,.spmr-float-menu{--gold:#ffffff;--gold-dim:rgba(255,255,255,0.14);--gold-border:rgba(255,255,255,0.26);--acc-rgb:255,255,255;--acc-fill:#ffffff;--on-acc:#000000;}
+#splashOnboard,#streakPopup,#streakShareOverlay,.streak-share-card,#dailySummaryOverlay,.lightbox,#spMergedMiniAppRoot,#spMergedMiniBar,#spMergedMiniLoading,#spMergedMiniSheet,#spMarketRun,.spmr-float-pill,.spmr-float-menu{--gold:#ffffff;--gold-dim:rgba(255,255,255,0.14);--gold-border:rgba(255,255,255,0.26);--acc-rgb:255,255,255;--acc-fill:#ffffff;--on-acc:#000000;}
 body.light-mode {
   --gold: #0d0d0d; --gold-dim: rgba(0,0,0,0.07); --gold-border: rgba(0,0,0,0.18);
   --acc-rgb: 0,0,0; --acc-fill: #0d0d0d; --on-acc: #ffffff;
@@ -2085,7 +2085,7 @@ body.light-mode .profile-cover-banner { background: linear-gradient(135deg, #d1d
   cursor: pointer; transition: all 0.22s;
 }
 .profile-avatar.avi-premium {
-  border-radius: 26px !important;
+  border-radius: 32% !important;
   border: 3px solid var(--bg) !important;
   box-shadow: 0 4px 14px rgba(0,0,0,0.4) !important;
 }
@@ -2152,8 +2152,8 @@ body.light-mode .profile-cover-banner { background: linear-gradient(135deg, #d1d
 .suggest-card:hover { background: rgba(255,255,255,0.07); }
 .suggest-avi { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: rgba(var(--acc-rgb),0.12); border: 1.5px solid rgba(var(--acc-rgb),0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--gold); }
 .suggest-avi img { width: 100%; height: 100%; object-fit: cover; }
-.avi-premium { border-radius: 10px !important; border: 2px solid var(--glass-border) !important; box-shadow: none !important; overflow: hidden !important; }
-.uprofile-avi.avi-premium { border-radius: 18px !important; border: 2.5px solid var(--glass-border) !important; box-shadow: none !important; }
+.avi-premium { border-radius: 32% !important; border: 2px solid var(--glass-border) !important; box-shadow: none !important; overflow: hidden !important; }
+.uprofile-avi.avi-premium { border-radius: 32% !important; border: 2.5px solid var(--glass-border) !important; box-shadow: none !important; }
 .suggest-info { flex: 1; min-width: 0; overflow: hidden; }
 .suggest-name { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; white-space: nowrap; overflow: visible; }
 .suggest-name > span:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -3870,8 +3870,150 @@ body.light-mode #messageRequestsPageContent .mr-request-preview{background:rgba(
 </style>
 
 
+<style id="lg-v2">
+/* ═══════════ LIQUID GLASS v2 — Social Plus ═══════════ */
+:root{--lg-blur:18px;--lg-sat:175%;--lg-shine:.7;--lg-fill:rgba(20,20,26,.46);--lg-hi:rgba(255,255,255,.42);--lg-edge:rgba(255,255,255,.14);--lg-shadow:rgba(0,0,0,.5)}
+body.light-mode{--lg-fill:rgba(255,255,255,.52);--lg-hi:rgba(255,255,255,.95);--lg-edge:rgba(0,0,0,.08);--lg-shadow:rgba(30,30,50,.22)}
+body.lg-tinted{--lg-fill:rgba(16,16,20,.82)}
+body.light-mode.lg-tinted{--lg-fill:rgba(250,250,252,.88)}
+/* one recipe for every glass surface */
+#_island,.floating-sheet,.settings-drawer,.fl-sheet,.chat-wall-inner,.subpage-topbar,
+[style*="align-items:flex-end"]>[style*="border-radius"][style*="px 0 0"],
+.lgp-card,.lg-glass,.streak-week-card,.streak-info-card,.streak-badges-section,.streak-tip,.lgx-card,.lgx-row{
+  background:linear-gradient(160deg,rgba(255,255,255,calc(.16*var(--lg-shine))),rgba(255,255,255,calc(.03*var(--lg-shine))) 55%,rgba(255,255,255,calc(.08*var(--lg-shine)))),var(--lg-fill)!important;
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat))!important;backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat))!important;
+  border:1px solid var(--lg-edge)!important;
+  box-shadow:0 22px 56px var(--lg-shadow),0 2px 6px rgba(0,0,0,.14),inset 0 1.5px 1px var(--lg-hi),inset 0 -1px 1px rgba(255,255,255,.1),inset 1px 0 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(255,255,255,.08)!important}
+body.lg-refraction .floating-sheet,body.lg-refraction .settings-drawer,body.lg-refraction #_island{-webkit-backdrop-filter:blur(calc(var(--lg-blur)*.7)) saturate(var(--lg-sat))!important;backdrop-filter:url(#lg-refract) blur(calc(var(--lg-blur)*.7)) saturate(var(--lg-sat))!important}
+body.lg-off *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.lg-off{--lg-fill:rgba(24,24,28,.97)}body.light-mode.lg-off{--lg-fill:rgba(250,250,252,.98)}
+/* ── floating overlays: never touch an edge ── */
+.floating-sheet-backdrop,[style*="align-items:flex-end"][style*="position:fixed"]{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.floating-sheet,.settings-drawer{left:12px!important;right:12px!important;width:auto!important;max-width:576px;margin:0 auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;border-radius:36px!important;height:min(calc(100dvh - 40px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)),860px)!important}
+.floating-sheet.floating-sheet-compact{height:auto!important;border-radius:32px!important}
+.floating-sheet.open,.settings-drawer.open{animation:lgSheetIn .55s cubic-bezier(.16,1,.3,1)}
+@keyframes lgSheetIn{from{transform:translateY(46px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.floating-sheet::after,.settings-drawer::after{background:rgba(255,255,255,.3)!important}
+.fl-sheet,.chat-wall-inner,[style*="align-items:flex-end"]>[style*="border-radius"][style*="px 0 0"]{width:calc(100% - 24px)!important;max-width:520px;margin:0 auto calc(12px + env(safe-area-inset-bottom,0px))!important;border-radius:34px!important;animation:lgSheetIn .5s cubic-bezier(.16,1,.3,1)}
+.subpage-topbar{margin:calc(10px + env(safe-area-inset-top,0px)) 12px 6px!important;padding:10px 14px!important;border-radius:28px!important}
+.subpage-topbar button{color:var(--text)!important}
+/* ── Dynamic Island: liquid glass, springy, animated ── */
+#_island{border-radius:34px!important;width:min(calc(100vw - 24px),400px)!important;max-width:min(calc(100vw - 24px),400px)!important;
+  transition:transform .6s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,border-radius .45s cubic-bezier(.16,1,.3,1),max-width .55s cubic-bezier(.16,1,.3,1),top .3s ease!important;--lg-fill:rgba(14,14,18,.5)}
+#_island.island-show{padding:10px 16px 10px 11px!important;animation:lgIslandPop .7s cubic-bezier(.34,1.56,.64,1)}
+@keyframes lgIslandPop{0%{transform:translateX(-50%) translateY(-30px) scale(.55,.4)}55%{transform:translateX(-50%) translateY(3px) scale(1.04,1.06)}100%{transform:translateX(-50%) translateY(0) scale(1)}}
+#_island.island-expanded{border-radius:30px!important}
+#_island::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;background:radial-gradient(120% 90% at 18% -25%,rgba(255,255,255,.5),transparent 55%),radial-gradient(90% 70% at 100% 125%,rgba(255,255,255,.16),transparent 60%)}
+#_island::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;pointer-events:none;z-index:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-18deg);opacity:0}
+#_island.island-show::after{animation:lgSheen 1.3s .25s ease-out 1}
+@keyframes lgSheen{0%{left:-45%;opacity:.9}100%{left:120%;opacity:0}}
+#_island>*{z-index:1}
+#_islandTitle{color:#fff!important;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+#_islandIcon{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 0 0 1px rgba(255,255,255,.18),0 4px 12px rgba(0,0,0,.25);backdrop-filter:blur(6px)}
+#_island.island-show #_islandIcon{animation:lgIconIn .8s cubic-bezier(.34,1.56,.64,1) both}
+#_islandIcon>*{display:inline-block;animation:lgIconBob 2.6s ease-in-out .8s infinite}
+#_islandIcon::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);opacity:0;pointer-events:none}
+#_island.island-show #_islandIcon::after{animation:lgRipple 1.4s .3s ease-out 2}
+@keyframes lgIconIn{0%{transform:scale(.2) rotate(-90deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes lgIconBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.5px) scale(1.09)}}
+@keyframes lgRipple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.9);opacity:0}}
+#_islandProgressBar{background:linear-gradient(90deg,rgba(255,255,255,.55),#fff,rgba(255,255,255,.55))!important;background-size:200% 100%;animation:lgBarFlow 1.4s linear infinite;border-radius:3px}
+@keyframes lgBarFlow{to{background-position:-200% 0}}
+#_islandPeek{-webkit-backdrop-filter:blur(14px) saturate(170%);backdrop-filter:blur(14px) saturate(170%);box-shadow:inset 0 1px 1px rgba(255,255,255,.5),0 8px 20px rgba(0,0,0,.35)}
+.island-action-btn{border-radius:100px!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:inset 0 1px 1px rgba(255,255,255,.5)}
+body.light-mode #_island{background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.04)),rgba(14,14,18,.6)!important}
+@media (prefers-reduced-motion:reduce){#_island,#_island *,.floating-sheet,.settings-drawer{animation:none!important}}
+/* ── Appearance › Liquid Glass live preview ── */
+.lgp-card{border-radius:26px;padding:14px;margin-bottom:16px}
+.lgp-scene{position:relative;height:230px;border-radius:22px;overflow:hidden;margin-bottom:14px;background:#0b1220}
+.lgp-blob{position:absolute;border-radius:50%;filter:blur(2px);animation:lgDrift 9s ease-in-out infinite alternate}
+.lgp-blob.a{width:150px;height:150px;left:-30px;top:-20px;background:radial-gradient(circle at 35% 30%,#ffd166,#ef476f)}
+.lgp-blob.b{width:170px;height:170px;right:-40px;top:40px;background:radial-gradient(circle at 40% 35%,#4cc9f0,#4361ee);animation-delay:-3s}
+.lgp-blob.c{width:130px;height:130px;left:34%;bottom:-40px;background:radial-gradient(circle at 40% 35%,#80ed99,#06d6a0);animation-delay:-6s}
+.lgp-stripes{position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.07) 0 2px,transparent 2px 22px)}
+@keyframes lgDrift{to{transform:translate(40px,26px) scale(1.12)}}
+.lgp-scene .lg-glass{position:absolute;left:14px;right:14px;border-radius:100px;color:#fff;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+.lgp-top{top:14px;padding:9px 12px}.lgp-mid{top:88px;padding:13px 18px;border-radius:24px!important}.lgp-bot{bottom:14px;padding:11px 18px;justify-content:center}
+.lgp-dot{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;box-shadow:inset 0 1px 1px rgba(255,255,255,.6)}
+.lgp-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px}
+.lgp-row b{font-size:14px;color:var(--text)}.lgp-row small{display:block;font-size:12px;color:var(--text3);margin-top:2px;line-height:1.35}
+.lgp-sw{position:relative;width:46px;height:28px;border-radius:100px;border:none;background:rgba(120,120,128,.4);flex-shrink:0;cursor:pointer;transition:background .25s}
+.lgp-sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.lgp-sw.on{background:#30d158}.lgp-sw.on i{transform:translateX(18px)}
+.lgp-range{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;margin:12px 0 4px;background:linear-gradient(90deg,var(--gold) var(--f,60%),rgba(120,120,128,.35) var(--f,60%))}
+.lgp-range::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.lgp-reset{width:100%;margin-top:8px;padding:12px;border-radius:16px;border:1px solid var(--lg-edge);background:rgba(255,255,255,.06);color:var(--text);font:600 13.5px var(--font);cursor:pointer}
+/* ── Streak page ── */
+#streakPageOverlay{background:var(--bg)!important}
+#streakPageOverlay::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 12%,rgba(255,132,30,.34),transparent 70%),radial-gradient(50% 30% at 90% 60%,rgba(255,70,40,.12),transparent 70%),radial-gradient(50% 30% at 5% 85%,rgba(255,190,60,.1),transparent 70%)}
+#streakPageOverlay>div{position:relative}
+#streakPageOverlay>div:first-child{margin:calc(10px + env(safe-area-inset-top,0px)) 12px 0!important;padding:8px 10px!important;border-radius:100px!important;background:rgba(255,255,255,.08)!important;-webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat))!important;backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat))!important;border:1px solid var(--lg-edge)!important;box-shadow:inset 0 1px 1px var(--lg-hi),0 10px 30px rgba(0,0,0,.3)!important}
+#profileStreakBar{display:flex!important;flex-direction:column;gap:14px;padding:16px 14px 44px!important}
+.streak-main-card{order:1;text-align:center;padding:26px 20px 20px!important;border-radius:36px!important;border:1px solid rgba(255,170,80,.35)!important;background:linear-gradient(160deg,rgba(255,150,50,.28),rgba(255,90,30,.08) 60%,rgba(255,255,255,.05))!important;-webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));box-shadow:0 26px 60px rgba(255,90,0,.22),inset 0 1.5px 1px rgba(255,255,255,.5),inset 0 -1px 1px rgba(255,255,255,.1)!important;animation:none!important}
+.streak-main-card>div:first-child{flex-direction:column;gap:2px!important}
+.streak-main-card>div:first-child>div:last-child{width:100%}
+.streak-main-card>div:first-child>div:last-child>div:first-child{justify-content:center!important;align-items:flex-end!important;gap:8px!important}
+#streakIconWrap{position:relative;width:132px;height:132px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(255,200,100,.35),rgba(255,110,20,.08) 65%,transparent 70%);animation:lgHalo 3s ease-in-out infinite}
+#streakIconWrap::before{content:"";position:absolute;inset:14px;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.3),rgba(255,255,255,.04));box-shadow:inset 0 1.5px 1px rgba(255,255,255,.6),inset 0 0 0 1px rgba(255,255,255,.16),0 12px 30px rgba(255,90,0,.35)}
+.streak-flame-icon{position:relative;width:78px!important;height:78px!important;transform-origin:50% 90%;animation:lgFlame 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(255,110,0,.7))}
+@keyframes lgFlame{0%,100%{transform:scale(1) rotate(-1.5deg)}25%{transform:scale(1.05,1.09) rotate(2deg)}50%{transform:scale(.98,1.03) rotate(-2deg)}75%{transform:scale(1.04,1.07) rotate(1deg)}}
+@keyframes lgHalo{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.streak-count-num{font-size:92px!important;line-height:.95!important;font-weight:800!important;letter-spacing:-5px!important;background:linear-gradient(180deg,#fff,#ffcf9a 70%,#ff9a3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important;filter:drop-shadow(0 4px 18px rgba(255,120,20,.4))}
+.streak-count-label{font-size:16px!important;font-weight:700!important;color:rgba(255,255,255,.8)!important;padding-bottom:12px}
+.streak-subtext{font-size:13.5px!important;color:rgba(255,255,255,.7)!important;margin-top:4px;text-align:center}
+.streak-checkin-btn{width:100%!important;margin-top:18px!important;padding:16px!important;border-radius:100px!important;border:none!important;font-size:16px!important;font-weight:800!important;color:#2a1200!important;background:linear-gradient(180deg,#ffe0a3,#ffab3d 55%,#ff8a1f)!important;box-shadow:0 12px 28px rgba(255,120,0,.45),inset 0 1.5px 1px rgba(255,255,255,.9),inset 0 -2px 3px rgba(160,60,0,.3)!important;display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.streak-checkin-btn:active{transform:scale(.96)}.streak-checkin-btn:disabled{opacity:.6;filter:saturate(.6)}
+.streak-week-card{order:2;border-radius:30px!important;padding:18px 16px 16px!important}
+.streak-week-day-dot{width:34px!important;height:34px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.2)}
+.streak-week-day.filled .streak-week-day-dot{background:linear-gradient(180deg,#ffd27a,#ff8a1f)!important;border-color:transparent!important;box-shadow:0 6px 16px rgba(255,120,0,.4),inset 0 1.5px 1px rgba(255,255,255,.8)!important;animation:lgDotIn .5s cubic-bezier(.34,1.56,.64,1) both}
+.streak-week-day.today:not(.filled) .streak-week-day-dot{border-color:#ffab3d!important;animation:lgTodayPulse 2s ease-in-out infinite}
+@keyframes lgDotIn{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@keyframes lgTodayPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,171,61,.5)}50%{box-shadow:0 0 0 7px rgba(255,171,61,0)}}
+.streak-info-grid{order:3;gap:12px!important}.streak-info-card{border-radius:28px!important}
+.streak-badges-section{order:4;border-radius:30px!important}.streak-tip{order:5;border-radius:24px!important}
+.streak-badge-circle.earned{background:radial-gradient(circle at 35% 25%,#ffe9b8,#f0a531 60%,#a8620a)!important;border:1px solid rgba(255,255,255,.5)!important;box-shadow:0 8px 18px rgba(240,165,49,.35),inset 0 1.5px 1px rgba(255,255,255,.85)!important}
+.streak-badge-circle.locked{background:rgba(255,255,255,.06)!important;border:1px dashed rgba(255,255,255,.18)!important}
+/* ── Premium: what's included + payment ── */
+.lgx-card{border-radius:30px;padding:20px;margin-bottom:14px}
+.lgx-hero{text-align:center;padding:26px 18px 22px;position:relative;overflow:hidden}
+.lgx-hero::before{content:"";position:absolute;inset:-40% -20% auto;height:200px;background:radial-gradient(closest-side,rgba(255,255,255,.22),transparent);pointer-events:none}
+.lgx-over{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3)}
+.lgx-h{font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--text);margin:6px 0 6px;line-height:1.1}
+.lgx-p{font-size:13.5px;color:var(--text2);line-height:1.5}
+.lgx-perk{display:flex;gap:14px;align-items:center;padding:13px 0}.lgx-perk+.lgx-perk{border-top:1px solid var(--lg-edge)}
+.lgx-ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.05));box-shadow:inset 0 1px 1px rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.1);color:var(--text)}
+.lgx-perk b{display:block;font-size:14.5px;color:var(--text);letter-spacing:-.2px}.lgx-perk span{display:block;font-size:12.5px;color:var(--text3);margin-top:2px;line-height:1.4}
+.lgx-tbl{width:100%;border-collapse:collapse;font-size:12.5px;color:var(--text2)}
+.lgx-tbl th{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--text);padding:0 0 10px;text-align:center}.lgx-tbl th:first-child,.lgx-tbl td:first-child{text-align:left}
+.lgx-tbl td{padding:11px 0;border-top:1px solid var(--lg-edge);text-align:center}.lgx-tbl td:first-child{color:var(--text);font-weight:600;padding-right:8px}
+.lgx-y{color:#30d158;font-weight:800}.lgx-n{color:var(--text3)}
+.lgx-btn{width:100%;padding:16px;border-radius:100px;border:none;font:800 15px var(--font);color:var(--on-acc);background:var(--acc-fill);box-shadow:0 12px 28px rgba(0,0,0,.3),inset 0 1.5px 1px rgba(255,255,255,.9);cursor:pointer;margin-top:6px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.lgx-btn:active{transform:scale(.97)}
+.lgx-sum{display:flex;align-items:center;gap:14px}.lgx-amt{font-size:34px;font-weight:800;letter-spacing:-1.2px;color:var(--text);line-height:1}.lgx-amt small{font-size:13px;color:var(--text3);font-weight:600;letter-spacing:0}
+.lgx-row{width:100%;display:flex;align-items:center;gap:14px;text-align:left;border-radius:26px;padding:16px;margin-bottom:12px;cursor:pointer;font-family:var(--font);color:var(--text);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.lgx-row:active{transform:scale(.98)}
+.lgx-row b{display:block;font-size:15px}.lgx-row span.s{display:block;font-size:12.5px;color:var(--text3);margin-top:2px}
+.lgx-note{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text3);line-height:1.5;padding:4px 6px}
+/* ── Profile frames (realistic metal / gem finishes) ── */
+.artifact-layer{top:-5px!important;left:-5px!important;right:-5px!important;bottom:-5px!important;width:auto!important;height:auto!important;margin:0!important;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5));z-index:3}
+.artifact-layer[style*="position:relative"]{top:0!important;left:0!important;right:auto!important;bottom:auto!important;width:80px!important;height:80px!important}
+.af-frame{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 200deg,var(--af-stops));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));overflow:hidden}
+.af-frame::before{content:"";position:absolute;inset:0;background:conic-gradient(from 0deg,transparent 0 80%,rgba(255,255,255,.9) 88%,transparent 96%);mix-blend-mode:overlay;animation:afSweep 7s linear infinite}
+.af-frame.glass{opacity:.9}.af-frame.glass::before{mix-blend-mode:normal;opacity:.5}
+@keyframes afSweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.af-frame::before{animation:none}}
+.lgf-hero{display:flex;flex-direction:column;align-items:center;padding:26px 16px 20px;margin-bottom:14px;border-radius:32px}
+.lgf-av{position:relative;width:104px;height:104px;border-radius:50%;background:linear-gradient(160deg,#3a3a44,#15151a);display:grid;place-items:center;font-size:40px;font-weight:800;color:#fff;margin-bottom:14px}
+.lgf-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.lgf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lgf-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 6px 12px;border-radius:26px;cursor:pointer;font-family:var(--font);color:var(--text);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.lgf-tile:active{transform:scale(.95)}
+.lgf-tile.sel{outline:2px solid var(--gold);outline-offset:-2px}
+.lgf-mini{position:relative;width:46px;height:46px;border-radius:50%;background:linear-gradient(160deg,#3a3a44,#15151a);margin:4px 0}
+.lgf-tile b{font-size:12px;letter-spacing:-.1px}
+
+</style>
+<script>window.GROQ_TEXT_MODEL="openai/gpt-oss-120b";</script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><filter id="lg-refract" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="n"/><feGaussianBlur in="n" stdDeviation="2" result="s"/><feDisplacementMap in="SourceGraphic" in2="s" scale="6" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
 
 <!-- Social Plus merged Mini App launcher. It lives in the same Vercel/GitHub file. -->
 <div id="spMergedMiniAppRoot" aria-hidden="true">
@@ -4739,7 +4881,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
           <div style="font-size:15px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px;">
             You aren't verified yet
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
           </div>
           <button onclick="document.getElementById('profileVerifyUpsell').style.display='none';try{localStorage.setItem('ka_verify_upsell_dismissed','1')}catch(e){}" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;flex-shrink:0;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5296,9 +5438,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
          it's the first thing people notice. -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openAppearancePage(),200)">
-        <div class="settings-icon-circle" style="background:rgba(167,139,250,0.15);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9"/><path d="M17 7h3"/><circle cx="15" cy="7" r="2"/><path d="M4 17h3"/><path d="M11 17h9"/><circle cx="9" cy="17" r="2"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Customize Home Feed</div><div class="settings-icon-desc">Choose what shows on your Home feed</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5307,13 +5447,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- App Market -->
     <div id="spV2MarketMenuItem" class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>window._spV2OpenMarket(),120)">
-        <div class="settings-icon-circle" style="background:rgba(48,209,88,0.13);border:1px solid rgba(48,209,88,0.22);color:#30D158;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="16" rx="3"/>
-            <path d="M7 4V2h10v2"/>
-            <path d="M7 9h10M7 13h6"/>
-          </svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M16.5 13v7M13 16.5h7"/></svg></div>
         <div class="settings-icon-info">
           <div class="settings-icon-label">App Market</div>
           <div class="settings-icon-desc">Build, discover and launch mini apps</div>
@@ -5325,23 +5459,13 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     </div>
 
     <!-- Add / Switch Account -->
-    <div onclick="openAddAccountSheet();" style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;margin-bottom:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,0.09)'" ontouchend="this.style.background='rgba(255,255,255,0.04)'"">
-      <div style="width:34px;height:34px;border-radius:9px;background:rgba(var(--acc-rgb),0.12);border:1px solid rgba(var(--acc-rgb),0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="4"/><path d="M3.5 21c0-4.142 3.806-7.5 8.5-7.5s8.5 3.358 8.5 7.5"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:600;color:var(--text);">Add / Switch Account</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:1px;">Sign into another account</div>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
 
-    <!-- Wallet -->
-    <div class="settings-icon-group" style="margin-bottom:10px;background:linear-gradient(135deg,rgba(184,134,11,0.12),rgba(var(--acc-rgb),0.04));border:1px solid rgba(var(--acc-rgb),0.22);">
+<div class="settings-icon-group" style="margin-bottom:10px;"><div class="settings-icon-row" onclick="openAddAccountSheet()"><div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 3-6 6.5-6"/><path d="M18 14v6M15 17h6"/></svg></div><div class="settings-icon-info"><div class="settings-icon-label">Add / Switch Account</div><div class="settings-icon-desc">Sign into another account easily</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+
+<!-- Wallet -->
+    <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openWalletPage(),200)">
-        <div class="settings-icon-circle" style="background:linear-gradient(135deg,rgba(184,134,11,0.28),rgba(var(--acc-rgb),0.14));border:1px solid rgba(var(--acc-rgb),0.35);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/><circle cx="16.5" cy="14.5" r="1.4" fill="var(--gold)" stroke="none"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H17a1 1 0 0 1 1 1v1.5"/><path d="M4 8.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6.5a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 8.5z"/><circle cx="16" cy="14" r="1.1" fill="currentColor" stroke="none"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Wallet</div><div class="settings-icon-desc">Plus Coins, tasks &amp; Premium</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5350,9 +5474,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- Ask Plus AI -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openAIChat(),220)">
-        <div class="settings-icon-circle" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);">
-          <svg width="20" height="20" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="aiGlSm" cx="42%" cy="30%" r="75%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#c7c7cc"/><stop offset="75%" stop-color="#8e8e93"/><stop offset="100%" stop-color="#636366"/></radialGradient><clipPath id="aiClSm"><rect x="1" y="1" width="42" height="42" rx="13" ry="13"/></clipPath></defs><g clip-path="url(#aiClSm)"><rect x="1" y="1" width="42" height="42" fill="url(#aiGlSm)"/></g><path d="M22 9.5c.3 1.6.9 2.7 2.6 3.1-1.7.4-2.3 1.5-2.6 3.1-.3-1.6-.9-2.7-2.6-3.1 1.7-.4 2.3-1.5 2.6-3.1z" fill="#ffffff"/><rect x="11" y="20" width="22" height="10" rx="5" ry="5" fill="#00000022"/><rect x="14" y="22.5" width="6.5" height="9" rx="3.25" ry="3.25" fill="#ffffff"/><rect x="23.5" y="22.5" width="6.5" height="9" rx="3.25" ry="3.25" fill="#ffffff"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 4l1.9 5.1L17.5 11l-5.1 1.9L10.5 18l-1.9-5.1L3.5 11l5.1-1.9z"/><path d="M18.5 3.5v3M17 5h3"/><path d="M18 15.5v4M16 17.5h4"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Ask Plus AI for Help</div><div class="settings-icon-desc">Get instant answers from the built-in AI</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5361,9 +5483,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- Contact Developer -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openBugReportToDave(),220)">
-        <div class="settings-icon-circle" style="background:rgba(255,159,10,0.15);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.42 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Contact Developer</div><div class="settings-icon-desc">Send a report or message to the dev</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5372,9 +5492,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- Settings (opens full Settings page) -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>toggleSettingsPanel(),180)">
-        <div class="settings-icon-circle" style="background:rgba(142,142,147,0.18);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Settings</div><div class="settings-icon-desc">Profile, theme, password &amp; more</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5383,9 +5501,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- Reload Feed -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>{ if(typeof loadPosts==='function')loadPosts(); showToast('Feed refreshed!','success'); },200)">
-        <div class="settings-icon-circle" style="background:rgba(255,255,255,0.14);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.86-5.67"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">Reload Feed</div><div class="settings-icon-desc">Force-fetch latest posts from server</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5394,9 +5510,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- Theme Toggle -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>toggleTheme(),180)">
-        <div class="settings-icon-circle" style="background:rgba(255,255,255,0.15);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label" id="sideMenuThemeLbl">Light Mode</div><div class="settings-icon-desc">Switch between Dark and Light</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5405,9 +5519,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <!-- App Updates -->
     <div class="settings-icon-group" style="margin-bottom:10px;">
       <div class="settings-icon-row" onclick="closeSideMenu();setTimeout(()=>openAppUpdatesPage(),200)">
-        <div class="settings-icon-circle" style="background:rgba(48,209,88,0.14);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        </div>
+        <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 11l4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></svg></div>
         <div class="settings-icon-info"><div class="settings-icon-label">App Updates</div><div class="settings-icon-desc">Check for &amp; download the latest version</div></div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5434,7 +5546,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <div class="settings-drawer-title">
       Settings
     </div>
-    <button class="settings-drawer-close" onclick="toggleSettingsPanel()">✕</button>
+    <button class="settings-drawer-close sp-back" aria-label="Back" onclick="toggleSettingsPanel()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
   </div>
   <div class="settings-drawer-scroll" id="settingsScrollArea">
 
@@ -5448,18 +5560,10 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
   <!-- Add / Switch Account row -->
-  <div onclick="openAddAccountSheet()" style="margin:0 0 16px;padding:11px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-    <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="4"/><path d="M3.5 21c0-4.142 3.806-7.5 8.5-7.5s8.5 3.358 8.5 7.5"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
-    </div>
-    <div style="flex:1;">
-      <div style="font-size:14px;font-weight:600;color:var(--text);">Add / Switch Account</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:1px;">Sign into another account easily</div>
-    </div>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-  </div>
 
-  <!-- Plus tier banner (Apple Settings "Joi Pro" style) — tier-aware, built by renderSettingsTierBanner() -->
+<div class="settings-icon-group" style="margin-bottom:10px;"><div class="settings-icon-row" onclick="openAddAccountSheet()"><div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 3-6 6.5-6"/><path d="M18 14v6M15 17h6"/></svg></div><div class="settings-icon-info"><div class="settings-icon-label">Add / Switch Account</div><div class="settings-icon-desc">Sign into another account easily</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+
+<!-- Plus tier banner (Apple Settings "Joi Pro" style) — tier-aware, built by renderSettingsTierBanner() -->
   <div id="settingsTierBanner" onclick="toggleSettingsPanel();openWalletPage('premium')" style="margin:0 0 16px;padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#3a3a3a 0%,#6b6b6b 100%);position:relative;overflow:hidden;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow: none;">
     
     <div id="settingsTierIcon" style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;">
@@ -5478,9 +5582,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <!-- Manage Users -->
   <div class="settings-icon-group" id="manageUsersSettingsSection" style="display:none;margin:0 0 12px;">
     <div class="settings-icon-row" onclick="openUserManager()">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.07);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.4c1.9.8 3 2.6 3 5.6"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Manage Users</div>
         <div class="settings-icon-desc">Verify, restrict, ban &amp; premium requests</div>
@@ -5492,9 +5594,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <!-- Super Admin -->
   <div class="settings-icon-group" id="superAdminSettingsSection" style="display:none;margin:0 0 16px;">
     <div class="settings-icon-row" onclick="toggleSettingsPanel();setTimeout(()=>openSuperAdmin(),200)">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.07);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16"/><path d="M4 18l-1.5-9 5 3.2L12 6l4.5 6.2 5-3.2L20 18"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.5-3.1 8-7.5 9.5-4.4-1.5-7.5-5-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Super Admin</div>
         <div class="settings-icon-desc">Wallet, tasks, approvals, pricing &amp; more</div>
@@ -5506,9 +5606,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <!-- Appearance -->
   <div class="settings-icon-group">
     <div class="settings-icon-row" onclick="openAppearancePage()">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.15);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.2" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.8" r="1" fill="currentColor" stroke="none"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Appearance</div>
         <div class="settings-icon-desc">Theme, nav style & display options</div>
@@ -5520,9 +5618,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <!-- Account -->
   <div class="settings-icon-group">
     <div class="settings-icon-row" onclick="toggleSettingsPanel();setTimeout(()=>openAppUpdatesPage(),200)">
-      <div class="settings-icon-circle" style="background:rgba(48,209,88,0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 11l4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">App Updates</div>
         <div class="settings-icon-desc">Check for & download the latest version</div>
@@ -5531,9 +5627,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     </div>
     <div class="settings-icon-divider"></div>
     <div class="settings-icon-row" onclick="toggleSettingsPanel();setTimeout(()=>openBugReportToDave(),250)">
-      <div class="settings-icon-circle" style="background:rgba(255,69,58,0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="9" width="10" height="11" rx="5"/><path d="M9.5 9V7.5a2.5 2.5 0 0 1 5 0V9"/><path d="M12 12v8M3.5 13H7M17 13h3.5M5 7.5L8 10M19 7.5L16 10M5 19l3-2.5M19 19l-3-2.5"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Report a Bug</div>
         <div class="settings-icon-desc">Send a report directly to the developer</div>
@@ -5542,9 +5636,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     </div>
     <div class="settings-icon-divider"></div>
     <div class="settings-icon-row" onclick="window.location.reload()">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.86-5.67"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Reload Feed</div>
         <div class="settings-icon-desc">Force-fetch latest posts from the server</div>
@@ -5556,9 +5648,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <!-- Danger zone -->
   <div class="settings-icon-group">
     <div class="settings-icon-row" onclick="confirmDeleteAccount()">
-      <div class="settings-icon-circle" style="background:rgba(255,69,58,0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      </div>
+      <div class="sp-ico danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l.8 12.2a1.5 1.5 0 0 0 1.5 1.3h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v6M14 11v6"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label" style="color:var(--red);">Delete Account</div>
         <div class="settings-icon-desc">Permanently remove your account</div>
@@ -5576,9 +5666,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;padding-left:4px;">Security</div>
   <div class="settings-icon-group" style="margin-bottom:12px;">
     <div class="settings-icon-row" onclick="openManageDevices()">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Manage Devices</div>
         <div class="settings-icon-desc">See where you're signed in &amp; log out devices</div>
@@ -5587,9 +5675,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     </div>
     <div class="settings-icon-divider"></div>
     <div class="settings-icon-row" onclick="generateOrViewRecoveryCode()">
-      <div class="settings-icon-circle" style="background:rgba(var(--acc-rgb),0.14);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 19 4l3 3-3 3-2-2-2.5 2.5"/><path d="M16 8l2 2"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L19 4"/><path d="M15.5 7.5l2.5 2.5"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Recovery Code</div>
         <div class="settings-icon-desc" id="recoveryCodeDesc">Set up a code to reset your password if locked out</div>
@@ -5598,9 +5684,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
     </div>
     <div class="settings-icon-divider"></div>
     <div class="settings-icon-row" onclick="toggleLockEnabledRow()">
-      <div class="settings-icon-circle" style="background:rgba(255,255,255,0.15);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      </div>
+      <div class="sp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></div>
       <div class="settings-icon-info">
         <div class="settings-icon-label">Require Password on Open</div>
         <div class="settings-icon-desc">Ask for your password every time the app opens</div>
@@ -5982,7 +6066,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
 <div id="appearanceOverlay" class="settings-drawer" style="z-index:19600;">
   <div class="settings-drawer-header">
     <div class="settings-drawer-title">Appearance</div>
-    <button class="settings-drawer-close" onclick="closeAppearancePage()">✕</button>
+    <button class="settings-drawer-close sp-back" aria-label="Back" onclick="closeAppearancePage()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
   </div>
   <div class="settings-drawer-scroll">
     <!-- Appearance mode: System / Dark / Light segmented control (img 8 style) -->
@@ -6397,8 +6481,20 @@ const OWNER_USER  = 'Social Plus';
 const OWNER_PASS  = 'Socialplus@';
 
 // ── GLOBAL VERIFIED BADGE ── use this everywhere instead of plain or inline SVGs
-const VERIFIED_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
-const PREMIUM_BADGE_HTML = '<span title="Premium Member" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:linear-gradient(135deg,#0864c9,rgba(255,255,255,0.92));border-radius:4px;font-size:10px;line-height:1;vertical-align:middle;margin-left:1px;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M2 20L0 8l7 5 9-11 9 11 7-5-2 12z" fill="#000"/></svg></span>';
+const VERIFIED_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
+// Tier badges use FIXED colours — theme tokens (--gold/--acc-fill) flip to black in light mode
+// and must never recolour a verification badge. Premium + Prestige = gold, Pro = blue.
+const PREMIUM_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Plus Premium"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
+const PRO_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Plus Pro"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#1D9BF0"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
+function _premBadge() {
+  for (var i = 0; i < arguments.length; i++) {
+    var k = arguments[i];
+    if (!k || !isPremiumUser(k)) continue;
+    var t = getPremiumTier(k);
+    return (t && t.tier === 'pro') ? PRO_BADGE_HTML : PREMIUM_BADGE_HTML;
+  }
+  return PREMIUM_BADGE_HTML;
+}
 // Small reusable SVG icons for premium/wallet UI — replaces keyboard emoji so
 // these render as consistent, crisp vector icons instead of platform glyphs.
 const ICON_CROWN  = function(c){ c=c||'currentColor'; return `<svg width="16" height="13" viewBox="0 0 32 24" fill="none"><path d="M2 22L0 8l7 5 9-11 9 11 7-5-2 14z" fill="${c}"/></svg>`; };
@@ -6415,7 +6511,7 @@ function _getBadgesHTML(usernameOrKey) {
   const key = String(usernameOrKey).toLowerCase().replace(/\s+/g,'');
   let out = '';
   if (isUserVerified(usernameOrKey)) out += ' ' + VERIFIED_BADGE_HTML;
-  else if (isPremiumUser(usernameOrKey)) out += ' ' + PREMIUM_BADGE_HTML;
+  else if (isPremiumUser(usernameOrKey)) out += ' ' + _premBadge(usernameOrKey);
   return out;
 }
 const OWNER_KEY   = 'plusofficial';
@@ -6675,39 +6771,18 @@ const AF_SHAPES = {
   orb:    function(c,sz){ sz=sz||11; return `<span class="af-shape" style="display:block;width:${sz}px;height:${sz}px;border-radius:50%;background:conic-gradient(${c});box-shadow: 0 0 8px ${c};"></span>`; }
 };
 const PROFILE_ARTIFACTS = [
-  { id:'brand',     name:'Social Plus', shape:'orb',    color:'#7C5CFF', kind:'orbit',   count:3, ring:'linear-gradient(135deg,#7C5CFF,#22D3EE)' },
-  { id:'fire',      name:'On Fire',     shape:'flame',  color:'#FF6B00', kind:'orbit',   count:3, ring:'linear-gradient(135deg,#FF6B00,#FFD500)' },
-  { id:'sparkle',   name:'Sparkle',     shape:'spark',  color:'var(--gold)', kind:'twinkle', count:7 },
-  { id:'stars',     name:'Starstruck',  shape:'star',   color:'#FFE27A', kind:'twinkle', count:6 },
-  { id:'crown',     name:'Royalty',     shape:'crown',  color:'#F5C518', kind:'float',   count:2, ring:'linear-gradient(135deg,#F5C518,#B8860B)' },
-  { id:'diamond',   name:'Prestige',    shape:'gem',    color:'#7FE7F0', kind:'orbit',   count:3, ring:'linear-gradient(135deg,#22D3EE,#7C5CFF)' },
-  { id:'confetti',  name:'Celebration', shape:'petal',  color:'#FF6BD6', kind:'fall',    count:8, multiColor:['#FF6BD6','#F5C518','#22D3EE','#7C5CFF'] },
-  { id:'hearts',    name:'Loved',       shape:'heart',  color:'#FF4D6D', kind:'float',   count:3, beat:true },
-  { id:'snow',      name:'Snowfall',    shape:'flake',  color:'#BEEAFF', kind:'fall',    count:8 },
-  { id:'aurora',    name:'Aurora',      shape:'orb',    color:'#22D3EE', kind:'glow',    count:0, ring:'linear-gradient(135deg,#22D3EE,#7C5CFF,#FF6BD6)' },
-  { id:'rocket',    name:'Launch',      shape:'bolt',   color:'#FF8A00', kind:'orbit',   count:2 },
-  { id:'lightning', name:'Charged',     shape:'bolt',   color:'#FFE500', kind:'twinkle', count:5 },
-  { id:'rainbow',   name:'Rainbow',     shape:'orb',    color:'#FF6B6B', kind:'glow',    count:0, ring:'linear-gradient(135deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF)' },
-  { id:'butterfly', name:'Butterfly',   shape:'wing',   color:'#FF8A3D', kind:'orbit',   count:2 },
-  { id:'balloon',   name:'Balloon',     shape:'petal',  color:'#FF4D6D', kind:'float',   count:2 },
-  { id:'trophy',    name:'Champion',    shape:'trophy', color:'#F5C518', kind:'float',   count:1, ring:'linear-gradient(135deg,#F5C518,#FF8A00)' },
-  { id:'gem',       name:'Gemstone',    shape:'gem',    color:'#4DD8FF', kind:'twinkle', count:5 },
-  { id:'moon',      name:'Moonlit',     shape:'moon',   color:'#E8E8FF', kind:'orbit',   count:2 },
-  { id:'sun',       name:'Radiant',     shape:'orb',    color:'#FFD500', kind:'glow',    count:0, ring:'linear-gradient(135deg,#FFD500,#FF8A00)' },
-  { id:'petals',    name:'Petals',      shape:'petal',  color:'#FFAEDB', kind:'fall',    count:8 },
-  { id:'leaf',      name:'Zen',         shape:'leaf',   color:'#6BCB77', kind:'drift',   count:3 },
-  { id:'skull',     name:'Menace',      shape:'skull',  color:'#D0D0D0', kind:'twinkle', count:3 },
-  { id:'ghost',     name:'Spooky',      shape:'orb',    color:'#E8E8E8', kind:'float',   count:2 },
-  { id:'alien',     name:'Cosmic',      shape:'ufo',    color:'#8CE99A', kind:'orbit',   count:2 },
-  { id:'gold',      name:'Gold Rush',   shape:'coin',   color:'#F5C518', kind:'orbit',   count:4, ring:'linear-gradient(135deg,#F5C518,#B8860B)' },
-  { id:'ice',       name:'Frost',       shape:'flake',  color:'#9FE6FF', kind:'twinkle', count:5 },
-  { id:'wave',      name:'Ocean',       shape:'orb',    color:'#22D3EE', kind:'glow',    count:0, ring:'linear-gradient(135deg,#22D3EE,#0EA5E9)' },
-  { id:'party',     name:'Party Mode',  shape:'petal',  color:'#F5C518', kind:'fall',    count:8, multiColor:['#F5C518','#FF6BD6','#7C5CFF','#6BCB77'] },
-  { id:'dove',      name:'Peace',       shape:'bird',   color:'#EAEAFF', kind:'orbit',   count:2 },
-  { id:'medal',     name:'Top Rank',    shape:'trophy', color:'#F5C518', kind:'float',   count:1, ring:'linear-gradient(135deg,#F5C518,#FFE27A)' },
-  { id:'wizard',    name:'Mystic',      shape:'gem',    color:'#B794F6', kind:'orbit',   count:3 }
+  { id:'brand',    name:'Signature',  shape:'ring', color:'#E9E9EF', finish:'metal', stops:'#fafafc,#8d8d99,#ffffff,#6a6a76,#fafafc', ring:'linear-gradient(135deg,#fafafc,#7d7d89)' },
+  { id:'gold',     name:'Gold',       shape:'ring', color:'#E7B93C', finish:'metal', stops:'#fff2b0,#d9a520,#8a6410,#f6d76a,#fff2b0', ring:'linear-gradient(135deg,#fff2b0,#b8860b)' },
+  { id:'rosegold', name:'Rose Gold',  shape:'ring', color:'#E8A598', finish:'metal', stops:'#ffe3da,#d9877b,#9a5548,#f2b7aa,#ffe3da', ring:'linear-gradient(135deg,#ffe3da,#b76e63)' },
+  { id:'platinum', name:'Platinum',   shape:'ring', color:'#C9CED6', finish:'metal', stops:'#ffffff,#aeb5c0,#dfe3e9,#8b93a0,#ffffff', ring:'linear-gradient(135deg,#ffffff,#8b93a0)' },
+  { id:'obsidian', name:'Obsidian',   shape:'ring', color:'#3A3A44', finish:'metal', stops:'#54545f,#131317,#3c3c46,#0a0a0d,#54545f', ring:'linear-gradient(135deg,#54545f,#0a0a0d)' },
+  { id:'emerald',  name:'Emerald',    shape:'ring', color:'#2FBF80', finish:'gem',   stops:'#9ff3c9,#16a067,#0a5c3b,#4fd9a0,#9ff3c9', ring:'linear-gradient(135deg,#9ff3c9,#0a5c3b)' },
+  { id:'sapphire', name:'Sapphire',   shape:'ring', color:'#3B7BFF', finish:'gem',   stops:'#b5d2ff,#2f6bea,#12327f,#5b95ff,#b5d2ff', ring:'linear-gradient(135deg,#b5d2ff,#12327f)' },
+  { id:'ruby',     name:'Ruby',       shape:'ring', color:'#E0364F', finish:'gem',   stops:'#ffb3bf,#d02a45,#70101f,#f0566d,#ffb3bf', ring:'linear-gradient(135deg,#ffb3bf,#70101f)' },
+  { id:'glass',    name:'Liquid Glass', shape:'ring', color:'#FFFFFF', finish:'glass', stops:'rgba(255,255,255,.95),rgba(255,255,255,.25),rgba(255,255,255,.8),rgba(255,255,255,.2),rgba(255,255,255,.95)', ring:'linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.2))' }
 ];
-function _artifactById(id) { return PROFILE_ARTIFACTS.find(function(a){ return a.id === id; }) || null; }
+const LEGACY_ARTIFACT_MAP = { crown:'gold', trophy:'gold', medal:'gold', gold:'gold', sun:'gold', diamond:'platinum', gem:'sapphire', ice:'platinum', wave:'sapphire', aurora:'sapphire', moon:'platinum', alien:'obsidian', skull:'obsidian', ghost:'platinum', dove:'platinum', wizard:'sapphire', fire:'ruby', rocket:'ruby', lightning:'gold', hearts:'ruby', sparkle:'glass', stars:'glass', confetti:'rosegold', snow:'platinum', rainbow:'glass', butterfly:'rosegold', balloon:'ruby', petals:'rosegold', leaf:'emerald', party:'gold' };
+function _artifactById(id) { return PROFILE_ARTIFACTS.find(function(a){ return a.id === id; }) || PROFILE_ARTIFACTS.find(function(a){ return a.id === LEGACY_ARTIFACT_MAP[id]; }) || null; }
 function _getLocalArtifacts() {
   try { return JSON.parse(localStorage.getItem('ka_profile_artifacts') || '{}'); } catch(e) { return {}; }
 }
@@ -6754,49 +6829,7 @@ async function setMyProfileArtifact(artifactId) {
 function renderArtifactLayer(artifactId) {
   const a = _artifactById(artifactId);
   if (!a) return '';
-  let html = '';
-  if (a.ring) {
-    html += `<div class="af-ring af-ring-spin" style="background:conic-gradient(from 0deg, ${a.ring});-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));"></div>`;
-  }
-  if (a.kind === 'glow') {
-    html += `<div class="af-glow-pulse" style="background:radial-gradient(circle,${(a.ring||a.color||'rgba(var(--acc-rgb),0.5)')} 0%,transparent 70%);opacity:0.5;"></div>`;
-    html += `<div class="af-glow-pulse" style="animation-delay:1.2s;background:radial-gradient(circle,${(a.ring||a.color||'rgba(var(--acc-rgb),0.5)')} 0%,transparent 70%);opacity:0.35;"></div>`;
-  }
-  const n = a.count || 0;
-  const shapeFn = AF_SHAPES[a.shape] || AF_SHAPES.dot;
-  for (let i = 0; i < n; i++) {
-    const angle = (360 / Math.max(n,1)) * i + (i%2===0?0:20);
-    const dur = (a.kind==='orbit') ? (4.5 + i*0.6) : (a.kind==='fall') ? (3.2 + i*0.5) : (2.4 + i*0.4);
-    const delay = i * 0.4;
-    const col = (a.multiColor && a.multiColor[i % a.multiColor.length]) || a.color || 'var(--gold)';
-    let style = `position:absolute;`;
-    if (a.kind === 'orbit') {
-      const r = 78 + (i%3)*14; // spreads shapes across the wider 230px layer, past the avatar edge
-      style += `left:50%;top:50%;margin:-9px 0 0 -9px;--r:${r}px;transform-origin:0 0;animation:${i%2===0?'afOrbit':'afOrbitRev'} ${dur}s linear infinite;transform:rotate(${angle}deg) translateX(var(--r));animation-delay:${delay}s;`;
-    } else if (a.kind === 'twinkle') {
-      // Deterministic ring layout (same math as 'orbit', minus the rotation
-      // animation) so particles sit symmetrically around the avatar instead
-      // of landing at random spots on every render.
-      const r = 72 + (i%3)*16;
-      const rad = (angle * Math.PI) / 180;
-      const x = 50 + (Math.cos(rad) * r) / 2.3; // % offset from center, scaled to the 230px layer
-      const y = 50 + (Math.sin(rad) * r) / 2.3;
-      style += `left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;margin:-8px 0 0 -8px;animation:afTwinkle ${dur}s ease-in-out infinite;animation-delay:${delay}s;`;
-    } else if (a.kind === 'float') {
-      style += `left:${14+((angle+i*37)%72)}%;top:82%;animation:afFloatUp ${dur+1.6}s ease-in infinite;animation-delay:${delay}s;`;
-    } else if (a.kind === 'fall') {
-      // Evenly spaced across the width instead of random — falling snow/
-      // confetti reads as intentional, not scattered, when the columns
-      // are evenly spaced even though the fall timing still varies.
-      const x = ((i + 0.5) / n) * 100;
-      style += `left:${x.toFixed(1)}%;top:-10%;animation:afFall ${dur+1.8}s linear infinite;animation-delay:${delay}s;`;
-    } else if (a.kind === 'drift') {
-      style += `left:${8+((angle+i*29)%84)}%;top:${8+((angle*1.7+i*23)%84)}%;animation:afDrift ${dur+1.6}s ease-in-out infinite;animation-delay:${delay}s;`;
-    }
-    if (a.beat) style += `animation-name:afHeartBeat;animation-duration:${dur}s;`;
-    html += `<span class="af-particle" style="${style}">${shapeFn(col)}</span>`;
-  }
-  return html;
+  return `<div class="af-frame ${a.finish}" style="--af-stops:${a.stops}"></div>`;
 }
 // Wraps ANY avatar element with the given user's artifact layer, or clears it
 // if they have none. Generalized so it works for the own profile page
@@ -7548,7 +7581,7 @@ function _aviHtml(pic, displayName, size) {
     return `<span style="font-size:${Math.round(size*0.55)}px;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">${pic.slice(9)}</span>`;
   }
   if (pic.startsWith('__gradient__')) {
-    return `<div style="width:100%;height:100%;border-radius:50%;background:${pic.slice(12)};"></div>`;
+    return `<div style="width:100%;height:100%;border-radius:inherit;background:${pic.slice(12)};"></div>`;
   }
   return `<img src="${pic}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'"/>`;
 }
@@ -7564,7 +7597,7 @@ function _aviStyle(pic) {
 function _aviWrapStyle(userKeyOrName, altName) {
   const _prem = (typeof isPremiumUser === 'function') && (isPremiumUser(userKeyOrName) || (altName && isPremiumUser(altName)));
   return _prem
-    ? 'border-radius:10px;background:rgba(255,255,255,0.06);border:1.5px solid var(--glass-border);'
+    ? 'border-radius:32%;background:rgba(255,255,255,0.06);border:1.5px solid var(--glass-border);'
     : 'border-radius:50%;background:rgba(var(--acc-rgb),0.12);border:1.5px solid rgba(var(--acc-rgb),0.3);';
 }
 
@@ -12005,7 +12038,7 @@ function renderPost(post) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           </div>
           <div>
-            <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
+            <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
             <div class="post-time" style="display:inline-flex;align-items:center;gap:4px;">✨ What's New · ${timeAgo}</div>
           </div>
         </div>
@@ -12049,7 +12082,7 @@ function renderPost(post) {
         <div class="post-identity">
           <div class="post-avi" style="background:rgba(var(--acc-rgb),0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);border:1.5px solid rgba(var(--acc-rgb),0.3);">P</div>
           <div>
-            <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
+            <div class="post-name">Social Plus <span class="verified" title="Official"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
             <div class="post-time" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> App Update${post.version ? ' · v' + escHtml(post.version) : ''} · ${timeAgo}</div>
           </div>
         </div>
@@ -12111,7 +12144,7 @@ function renderPost(post) {
           <div class="post-identity">
             <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--card-border);color:var(--text);font-weight:800;font-size:16px;">S</div>'}</div>
             <div>
-              <div class="post-author" style="flex-direction:column;align-items:flex-start;gap:3px;"><div style="display:flex;align-items:center;gap:2px;"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span><span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div></div>
+              <div class="post-author" style="flex-direction:column;align-items:flex-start;gap:3px;"><div style="display:flex;align-items:center;gap:2px;"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span><span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div></div>
               <div class="post-time">${timeAgo}</div>
             </div>
           </div>
@@ -12168,7 +12201,7 @@ function renderPost(post) {
         <div class="post-identity">
           <div class="post-avi">${ownerPic() ? '<img src="'+ownerPic()+'" alt="Owner"/>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--card-border);color:var(--text);font-weight:800;font-size:16px;">S</div>'}</div>
           <div>
-            <div class="post-author"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span> <span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
+            <div class="post-author"><span onclick="openUserProfile(OWNER_KEY)" style="cursor:pointer;">Dave</span> <span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span></div>
             <div class="post-time">${timeAgo}</div>
           </div>
         </div>
@@ -12617,7 +12650,7 @@ function renderVerifRequestSection() {
   const alreadyVerified = currentUser && isUserVerified(currentUser);
   if (alreadyVerified) {
     el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;color:var(--gold);font-size:13px;font-weight:600;">
-      <span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>
+      <span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>
       Your account is verified!
     </div>`; return;
   }
@@ -12985,7 +13018,7 @@ async function openChat() {
   const aviEl = document.getElementById('chatAvi');
   aviEl.style.overflow = 'hidden';
   aviEl.innerHTML = _aviHtml(pic || null, displayName, 40);
-  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + PREMIUM_BADGE_HTML : ''));
+  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + _premBadge(chatPeerKey||'', displayName) : ''));
 
   document.getElementById('chatOverlay').classList.add('open');
   const tb = document.getElementById('appTabbar');
@@ -13152,7 +13185,7 @@ async function startDirectChatWith(userKey) {
     aviEl.innerHTML = _aviHtml(pic || null, displayName, 40);
   }
   const nameEl = document.getElementById('chatPeerName');
-  if (nameEl) nameEl.innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + PREMIUM_BADGE_HTML : '');
+  if (nameEl) nameEl.innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + _premBadge(chatPeerKey||'', displayName) : '');
   const aiControls = document.getElementById('aiChatControls');
   if (aiControls) aiControls.style.display = 'none';
   // Hide AI menu items for next non-AI chat
@@ -13205,7 +13238,7 @@ async function startChatWithViewed() {
   const pic = picFor(chatPeerKey) || picFor(displayName);
   const aviEl = document.getElementById('chatAvi');
   aviEl.innerHTML = _aviHtml(pic || null, displayName, 40);
-  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + PREMIUM_BADGE_HTML : ''));
+  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(chatPeerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(chatPeerKey||'') || isPremiumUser(displayName) ? ' ' + _premBadge(chatPeerKey||'', displayName) : ''));
   const aiControls = document.getElementById('aiChatControls');
   if (aiControls) aiControls.style.display = 'none';
   const aiChips = document.getElementById('aiQuickChips');
@@ -13757,9 +13790,9 @@ async function openUserProfile(userKey) {
   }
 
   const nameEl = document.getElementById('uprofileName');
-  const badgeSvg = `<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`;
+  const badgeSvg = `<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`;
   const isThisPremium = isPremiumUser(userKey) || isPremiumUser(displayName);
-  nameEl.innerHTML = escHtml(displayName) + (isThisVerified ? badgeSvg : (isThisPremium ? ' ' + PREMIUM_BADGE_HTML : ''));
+  nameEl.innerHTML = escHtml(displayName) + (isThisVerified ? badgeSvg : (isThisPremium ? ' ' + _premBadge(userKey, displayName) : ''));
   const existingBadge = nameEl.parentNode.querySelector('.uprofile-verified-badge');
   if (existingBadge) existingBadge.remove();
   const storedUsername = (storedAcct && storedAcct.username) || (isKrisAccount2 ? OWNER_KEY : userKey.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase());
@@ -14945,7 +14978,7 @@ async function openProfilePage() {
 
   const isMeVerified = (currentUser === OWNER_USER || isUserVerified(currentUser));
   avatarBtn.classList.toggle('avi-premium', isMeVerified);
-  avatarBtn.style.borderRadius = isMeVerified ? '20px' : '50%';
+  avatarBtn.style.borderRadius = isMeVerified ? '' : '50%';
 
   if (savedPic && savedPic.startsWith('__emoji__')) {
     avatarImg.style.display = 'none';
@@ -14973,8 +15006,8 @@ async function openProfilePage() {
   _applyProfileArtifactToOwnAvatar();
 
   const verifiedBadgeHtml = (currentUser === OWNER_USER || isUserVerified(currentUser))
-    ? ` <span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`
-    : (isPremiumUser(currentUser) ? ' ' + PREMIUM_BADGE_HTML : '');
+    ? ` <span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`
+    : (isPremiumUser(currentUser) ? ' ' + _premBadge(currentUser) : '');
   document.getElementById('profileNameDisplay').innerHTML =
     escHtml(currentUser) + verifiedBadgeHtml;
   document.getElementById('profileHandleDisplay').textContent = '@' + (isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || currentUser.replace(/\s+/g,'').toLowerCase()));
@@ -15939,8 +15972,8 @@ async function renderSuggestedAccounts() {
       isUserVerified(acc.name || '');
     const isPremiumAcc = !isVerifiedAcc && (isPremiumUser(acc.userKey || '') || isPremiumUser(acc.name || ''));
     const verifiedBadge = isVerifiedAcc
-      ? `<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`
-      : isPremiumAcc ? PREMIUM_BADGE_HTML : '';
+      ? `<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>`
+      : isPremiumAcc ? _premBadge(acc.userKey || '', acc.name || '') : '';
 
     const followBtnHtml = isSelf ? '' :
       `<button class="follow-btn ${isFollowing ? 'following' : ''}" onclick="event.stopPropagation();toggleFollow('${acc.userKey || acc.id}', this)">
@@ -16862,7 +16895,7 @@ async function openChatFromInbox(peerKey) {
   aviEl.style.fontSize = '';
   aviEl.style.overflow = 'hidden';
   aviEl.innerHTML = _aviHtml(pic || null, displayName, 40);
-  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(peerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(peerKey||'') || isPremiumUser(displayName) ? ' ' + PREMIUM_BADGE_HTML : ''));
+  document.getElementById('chatPeerName').innerHTML = escHtml(displayName) + (isUserVerified(peerKey||'') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(peerKey||'') || isPremiumUser(displayName) ? ' ' + _premBadge(peerKey||'', displayName) : ''));
   const aiControls = document.getElementById('aiChatControls');
   if (aiControls) aiControls.style.display = 'none';
   const aiChips = document.getElementById('aiQuickChips');
@@ -17818,7 +17851,7 @@ function _renderProfilePostsHTML(container, userPosts, usernameKey) {
   }
   const myPic = isOwner ? ownerPic() : (picFor(currentUser) || picFor(usernameKey) || null);
   const myAvi = _aviHtml(myPic, currentUser, 34);
-  const verBadge = (isOwner || isUserVerified(usernameKey) || isUserVerified(currentUser)) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(usernameKey)||isPremiumUser(currentUser)) ? ' ' + PREMIUM_BADGE_HTML : '';
+  const verBadge = (isOwner || isUserVerified(usernameKey) || isUserVerified(currentUser)) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(usernameKey)||isPremiumUser(currentUser)) ? ' ' + _premBadge(usernameKey, currentUser) : '';
 
   container.innerHTML = userPosts.map(p => {
     const commentsOn = p.commentsOn !== false;
@@ -21047,8 +21080,8 @@ async function sendAIMessageWithImage(imageSrc) {
       mode: 'cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 600,
+          model: GROQ_TEXT_MODEL, reasoning_effort: 'low',
+          max_tokens: 1100,
           messages: [
             { role: 'system', content: 'You are the Plus AI built into Social Plus. The user shared an image. Acknowledge you can see it was shared, describe what you might infer from context, and offer to help with questions. Never say you are Claude.' },
             { role: 'user', content: `User shared an image from: ${imageSrc}\n\nUser said: ${userText}\n\nRespond helpfully about the image context.` }
@@ -21890,6 +21923,15 @@ function showStreakPopup(streak) {
 
   title.textContent = data.title;
   msg.textContent = data.msg;
+  const _skCount = document.getElementById('streakPopupCount');
+  if (_skCount) _skCount.textContent = String(streak);
+  const _skWeek = document.getElementById('streakPopupWeek');
+  if (_skWeek) {
+    const pos = streak % 7 === 0 ? 7 : streak % 7;
+    let pips = '';
+    for (let i = 1; i <= 7; i++) pips += '<span class="sk-pip' + (i <= pos ? ' on' : '') + (i === pos ? ' now' : '') + '"></span>';
+    _skWeek.innerHTML = pips;
+  }
 
   // Show share button only on 7-day milestones
   if (shareWrap) shareWrap.style.display = isTrophy ? 'block' : 'none';
@@ -22985,7 +23027,7 @@ function showVerifiedInfo(e) {
   popup.innerHTML = `
     <div style="background:var(--glass);border:1px solid rgba(var(--acc-rgb),0.3);border-top-color:rgba(var(--acc-rgb),0.5);border-radius:24px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);">
       <div style="width:56px;height:56px;border-radius:50%;background:rgba(var(--acc-rgb),0.12);border:2px solid rgba(var(--acc-rgb),0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       </div>
       <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">Verified Account</div>
       <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:18px;">This account has been verified by <span style="color:var(--gold);font-weight:600;">Social Plus</span> as a trusted and authentic member of the community.</div>
@@ -23209,7 +23251,7 @@ async function renderUserManager() {
       const expiryText = premTier.expires_at ? `${formatPremiumCountdown(premTier.expires_at)}` : 'Never expires';
       premLine = `<div style="font-size:11px;color:${soonExpiring ? 'var(--gold)' : 'var(--text3)'};margin-top:2px;">👑 ${escHtml(premTier.label)} · ${escHtml(expiryText)}${soonExpiring ? ' · suggest renewal' : ''}</div>`;
     }
-    const verBadge = isVerified ? `<span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>` : '';
+    const verBadge = isVerified ? `<span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>` : '';
     return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">
         <div style="width:44px;height:44px;${isVerified ? 'border-radius:10px;border:2px solid var(--gold);box-shadow: none;' : (premTier ? 'border-radius:10px;border:1.5px solid var(--glass-border);' : 'border-radius:50%;border:1.5px solid rgba(var(--acc-rgb),0.2);')}background:rgba(var(--acc-rgb),0.1);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
@@ -24179,8 +24221,8 @@ async function sendAIMessage() {
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 800,
+        model: GROQ_TEXT_MODEL, reasoning_effort: 'low',
+        max_tokens: 1300,
         messages: [{ role: 'system', content: KRIS_AI_SYSTEM }, ...(cleanedMsgs.length ? cleanedMsgs : [{ role: 'user', content: text }])]
       })
     });
@@ -24893,7 +24935,7 @@ async function renderExploreSuggested() {
           ? `<img src="${escHtml(p.pic)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--gold);">${escHtml((p.displayName||'?').charAt(0).toUpperCase())}</div>`
           : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--gold);">${escHtml((p.displayName||'?').charAt(0).toUpperCase())}</div>`);
     const bioShort = p.bio ? (p.bio.length > 60 ? p.bio.substring(0, 57) + '…' : p.bio) : '';
-    const verifiedBadge = (p.isKris || p.isVerified) ? ` <span style="display:inline-flex;align-items:center;vertical-align:middle;">${VERIFIED_BADGE_HTML}</span>` : (isPremiumUser(p.key) || isPremiumUser(p.displayName)) ? ' ' + PREMIUM_BADGE_HTML : '';
+    const verifiedBadge = (p.isKris || p.isVerified) ? ` <span style="display:inline-flex;align-items:center;vertical-align:middle;">${VERIFIED_BADGE_HTML}</span>` : (isPremiumUser(p.key) || isPremiumUser(p.displayName)) ? ' ' + _premBadge(p.key, p.displayName) : '';
     const aviBg = isAICard ? 'rgba(255,255,255,0.18)' : 'rgba(var(--acc-rgb),0.15)';
     const aviBorder = isAICard ? '2px solid rgba(255,255,255,0.45)' : `2px solid ${p.isKris||p.isVerified?'rgba(var(--acc-rgb),0.5)':'rgba(255,255,255,0.15)'}`;
     return `<div style="flex-shrink:0;width:${cardW};background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:16px 14px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;">
@@ -25389,7 +25431,7 @@ async function _fireSearchAIAnswer(q) {
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', max_tokens: 180, messages: [{ role: 'system', content: PLUS_SEARCH_SYSTEM }, { role: 'user', content: q }]
+        model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 680, messages: [{ role: 'system', content: PLUS_SEARCH_SYSTEM }, { role: 'user', content: q }]
       })
     });
     const data = await res.json();
@@ -25816,7 +25858,7 @@ async function renderExplorePostsFeed() {
     </div>`;
     const _exHighlight = _buildHighlightedCommentHTML(p.id, p.comments||[], 'openProfilePostCommentOverlay');
 
-    const verBadge = (p.authorKey === OWNER_KEY || isUserVerified(p.authorKey) || isUserVerified(p.authorDisplay)) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(p.authorKey) || isPremiumUser(p.authorDisplay)) ? ' ' + PREMIUM_BADGE_HTML : '';
+    const verBadge = (p.authorKey === OWNER_KEY || isUserVerified(p.authorKey) || isUserVerified(p.authorDisplay)) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(p.authorKey) || isPremiumUser(p.authorDisplay)) ? ' ' + _premBadge(p.authorKey, p.authorDisplay) : '';
 
     return `<div class="_u-post-card-bg" id="excard-${p.id}">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;cursor:pointer;" onclick="_openUserProfileFrom('explore','${escHtml(authorKey)}')">
@@ -26940,7 +26982,7 @@ async function _renderMessagesPageContentInner(container, skipIfUnchanged) {
       const unreadCount = _dmUnreadCount(conv.msgs, myKey, conv.key);
       const unreadBadge = unreadCount ? `<span class="_msgs-row-unread">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
       const peerKey = isOwnerConv ? OWNER_KEY : (stored ? stored.username : conv.peer);
-      const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
+      const _convBadge = isOwnerConv ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : (isUserVerified(peerKey) ? `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>` : '');
       return `<div data-msg-row data-msg-bucket="personal" data-unread="${unreadCount}" data-name="${escHtml(displayName)}" style="display:flex;flex-wrap:nowrap;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="closeMessagesPage(false);openChatFromInbox('${escHtml(peerKey)}')">
         <div style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;cursor:pointer;${_aviWrapStyle(peerKey, displayName)}">${aviHtml}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden;cursor:pointer;">
@@ -28305,20 +28347,20 @@ document.addEventListener('visibilitychange', function() {
 
 
 <!-- ── STREAK POPUP OVERLAY ── -->
-<div id="streakPopup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);align-items:center;justify-content:center;padding:28px 20px;">
-    <div style="background:rgba(22,22,28,0.97);border:1px solid rgba(255,255,255,0.18);border-top-color:rgba(255,255,255,0.28);border-radius:32px;padding:40px 28px 28px;width:100%;max-width:340px;text-align:center;box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.08) inset;animation:streakCardSlideUp 0.4s cubic-bezier(0.32,0.72,0,1) both;">
+<div id="streakPopup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.78);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);align-items:center;justify-content:center;padding:28px 20px;">
+    <div class="sk-card">
       <div id="streakPopupIconWrap" class="streak-popup-icon-wrap flame-mode">
         <div id="streakPopupAnim" style="line-height:1;"></div>
       </div>
-      <div id="streakPopupTitle" style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:var(--gold);margin-bottom:10px;line-height:1.2;"></div>
-      <div id="streakPopupMsg" style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.7;margin-bottom:24px;"></div>
-      <div id="streakPopupShareWrap" style="display:none;margin-bottom:14px;">
-        <button onclick="openStreakShare()" style="font-family:var(--font);font-size:14px;font-weight:700;padding:13px 0;border-radius:14px;background:rgba(var(--acc-rgb),0.12);border:1px solid rgba(var(--acc-rgb),0.32);color:var(--gold);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:-0.1px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share Achievement
-        </button>
+      <div class="sk-count" id="streakPopupCount">1</div>
+      <div class="sk-unit">day streak</div>
+      <div class="sk-week" id="streakPopupWeek"></div>
+      <div class="sk-title" id="streakPopupTitle"></div>
+      <div class="sk-msg" id="streakPopupMsg"></div>
+      <div id="streakPopupShareWrap" style="display:none;margin-bottom:10px;">
+        <button class="sk-btn ghost" onclick="openStreakShare()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share achievement</button>
       </div>
-      <button onclick="closeStreakPopup()" style="width:100%;font-family:var(--font);font-size:16px;font-weight:700;padding:16px;border-radius:16px;background:linear-gradient(135deg,#FF8C00,var(--gold));border:none;color:#000;cursor:pointer;letter-spacing:-0.2px;box-shadow: none;">Dismiss</button>
+      <button class="sk-btn" onclick="closeStreakPopup()">Dismiss</button>
     </div>
   </div>
 
@@ -29208,7 +29250,7 @@ function _sortChannelsByTierThenSubs(list) {
 function _channelBadgeIconHtml(artifactId, size) {
   size = size || 14;
   if (!artifactId || artifactId === '__default__') {
-    return `<svg viewBox="0 0 24 24" fill="none" width="${size}" height="${size}"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    return `<svg viewBox="0 0 24 24" fill="none" width="${size}" height="${size}"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
   }
   const a = _artifactById(artifactId);
   if (!a) return _channelBadgeIconHtml(null, size);
@@ -29671,7 +29713,7 @@ function _renderProfileArtifactCard(slotId) {
   if (!artifactId) {
     slot.innerHTML = `<button onclick="openArtifactsPage()" style="width:100%;display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;background:rgba(var(--acc-rgb),0.06);border:1px dashed rgba(var(--acc-rgb),0.3);color:var(--gold);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add an artifact to your profile
+      Add a frame to your profile
     </button>`;
     return;
   }
@@ -33770,7 +33812,7 @@ function openGroupMgmt() {
           var mClean = m.replace(/^@+/, ''); // strip any leading @ from stored key
           var mPic = (typeof picFor === 'function') ? (picFor(mClean) || picFor(m)) : null;
           var mAvi = (typeof _aviHtml === 'function') ? _aviHtml(mPic, mClean, 34) : escHtml(mClean.charAt(0).toUpperCase());
-          var mVerBadge = (typeof isUserVerified === 'function' && isUserVerified(mClean)) ? ' <span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="var(--gold)"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>' : '';
+          var mVerBadge = (typeof isUserVerified === 'function' && isUserVerified(mClean)) ? ' <span class="verified"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>' : '';
           return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
             + '<div onclick="document.getElementById(\'groupMgmtSheet\').style.display=\'none\';setTimeout(function(){openUserProfile(\'' + escHtml(mClean) + '\');},180);" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);overflow:hidden;cursor:pointer;' + _aviWrapStyle(mClean) + '">' + mAvi + '</div>'
             + '<div onclick="document.getElementById(\'groupMgmtSheet\').style.display=\'none\';setTimeout(function(){openUserProfile(\'' + escHtml(mClean) + '\');},180);" style="flex:1;font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:4px;cursor:pointer;">@' + escHtml(mClean) + mVerBadge + roleTag + '</div>'
@@ -35862,23 +35904,23 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
        out of. -->
   <div class="spas-tabbar" id="walletTabbar">
     <div class="spas-tab wallet-tabbar-row active" data-wtab="home" onclick="window._spWalletGoHome()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.8 12 4l8 6.8V19a1 1 0 0 1-1 1h-4v-5.2a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1V20H5a1 1 0 0 1-1-1z"/></svg>
       <span>Home</span>
     </div>
     <div class="spas-tab wallet-tabbar-row" data-wtab="earn" onclick="openWalletEarnPage()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>
       <span>Earn</span>
     </div>
     <div class="spas-tab wallet-tabbar-row" data-wtab="spend" onclick="openWalletBoostPage()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8h13l-1 11.2a1 1 0 0 1-1 .8H7.5a1 1 0 0 1-1-.8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>
       <span>Spend</span>
     </div>
     <div class="spas-tab wallet-tabbar-row" data-wtab="premium" onclick="openWalletPremiumPage()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M5 18l-1.5-9L9 12l3-6 3 6 5.5-3L19 18"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z"/><path d="M8.5 12l2.5 2.5 4.5-4.5"/></svg>
       <span>Premium</span>
     </div>
     <div class="spas-tab wallet-tabbar-row" data-wtab="settings" onclick="openWalletSettingsPage()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.6"/><circle cx="9" cy="17" r="2.6"/></svg>
       <span>Settings</span>
     </div>
   </div>
@@ -35918,7 +35960,7 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
   </div>
   <div class="spas-body" style="padding-bottom:100px;">
     <div id="walletBoostClosedNote" class="spas-empty" style="display:none;margin:0 16px;background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:22px;">
-      🔒<b>Boosting is closed</b><span>Boosting is temporarily disabled.</span>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Boosting is closed</b><span>Boosting is temporarily disabled.</span>
     </div>
     <div id="walletBoostContent">
       <div class="spas-sec-head" style="margin-top:6px;"><b>Boost a Post</b></div>
@@ -35943,16 +35985,16 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
       <div id="walletPremiumPlansWrap" style="margin-top:14px;"></div>
     </div>
     <div class="spas-sec-head"><b>More</b></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;">
-      <button onclick="openPremiumShowcasePage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>
-        <div style="font-size:13px;font-weight:800;color:var(--text);">What am I getting?</div>
-        <div style="font-size:11px;color:var(--text3);line-height:1.4;">See every perk per plan</div>
+    <div class="wpx-list">
+      <button class="wpx-row" onclick="openPremiumShowcasePage()">
+        <span class="wpx-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span>
+        <span class="wpx-row-t"><b>What's included</b><small>Every perk, plan by plan</small></span>
+        <svg class="wpx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
-      <button onclick="openArtifactsPage()" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;font-family:var(--font);text-align:left;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"/></svg>
-        <div style="font-size:13px;font-weight:800;color:var(--text);">Profile Artifacts</div>
-        <div style="font-size:11px;color:var(--text3);line-height:1.4;">Animated avatar decorations</div>
+      <button class="wpx-row" onclick="openArtifactsPage()">
+        <span class="wpx-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.2"/></svg></span>
+        <span class="wpx-row-t"><b>Profile frames</b><small>Metal and gemstone frames for your photo</small></span>
+        <svg class="wpx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
   </div>
@@ -36015,7 +36057,7 @@ body.light-mode .sa-tab-btn { background:rgba(0,0,0,0.04); }
     <button onclick="closeArtifactsPage()" style="background:none;border:none;color:var(--gold);font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--font);padding:0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
     </button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:800;color:var(--text);margin-right:20px;">Profile Artifacts</div>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:800;color:var(--text);margin-right:20px;">Profile Frames</div>
   </div>
   <div id="artifactsPageBody" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));"></div>
 </div>
@@ -39155,7 +39197,7 @@ function _paintWalletRecentActivityToggle() {
   const btn = document.getElementById('walletRecentActivityToggle');
   if (!btn) return;
   const on = _walletRecentActivityEnabled();
-  btn.style.background = on ? 'var(--gold)' : 'rgba(120,120,128,.32)';
+  btn.style.background = on ? '#30D158' : 'rgba(120,120,128,.36)';
   const knob = btn.querySelector('span');
   if (knob) knob.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
 }
@@ -40710,6 +40752,14 @@ async function _isCurrentUserPremium() {
   return isPremiumUser(_myWalletKey());
 }
 
+const _WPX_TIER = {
+  pro:      { col: '#1D9BF0', rgb: '29,155,240', badge: 'Blue verification badge' },
+  premium:  { col: '#F5B301', rgb: '245,179,1',  badge: 'Gold verification badge' },
+  prestige: { col: '#F5B301', rgb: '245,179,1',  badge: 'Gold verification badge' }
+};
+function _wpxSeal(col) {
+  return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="' + col + '"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
 async function _renderWalletPremiumTab() {
   const statusCard = document.getElementById('walletPremiumStatusCard');
   const plansWrap = document.getElementById('walletPremiumPlansWrap');
@@ -40719,47 +40769,73 @@ async function _renderWalletPremiumTab() {
   const rec = getPremiumTier(key);
 
   if (!_walletConfig.premiumTiersEnabled) {
-    statusCard.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px;">Plus Premium is not available right now.</div>';
+    statusCard.innerHTML = '<div class="wpx-hero"><div class="wpx-hero-top"><div class="wpx-seal">' + _wpxSeal('#8e8e93') + '</div><div><div class="wpx-hero-name">Plus plans are paused</div><div class="wpx-sub">New subscriptions are unavailable right now. Check back soon.</div></div></div></div>';
     plansWrap.innerHTML = '';
     return;
   }
 
-  // ── Status card: active subscription w/ countdown, or a plain header ──
+  // ── Hero: current plan, or an invitation to pick one ──
   if (rec) {
-    statusCard.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(184,134,11,0.18),rgba(var(--acc-rgb),0.05));border:1px solid rgba(var(--acc-rgb),0.28);border-radius:18px;padding:20px;text-align:center;">
-      <div style="width:52px;height:52px;border-radius:50%;background:rgba(var(--acc-rgb),0.15);border:1px solid rgba(var(--acc-rgb),0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--gold);">${ICON_CROWN('var(--gold)')}</div>
-      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:4px;">${escHtml(rec.label)}</div>
-      <div style="font-size:13px;color:#30D158;font-weight:600;margin-bottom:6px;">Active</div>
-      <div style="font-size:12.5px;color:var(--text3);">${rec.expires_at ? '⏳ ' + escHtml(formatPremiumCountdown(rec.expires_at)) : 'Never expires'}</div>
-    </div>`;
+    const tv = _WPX_TIER[rec.tier] || _WPX_TIER.pro;
+    let meter = '', meta = '';
+    if (rec.expires_at) {
+      const total = (PREMIUM_TIERS[rec.tier] ? PREMIUM_TIERS[rec.tier].months : 1) * 30.44 * 86400000;
+      const left = new Date(rec.expires_at).getTime() - Date.now();
+      const pct = rec.isTrial ? null : Math.max(2, Math.min(100, Math.round(left / total * 100)));
+      if (pct !== null) meter = '<div class="wpx-meter"><b style="width:' + pct + '%"></b></div>';
+      meta = '<div class="wpx-meta"><span>' + escHtml(formatPremiumCountdown(rec.expires_at)) + '</span><span>' + escHtml(new Date(rec.expires_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })) + '</span></div>';
+    } else {
+      meta = '<div class="wpx-meta"><span>Never expires</span></div>';
+    }
+    statusCard.innerHTML =
+      '<div class="wpx-hero on" style="--t:' + tv.rgb + '">' +
+        '<div class="wpx-hero-top">' +
+          '<div class="wpx-seal">' + _wpxSeal(tv.col) + '</div>' +
+          '<div style="min-width:0;">' +
+            '<div class="wpx-hero-name">' + escHtml(rec.label) + '</div>' +
+            '<div class="wpx-status"><i></i>' + (rec.isTrial ? 'Active trial' : 'Active') + '</div>' +
+          '</div>' +
+        '</div>' + meter + meta +
+      '</div>';
   } else {
-    statusCard.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(184,134,11,0.18),rgba(var(--acc-rgb),0.05));border:1px solid rgba(var(--acc-rgb),0.28);border-radius:18px;padding:20px;text-align:center;">
-      <div style="width:52px;height:52px;border-radius:50%;background:rgba(var(--acc-rgb),0.15);border:1px solid rgba(var(--acc-rgb),0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>
-      </div>
-      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:4px;">Plus Premium</div>
-      <div style="font-size:12.5px;color:var(--text3);">Pick a plan below to unlock premium perks</div>
-    </div>`;
+    statusCard.innerHTML =
+      '<div class="wpx-hero">' +
+        '<div class="wpx-hero-top">' +
+          '<div class="wpx-seal">' + _wpxSeal('#8e8e93') + '</div>' +
+          '<div style="min-width:0;">' +
+            '<div class="wpx-hero-name">Get verified</div>' +
+            '<div class="wpx-sub">Pick a plan to show a verification badge on your profile and posts.</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
   }
 
-  // ── 3 plan cards. If already subscribed, cards offer "Upgrade/Renew" instead ──
+  // ── Plans ──
   const pricing = _walletConfig.premiumTierPricing || {};
   const order = ['pro', 'premium', 'prestige'];
   plansWrap.innerHTML = order.map(function(tid) {
     const t = PREMIUM_TIERS[tid];
+    const tv = _WPX_TIER[tid];
     const p = pricing[tid] || {};
     const isCurrent = rec && rec.tier === tid;
-    const durationLabel = t.months === 1 ? '1 month' : t.months === 6 ? '6 months' : '1 year';
-    return `<div style="background:var(--glass);border:1px solid ${isCurrent ? 'rgba(var(--acc-rgb),0.5)' : 'var(--glass-border)'};border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
-      <div style="width:42px;height:42px;border-radius:12px;background:rgba(var(--acc-rgb),0.14);border:1px solid rgba(var(--acc-rgb),0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold);">${tid==='pro'?ICON_STAR('var(--gold)'):tid==='premium'?ICON_CROWN('var(--gold)'):ICON_GEM('var(--gold)')}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14.5px;font-weight:800;color:var(--text);">${escHtml(t.label)}${isCurrent ? ' <span style=\"color:#30D158;font-size:11px;\">· current</span>' : ''}</div>
-        <div style="font-size:12px;color:var(--text3);">${durationLabel} · ₦${(p.naira||0).toLocaleString('en-NG')} or ${p.usdt||0} USDT</div>
-      </div>
-      <button onclick="openPremiumPayMethodPage('${tid}')" style="padding:10px 16px;border-radius:100px;background:var(--acc-fill);border:none;color:var(--on-acc);font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;">${isCurrent ? 'Renew' : 'Subscribe'}</button>
-    </div>`;
+    const dur = t.months === 1 ? '1 month' : t.months === 6 ? '6 months' : '1 year';
+    return '<div class="wpx-plan' + (isCurrent ? ' cur' : '') + '" style="--t:' + tv.rgb + '">' +
+      '<div class="wpx-plan-head">' +
+        '<div class="wpx-seal">' + _wpxSeal(tv.col) + '</div>' +
+        '<div style="min-width:0;">' +
+          '<div class="wpx-plan-name">' + escHtml(t.label) + '</div>' +
+          '<div class="wpx-sub">' + tv.badge + '</div>' +
+        '</div>' +
+        (isCurrent ? '<span class="wpx-chip">Current</span>' : '') +
+      '</div>' +
+      '<div class="wpx-plan-foot">' +
+        '<div>' +
+          '<div class="wpx-price">\u20a6' + (p.naira || 0).toLocaleString('en-NG') + '<span class="wpx-per"> / ' + dur + '</span></div>' +
+          '<div class="wpx-sub" style="margin-top:6px;">or ' + (p.usdt || 0) + ' USDT</div>' +
+        '</div>' +
+        '<button class="wpx-cta" onclick="openPremiumPayMethodPage(\'' + tid + '\')">' + (isCurrent ? 'Renew' : 'Subscribe') + '</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -40780,24 +40856,18 @@ async function openArtifactsPage() {
   await _refreshPremiumTiersCache();
   const key = _myUsernameKey ? _myUsernameKey() : (currentUser||'').toLowerCase();
   const premium = isPremiumUser(key);
-  const myArtifact = getUserArtifactId(key);
-
-  const intro = premium
-    ? `<div style="font-size:12.5px;color:var(--text3);line-height:1.5;margin-bottom:18px;">Tap a design to preview it on your profile, then apply it. You can change or remove it any time.</div>`
-    : `<div style="background:linear-gradient(135deg,rgba(184,134,11,0.18),rgba(var(--acc-rgb),0.05));border:1px solid rgba(var(--acc-rgb),0.28);border-radius:16px;padding:14px 16px;font-size:12.5px;color:var(--text2,var(--text));line-height:1.5;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">${ICON_PALETTE('var(--gold)')}</span><span>Animated artifacts are a <b style="color:var(--gold);">Plus Premium</b> perk. Preview any design below — subscribe to apply one to your profile.</span></div>`;
-
+  const mine = _artifactById(getUserArtifactId(key));
+  const myPicImg = document.getElementById('profileAvatarImg');
+  const hasPic = myPicImg && myPicImg.style.display !== 'none' && myPicImg.src;
+  const av = hasPic ? `<img src="${myPicImg.src}" alt="">` : escHtml((currentUser||'?').charAt(0).toUpperCase());
+  const hero = `<div class="lgx-card lgf-hero"><div class="lgf-av">${av}<div class="artifact-layer">${mine ? renderArtifactLayer(mine.id) : ''}</div></div>
+    <div style="font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.3px;">${mine ? escHtml(mine.name) : 'No artifact'}</div>
+    <div style="font-size:12.5px;color:var(--text3);margin-top:4px;text-align:center;line-height:1.45;">${premium ? 'Pick an artifact below. It floats around your photo on your profile.' : 'Artifacts are part of Premium. Tap any artifact to preview it on your photo.'}</div></div>`;
   const grid = PROFILE_ARTIFACTS.map(function(a) {
-    const isMine = myArtifact === a.id;
-    const iconFn = AF_SHAPES[a.shape] || AF_SHAPES.dot;
-    const swatchBg = a.ring ? a.ring.replace('linear-gradient(135deg,','radial-gradient(circle,') : 'rgba(255,255,255,0.06)';
-    return `<button onclick="previewArtifact('${a.id}')" style="position:relative;background:var(--glass);border:1px solid ${isMine ? 'rgba(var(--acc-rgb),0.6)' : 'var(--glass-border)'};border-radius:16px;padding:16px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:var(--font);">
-      ${isMine ? '<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--acc-fill);display:flex;align-items:center;justify-content:center;font-size:10px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--on-acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
-      <div style="width:36px;height:36px;border-radius:50%;background:${swatchBg};display:flex;align-items:center;justify-content:center;">${iconFn(a.color || 'var(--gold)', 19)}</div>
-      <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;">${escHtml(a.name)}</div>
-    </button>`;
+    const sel = mine && mine.id === a.id;
+    return `<button class="lgx-row lgf-tile${sel ? ' sel' : ''}" onclick="previewArtifact('${a.id}')"><div class="lgf-mini"><div class="artifact-layer">${renderArtifactLayer(a.id)}</div></div><b>${escHtml(a.name)}</b></button>`;
   }).join('');
-
-  body.innerHTML = intro + `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">${grid}</div>`;
+  body.innerHTML = hero + `<div class="lgf-grid">${grid}</div>`;
 }
 function closeArtifactsPage() {
   document.getElementById('artifactsPageOverlay').style.display = 'none';
@@ -40833,7 +40903,7 @@ async function previewArtifact(artifactId) {
   const isMine = myArtifact === artifactId;
 
   if (!premium) {
-    document.getElementById('artifactPreviewSub').textContent = 'Subscribe to Plus Premium to apply animated artifacts to your profile.';
+    document.getElementById('artifactPreviewSub').textContent = 'Artifacts are part of Plus Premium. Subscribe to apply one to your profile.';
     btn.textContent = 'Subscribe to Plus Premium';
     _artifactPreviewMode = 'subscribe';
   } else if (isMine) {
@@ -40841,7 +40911,7 @@ async function previewArtifact(artifactId) {
     btn.textContent = 'Remove from Profile';
     _artifactPreviewMode = 'remove';
   } else {
-    document.getElementById('artifactPreviewSub').textContent = 'Add this animated artifact to your profile.';
+    document.getElementById('artifactPreviewSub').textContent = 'Add this artifact to your profile.';
     btn.textContent = 'Apply to Profile';
     _artifactPreviewMode = 'apply';
   }
@@ -40862,7 +40932,7 @@ async function _confirmArtifactAction() {
   const ok = await setMyProfileArtifact(id);
   closeArtifactPreview();
   if (ok) {
-    _showIsland && _showIsland({ title: id ? 'Artifact applied ✨' : 'Artifact removed', sub: id ? 'Your profile now shows this artifact.' : '', type: 'signin', duration: 2600 });
+    _showIsland && _showIsland({ title: id ? 'Frame applied' : 'Frame removed', sub: id ? 'Your profile now shows this frame.' : '', type: 'signin', duration: 2600 });
     _renderProfileManageCard('profileManageCardSlot');
     if (document.getElementById('pmsArtifactSlot')) _renderProfileArtifactCard('pmsArtifactSlot');
   } else {
@@ -40878,28 +40948,19 @@ function openPremiumPayMethodPage(tierId) {
   _premiumSelectedTier = tierId;
   const t = PREMIUM_TIERS[tierId];
   const p = (_walletConfig.premiumTierPricing || {})[tierId] || {};
-  document.getElementById('premiumPayMethodTitle').textContent = t.label;
+  const dur = t.months===1?'1 month':t.months===6?'6 months':'1 year';
+  const S = function(d){ return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>'; };
+  const chev = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>';
+  document.getElementById('premiumPayMethodTitle').textContent = 'Checkout';
   document.getElementById('premiumPayMethodBody').innerHTML = `
-    <div style="text-align:center;margin-bottom:22px;">
-      <div style="font-size:20px;font-weight:800;color:var(--gold);">${escHtml(t.label)}</div>
-      <div style="font-size:12.5px;color:var(--text3);margin-top:4px;">${t.months===1?'1 month':t.months===6?'6 months':'1 year'} access</div>
-    </div>
-    <button onclick="openPremiumBankTransferPage()" style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">
-      <div style="width:40px;height:40px;border-radius:12px;background:rgba(var(--acc-rgb),0.14);border:1px solid rgba(var(--acc-rgb),0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏦</div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">Pay with Naira</div>
-        <div style="font-size:12px;color:var(--text3);">₦${(p.naira||0).toLocaleString('en-NG')} · bank transfer</div>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <button onclick="openPremiumCryptoPage()" style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;cursor:pointer;font-family:var(--font);">
-      <div style="width:40px;height:40px;border-radius:12px;background:rgba(167,139,250,0.14);border:1px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">₿</div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">Pay with Crypto</div>
-        <div style="font-size:12px;color:var(--text3);">${p.usdt||0} USDT or ${p.gram||0} GRAM</div>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>`;
+    <div class="lgx-card lg-glass"><div class="lgx-over">Order summary</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;gap:10px;">
+        <div><div style="font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.4px;">${escHtml(t.label)}</div><div style="font-size:13px;color:var(--text3);margin-top:3px;">${dur} of access</div></div>
+        <div class="lgx-amt">\u20a6${(p.naira||0).toLocaleString('en-NG')}</div></div></div>
+    <div class="lgx-over" style="margin:18px 6px 10px;">Pay with</div>
+    <button class="lgx-row" onclick="openPremiumBankTransferPage()"><div class="lgx-ic">${S('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/>')}</div><div><b>Bank transfer</b><span class="s">\u20a6${(p.naira||0).toLocaleString('en-NG')} in Naira</span></div>${chev}</button>
+    <button class="lgx-row" onclick="openPremiumCryptoPage()"><div class="lgx-ic">${S('<circle cx="12" cy="12" r="9"/><path d="M9.5 8h4a2 2 0 0 1 0 4h-4h4.5a2 2 0 0 1 0 4H9.5"/><path d="M9.5 6.5V17.5M12 6v2M12 16v2"/>')}</div><div><b>Crypto</b><span class="s">${p.usdt||0} USDT or ${p.gram||0} GRAM</span></div>${chev}</button>
+    <div class="lgx-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Premium is activated once your payment has been verified.</div>`;
   document.getElementById('premiumPayMethodOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   if (typeof window._forceRepaint === 'function') window._forceRepaint();
@@ -41179,40 +41240,28 @@ async function submitPremiumCryptoConfirm(senderAddress) {
 // ── Showcase page: "What am I getting?" per tier ──
 function openPremiumShowcasePage() {
   const body = document.getElementById('premiumShowcaseBody');
-  const feat = function(icon, title, sub) {
-    return `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--glass-border);">
-      <div style="width:36px;height:36px;border-radius:10px;background:rgba(var(--acc-rgb),0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon}</div>
-      <div><div style="font-size:13.5px;font-weight:700;color:var(--text);">${escHtml(title)}</div><div style="font-size:12px;color:var(--text3);margin-top:2px;line-height:1.4;">${escHtml(sub)}</div></div>
-    </div>`;
-  };
+  const I = function(p){ return '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; };
+  const perks = [
+    [I('<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'),'No ads','Nothing interrupts your feed or channel broadcasts.'],
+    [I('<circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/>'),'Profile frames','Metal, gemstone and glass finishes around your photo.'],
+    [I('<path d="M12 3l2.6 2 3.2-.2 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.2L12 21l-2.6-2-3.2.2-1-3.1L2.6 14.2l1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.2z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'),'Channel badge','A verification-style badge on your channel.'],
+    [I('<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>'),'Higher channel ranking','Suggested above free accounts in Explore.'],
+    [I('<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/>'),'3 reactions per post','Instead of one on free accounts.'],
+    [I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1"/>'),'Channel card on your profile','A card that links people straight to your channel.']
+  ].map(function(p){ return `<div class="lgx-perk"><div class="lgx-ic">${p[0]}</div><div><b>${escHtml(p[1])}</b><span>${escHtml(p[2])}</span></div></div>`; }).join('');
+  var pr = {}; try { pr = (_walletConfig && _walletConfig.premiumTierPricing) || {}; } catch(e) {}
+  const price = function(t){ return pr[t] && pr[t].naira ? '\u20a6' + Number(pr[t].naira).toLocaleString('en-NG') : '—'; };
+  const Y = '<span class="lgx-y">✓</span>', N = '<span class="lgx-n">—</span>';
+  const rows = [['No ads',Y,Y,Y],['Profile frames',Y,Y,Y],['Channel badge',Y,Y,Y],['Higher ranking',Y,Y,Y],['3 reactions',Y,Y,Y],['Rounded-square photo',N,Y,Y]]
+    .map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>'; }).join('');
   body.innerHTML = `
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);">All plans include</div>
-    </div>
-    ${feat(ICON_SHIELD_NOAD('var(--gold)'),'No ads','Skip every ad — in your feed and in channel broadcasts.')}
-    ${feat(ICON_PALETTE('var(--gold)'),'Animated profile artifacts','Decorate your profile with animated artifacts, including exclusive Social Plus designs.')}
-    ${feat(ICON_CHECKBADGE('var(--gold)'),'Custom channel badge','Your channel gets a verification-style badge, customizable to any artifact you own.')}
-    ${feat(ICON_TRENDUP('var(--gold)'),'Boosted channel ranking','Your channel is suggested above free accounts in Explore.')}
-    ${feat(ICON_CHAT('var(--gold)'),'More channel reactions','React up to 3× per post instead of the free 1×.')}
-    ${feat(ICON_LINK('var(--gold)'),'Channel on your profile','Show a card linking to your channel so others can find it easily.')}
-    <div style="text-align:center;margin:22px 0 10px;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);">Plan differences</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;">
-        <div style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;"><span style="color:var(--gold);display:inline-flex;">${ICON_STAR('var(--gold)')}</span> Plus Pro — 1 month</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px;">All core perks. Profile picture stays circular (not the square premium shape).</div>
-      </div>
-      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;">
-        <div style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;"><span style="color:var(--gold);display:inline-flex;">${ICON_CROWN('var(--gold)')}</span> Plus Premium — 6 months</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px;">Everything in Pro, plus the rounded-square premium profile frame, and better value per month.</div>
-      </div>
-      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px;">
-        <div style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;"><span style="color:var(--gold);display:inline-flex;">${ICON_GEM('var(--gold)')}</span> Plus Prestige — 1 year</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px;">Everything in Premium, locked in for a full year at the best per-month price.</div>
-      </div>
-    </div>
-    <button onclick="closePremiumShowcasePage()" style="width:100%;padding:14px;border-radius:14px;background:var(--acc-fill);border:none;color:var(--on-acc);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:22px;">Got it</button>`;
+    <div class="lgx-card lg-glass lgx-hero"><div class="lgx-over">Social Plus Premium</div><div class="lgx-h">What you get</div><div class="lgx-p">Every plan includes the same core perks. Longer plans add the rounded-square photo and a better monthly price.</div></div>
+    <div class="lgx-card">${perks}</div>
+    <div class="lgx-card"><table class="lgx-tbl"><thead><tr><th></th><th>Pro</th><th>Premium</th><th>Prestige</th></tr></thead><tbody>
+      ${rows}
+      <tr><td>Length</td><td>1 mo</td><td>6 mo</td><td>1 yr</td></tr>
+      <tr><td>Price</td><td>${price('pro')}</td><td>${price('premium')}</td><td>${price('prestige')}</td></tr></tbody></table></div>
+    <button class="lgx-btn" onclick="closePremiumShowcasePage()">Choose a plan</button>`;
   document.getElementById('premiumShowcaseOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -44957,7 +45006,7 @@ async function _aiReplyToComment(text, postId, parentCommentId){
   try {
     const res = await fetch('/api/groq', {
       method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 300, messages: [{ role: 'system', content: systemWithPostCtx }, { role: 'user', content: userPrompt }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 800, messages: [{ role: 'system', content: systemWithPostCtx }, { role: 'user', content: userPrompt }] })
     });
     const data = await res.json();
     reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -44976,7 +45025,7 @@ async function _aiReplyToProfilePost(text, userKey, postId){
   try {
     const res = await fetch('/api/groq', {
       method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 300, messages: [{ role: 'system', content: _getPlusAISystem() }, { role: 'user', content: clean }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 800, messages: [{ role: 'system', content: _getPlusAISystem() }, { role: 'user', content: clean }] })
     });
     const data = await res.json();
     reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -45152,7 +45201,7 @@ async function _aiReplyToChat(text, peerOrGroupId, isGroup){
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'system', content: SYSTEM }, ...historyMsgs] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 1000, messages: [{ role: 'system', content: SYSTEM }, ...historyMsgs] })
     });
     const data = await res.json();
     reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -45701,7 +45750,7 @@ Your job: Extract or infer fields for a betting prediction post. Respond ONLY wi
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'user', content: aiPrompt }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 1000, messages: [{ role: 'user', content: aiPrompt }] })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -45749,7 +45798,7 @@ Respond ONLY with a JSON object, no markdown:
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 900, messages: [{ role: 'user', content: prompt }] })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -45789,7 +45838,7 @@ Respond ONLY with a JSON object, no markdown:
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 900, messages: [{ role: 'user', content: prompt }] })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -45828,7 +45877,7 @@ Respond ONLY with a JSON object, no markdown:
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await res.json();
     let ct = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -45941,8 +45990,7 @@ function _ppcAIPickVersion(idx) {
 
 // ── Hardware / gesture back-button navigation ─────────────────────────────
 (function() {
-  // Push a sentinel state so back button has something to pop before leaving
-  history.pushState({ _ka: 'base' }, '');
+  // (sentinel push moved to the unified back stack in sp-back-v3)
 
   // ── Refresh should leave you where you were ─────────────────────────
   // This app has no per-screen URL — every page is a JS-managed overlay
@@ -45958,7 +46006,7 @@ function _ppcAIPickVersion(idx) {
   // fragility here.
   var KA_RESTORE_KEY = 'ka_last_open_overlay';
   window._kaRememberOpen = function(id) {
-    try { localStorage.setItem(KA_RESTORE_KEY, id); } catch(e) {}
+    /* disabled: app always starts on Home */
   };
   window._kaForgetOpen = function(id) {
     try {
@@ -45994,8 +46042,9 @@ function _ppcAIPickVersion(idx) {
       try {
         var savedId = localStorage.getItem(KA_RESTORE_KEY);
         if (!savedId) return;
-        var opener = KA_RESTORE_OPENERS[savedId];
-        if (opener) opener();
+        // Reopening the last screen on boot was removed: it made every launch slower.
+        // The app now always starts clean on Home. Clear any leftover value.
+        localStorage.removeItem(KA_RESTORE_KEY);
       } catch(e) {}
     }, 1500);
   });
@@ -46111,6 +46160,7 @@ function _ppcAIPickVersion(idx) {
     var origClose = l.close;
     l.close = function() { origClose(); window._kaForgetOpen(l.check); };
   });
+  window.__kaLayers = _kaLayers; window.__kaIsOpen = _kaIsOpen;
 
   // ── Generic safety net ──────────────────────────────────────────────
   // The list above has to be hand-maintained (each overlay's own close
@@ -46147,13 +46197,9 @@ function _ppcAIPickVersion(idx) {
   // task after the browser has had a chance to paint — on this Android
   // WebView, pushState called in the same task as the DOM/open work can
   // block the paint until something else forces a reflow (e.g. back press).
-  window._kaPushBack = function() {
-    setTimeout(function() {
-      history.pushState({ _ka: 'layer' }, '');
-    }, 0);
-  };
+  window._kaPushBack = function() { /* history is now managed by sp-back-v3 */ };
 
-  window.addEventListener('popstate', function(e) {
+  window.addEventListener('sp-old-popstate-disabled', function(e) {
     // Find the topmost open layer and close it
     for (var i = 0; i < _kaLayers.length; i++) {
       if (_kaIsOpen(_kaLayers[i].check)) {
@@ -46199,6 +46245,7 @@ function _ppcAIPickVersion(idx) {
   };
 
   function _patchOpen(name) {
+    return; // back handling lives in sp-back-v3 now
     if (typeof window[name] !== 'function') return;
     var orig = window[name];
     window[name] = function() {
@@ -46303,7 +46350,7 @@ function _ppcAIPickVersion(idx) {
     if (_kaObserver._t) return;
     _kaObserver._t = setTimeout(function() { _kaObserver._t = null; _kaScanForNewOverlay(); }, 30);
   });
-  _kaObserver.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
+  /* old observer disabled — sp-back-v3 tracks layers */
 
 })();
 </script>
@@ -47360,7 +47407,7 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
     fetch('/api/groq', {
       method:'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:300,
+      body:JSON.stringify({ model: GROQ_TEXT_MODEL, reasoning_effort: 'low', max_tokens: 800,
         messages:[{role:'system',content:sys}].concat(_kaiHistory.slice(-10)) })
     })
     .then(function(r){ return r.json(); })
@@ -47533,7 +47580,7 @@ body.light-mode .kai-msg-ai { color:rgba(255,255,255,0.9) !important; }
     var aviEl = document.getElementById('chatAvi');
     if (aviEl) { aviEl.style.overflow = 'hidden'; aviEl.innerHTML = _aviHtml(pic || null, displayName, 40); }
     var nameEl = document.getElementById('chatPeerName');
-    if (nameEl) nameEl.innerHTML = escHtml(displayName) + (isUserVerified(peerKey || '') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(peerKey || '') || isPremiumUser(displayName) ? ' ' + PREMIUM_BADGE_HTML : ''));
+    if (nameEl) nameEl.innerHTML = escHtml(displayName) + (isUserVerified(peerKey || '') || isUserVerified(displayName) ? ' ' + VERIFIED_BADGE_HTML : (isPremiumUser(peerKey || '') || isPremiumUser(displayName) ? ' ' + _premBadge(peerKey || '', displayName) : ''));
 
     var msgsOv = document.getElementById('messagesPageOverlay');
     if (msgsOv) msgsOv.style.display = 'none';
@@ -51284,5 +51331,513 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
+
+<style id="sp-ui-pass-2026-09">
+/* ═══ Fixed-colour controls: theme tokens (--gold / --acc-fill) flip to black in light mode and must never recolour these ═══ */
+.toggle-track, body.light-mode .toggle-track { background: rgba(120,120,128,.36) !important; border-color: transparent !important; }
+.toggle-track::before, .toggle-sw input:checked + .toggle-track::before { background: #fff !important; }
+.toggle-sw input:checked + .toggle-track, body.light-mode .toggle-sw input:checked + .toggle-track { background: #30D158 !important; border-color: #30D158 !important; }
+.toggle-sw-glass .track, body.light-mode .toggle-sw-glass .track { background: rgba(120,120,128,.36) !important; border-color: transparent !important; }
+.toggle-sw-glass .track::after { background: #fff !important; }
+.toggle-sw-glass input:checked + .track, body.light-mode .toggle-sw-glass input:checked + .track { background: #30D158 !important; border-color: #30D158 !important; }
+.nav-topic-toggle { background: rgba(120,120,128,.36) !important; border-color: transparent !important; }
+.nav-topic-toggle-on, body.light-mode .nav-topic-toggle-on { background: #30D158 !important; border-color: #30D158 !important; }
+.nav-topic-toggle-knob { background: #fff !important; }
+
+/* ═══ Filled accent buttons inside dark page headers (Channels "Create" etc.) — the header rule forced white text onto a white pill ═══ */
+[id$="Overlay"] > div[style*="rgba(10,10,14"] button[style*="acc-fill"],
+[id$="Overlay"] > div[style*="rgba(10,10,1"] button[style*="acc-fill"],
+[id$="Overlay"] .subpage-topbar button[style*="acc-fill"],
+[id$="overlay"] > div[style*="rgba(10,10,14"] button[style*="acc-fill"] { color: var(--on-acc) !important; }
+
+/* ═══ Settings icons: neutral chip + black glyph in light mode ═══ */
+body.light-mode .settings-icon-circle { background: rgba(0,0,0,.06) !important; border: 1px solid rgba(0,0,0,.08) !important; color: #000 !important; }
+body.light-mode .settings-icon-circle svg { color: #000 !important; }
+body.light-mode .settings-icon-circle svg[stroke]:not([stroke="none"]),
+body.light-mode .settings-icon-circle svg [stroke]:not([stroke="none"]) { stroke: #000 !important; }
+body.light-mode .settings-icon-circle svg [fill]:not([fill="none"]) { fill: #000 !important; }
+
+/* ═══ Avatar frame: one squircle radius so frame and picture share the same corners ═══ */
+.profile-avatar.avi-premium, .uprofile-avi.avi-premium, .avi-premium { border-radius: 32% !important; }
+.profile-avatar.avi-premium, .uprofile-avi.avi-premium { background: transparent !important; }
+.avi-premium img { border-radius: 0 !important; }
+@supports (corner-shape: squircle) {
+  .profile-avatar.avi-premium, .uprofile-avi.avi-premium, .avi-premium { corner-shape: squircle; border-radius: 40% !important; }
+}
+
+/* ═══ Streak popup ═══ */
+.sk-card { width: 100%; max-width: 336px; box-sizing: border-box; text-align: center; padding: 28px 24px 22px; border-radius: 28px; background: #16161c; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 32px 80px rgba(0,0,0,.7); animation: streakCardSlideUp .4s cubic-bezier(.32,.72,0,1) both; }
+#streakPopup .streak-popup-icon-wrap { width: 56px; height: 56px; margin: 0 auto 4px; background: none !important; border: none !important; box-shadow: none !important; }
+.sk-count { font-size: 76px; line-height: 1; font-weight: 800; letter-spacing: -3px; color: #fff; font-variant-numeric: tabular-nums; }
+.sk-unit { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.5); margin-top: 4px; }
+.sk-week { display: flex; gap: 6px; margin: 20px 4px 0; }
+.sk-pip { flex: 1; height: 6px; border-radius: 6px; background: rgba(255,255,255,.12); }
+.sk-pip.on { background: linear-gradient(90deg, #FF6B00, #FF9500); }
+.sk-pip.now { box-shadow: 0 0 10px rgba(255,120,0,.65); }
+.sk-title { font-size: 19px; font-weight: 800; letter-spacing: -.4px; color: #fff; margin-top: 22px; line-height: 1.25; }
+.sk-msg { font-size: 13.5px; line-height: 1.6; color: rgba(255,255,255,.6); margin: 8px 0 22px; }
+.sk-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #fff; color: #000; font-family: var(--font); font-size: 15px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.sk-btn.ghost { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.14); font-weight: 700; }
+
+/* ═══ Wallet tab bar ═══ */
+.spas-tab svg { transition: transform .15s; }
+.spas-tab.active svg { stroke-width: 2.1; }
+
+/* ═══ Wallet → Premium ═══ */
+.wpx-hero { position: relative; border-radius: 24px; padding: 20px; border: 1px solid var(--glass-border); background: var(--glass); overflow: hidden; }
+.wpx-hero.on { border-color: rgba(var(--t),.4); background: linear-gradient(165deg, rgba(var(--t),.18), rgba(var(--t),.04) 55%, transparent); }
+.wpx-hero-top { display: flex; align-items: center; gap: 14px; }
+.wpx-seal { width: 56px; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 18px; background: rgba(var(--t,142,142,147),.16); }
+.wpx-seal svg { width: 32px; height: 32px; display: block; }
+.wpx-hero-name { font-size: 21px; font-weight: 800; letter-spacing: -.5px; color: var(--text); line-height: 1.15; }
+.wpx-sub { font-size: 12.5px; line-height: 1.45; color: var(--text2); margin-top: 3px; }
+.wpx-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 12.5px; font-weight: 700; color: #30D158; }
+.wpx-status i { width: 7px; height: 7px; border-radius: 50%; background: #30D158; }
+.wpx-meter { height: 5px; border-radius: 5px; background: rgba(120,120,128,.24); margin-top: 18px; overflow: hidden; }
+.wpx-meter b { display: block; height: 100%; border-radius: 5px; background: rgb(var(--t)); }
+.wpx-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 600; color: var(--text2); margin-top: 9px; }
+.wpx-plan { display: flex; flex-direction: column; gap: 16px; padding: 16px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); margin-bottom: 10px; }
+.wpx-plan.cur { border-color: rgba(var(--t),.55); }
+.wpx-plan-head { display: flex; align-items: center; gap: 12px; }
+.wpx-plan .wpx-seal { width: 44px; height: 44px; border-radius: 14px; }
+.wpx-plan .wpx-seal svg { width: 26px; height: 26px; }
+.wpx-plan-name { font-size: 15.5px; font-weight: 800; letter-spacing: -.2px; color: var(--text); }
+.wpx-chip { margin-left: auto; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 100px; background: rgba(var(--t),.18); color: var(--text); flex-shrink: 0; }
+.wpx-plan-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.wpx-price { font-size: 24px; font-weight: 800; letter-spacing: -.8px; color: var(--text); line-height: 1; }
+.wpx-per { font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--text2); }
+.wpx-cta { padding: 11px 20px; border-radius: 100px; border: none; background: var(--acc-fill); color: var(--on-acc); font-family: var(--font); font-size: 13.5px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+.wpx-list { margin: 0 16px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); overflow: hidden; }
+.wpx-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: none; border: none; text-align: left; font-family: var(--font); cursor: pointer; color: var(--text); }
+.wpx-row + .wpx-row { border-top: 1px solid var(--glass-border); }
+.wpx-ic { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: rgba(120,120,128,.16); color: var(--text); }
+.wpx-row-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wpx-row-t b { font-size: 14px; font-weight: 700; color: var(--text); }
+.wpx-row-t small { font-size: 12px; color: var(--text2); }
+.wpx-chev { color: var(--text3); flex-shrink: 0; }
+</style>
+<script id="lg-v2-js">
+try{
+/* ═══ Liquid Glass v2 engine — Social Plus ═══ */
+window.GROQ_TEXT_MODEL='openai/gpt-oss-120b';
+(function(){
+  var KI='sp_lg_intensity',KT='sp_lg_tinted';
+  var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Mac/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+  function defI(){return ios?70:40;}
+  function get(){var i=parseInt(localStorage.getItem(KI),10);if(isNaN(i))i=defI();return{i:Math.max(0,Math.min(100,i)),t:localStorage.getItem(KT)==='1'};}
+  function apply(){
+    var s=get(),p=s.i/100,r=document.documentElement.style,b=document.body;
+    r.setProperty('--lg-blur',(p*26).toFixed(1)+'px');r.setProperty('--lg-sat',(100+p*95).toFixed(0)+'%');r.setProperty('--lg-shine',(p*.95).toFixed(2));
+    b.classList.toggle('lg-off',s.i===0);b.classList.toggle('lg-tinted',s.t);
+    var ok=window.CSS&&CSS.supports&&CSS.supports('backdrop-filter','url(#lg-refract)');
+    b.classList.toggle('lg-refraction',!!ok&&s.i>=60&&!s.t);
+    var sl=document.getElementById('lgpRange'),v=document.getElementById('lgpVal'),sw=document.getElementById('lgpTint');
+    if(sl){sl.value=s.i;sl.style.setProperty('--f',s.i+'%');}if(v)v.textContent=s.i+'%';if(sw)sw.classList.toggle('on',s.t);
+  }
+  window.spLgSet=function(v){localStorage.setItem(KI,String(v));apply();};
+  window.spLgTint=function(){localStorage.setItem(KT,get().t?'0':'1');apply();};
+  window.spLgReset=function(){localStorage.removeItem(KI);localStorage.removeItem(KT);apply();};
+  function mount(){
+    var sc=document.querySelector('#appearanceOverlay .settings-drawer-scroll');
+    if(!sc||document.getElementById('lgpCard'))return;
+    var d=document.createElement('div');d.id='lgpCard';d.className='lgp-card';
+    d.innerHTML='<div class="lgp-scene"><i class="lgp-blob a"></i><i class="lgp-blob b"></i><i class="lgp-blob c"></i><i class="lgp-stripes"></i>'+
+    '<div class="lg-glass lgp-top"><span class="lgp-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span><span>Liquid Glass</span></div>'+
+    '<div class="lg-glass lgp-mid"><span>Search Social Plus…</span></div>'+
+    '<div class="lg-glass lgp-bot"><span>New post</span></div></div>'+
+    '<div class="lgp-row"><div><b>Tinted glass</b><small>More opaque, easier to read</small></div><button class="lgp-sw" id="lgpTint" onclick="spLgTint()"><i></i></button></div>'+
+    '<div style="padding:8px 2px 2px"><div class="lgp-row" style="padding:0"><div><b>Liquid Glass intensity</b><small>Blur, shine and refraction. Lower it if the app feels laggy.</small></div><b id="lgpVal" style="color:var(--gold)">70%</b></div>'+
+    '<input class="lgp-range" id="lgpRange" type="range" min="0" max="100" oninput="spLgSet(this.value)"></div>'+
+    '<button class="lgp-reset" onclick="spLgReset()">Restore default</button>';
+    sc.insertBefore(d,sc.children[1]||null);apply();
+  }
+  var _o=window.openAppearancePage;
+  window.openAppearancePage=function(){var r=_o&&_o.apply(this,arguments);try{mount();}catch(e){}return r;};
+  apply();
+})();
+
+}catch(e){console.error("LG v2",e)}
+</script>
+<style id="sp-v3">
+/* ═══════════════════════════════════════════════════════════════════
+   SOCIAL PLUS v3
+   1. Liquid Glass, iOS 26/27 style: no outline, specular rim, soft depth
+   2. Settings + Appearance as full pages
+   3. One consistent icon system
+   4. Profile artifacts (gift-style decorations, not frames)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. LIQUID GLASS ─────────────────────────────────────────────────
+   Real Liquid Glass has NO stroked border. What you see at the edge is
+   a specular highlight: light catches the top-left and bottom-right
+   rims and fades to nothing along the sides, while the body glows very
+   slightly from inside. It is built here from directional inset
+   shadows (no border), driven by the existing intensity slider through
+   --lg-shine, so 0% = flat and 100% = full glass. */
+:is(#_island,.floating-sheet,.fl-sheet,.chat-wall-inner,.subpage-topbar,.lgp-card,.lg-glass,
+    .streak-week-card,.streak-info-card,.streak-badges-section,.streak-tip,.lgx-card,.lgx-row,
+    .app-tabbar,#fabPostBtn,.tab-btn.active,#streakPageOverlay>div:first-child,#_islandPeek,
+    .island-action-btn,[style*="align-items:flex-end"]>[style*="border-radius"][style*="px 0 0"]){
+  border-color:transparent !important;
+  outline:none !important;
+  box-shadow:
+    inset 1.5px 1.5px 0.5px -1px rgba(255,255,255,calc(.95 * var(--lg-shine,.4))),
+    inset -1.5px -1.5px 0.5px -1px rgba(255,255,255,calc(.6 * var(--lg-shine,.4))),
+    inset 0 0 28px -8px rgba(255,255,255,calc(.22 * var(--lg-shine,.4))),
+    0 14px 34px -8px rgba(0,0,0,.36),
+    0 2px 8px rgba(0,0,0,.10) !important;
+}
+body.light-mode :is(#_island,.floating-sheet,.fl-sheet,.chat-wall-inner,.subpage-topbar,.lgp-card,.lg-glass,
+    .streak-week-card,.streak-info-card,.streak-badges-section,.streak-tip,.lgx-card,.lgx-row,
+    .app-tabbar,#fabPostBtn,.tab-btn.active,#streakPageOverlay>div:first-child,#_islandPeek,
+    .island-action-btn,[style*="align-items:flex-end"]>[style*="border-radius"][style*="px 0 0"]){
+  box-shadow:
+    inset 1.5px 1.5px 0.5px -1px rgba(255,255,255,.8),
+    inset -1.5px -1.5px 0.5px -1px rgba(255,255,255,.45),
+    0 12px 30px -8px rgba(40,50,90,.24),
+    0 1px 5px rgba(40,50,90,.08) !important;
+}
+body.lg-off :is(#_island,.floating-sheet,.fl-sheet,.chat-wall-inner,.subpage-topbar,.lgp-card,.lg-glass,
+    .app-tabbar,#fabPostBtn,.tab-btn.active){
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.4) !important;
+}
+/* hairline strokes on neighbouring cards go too */
+.wpx-list,.lgp-reset,.settings-icon-group,.settings-icon-row{border-color:transparent !important}
+.wpx-row + .wpx-row,.lgx-perk + .lgx-perk,.lgx-tbl td{border-top-color:rgba(255,255,255,.06) !important}
+body.light-mode .wpx-row + .wpx-row,body.light-mode .lgx-perk + .lgx-perk,body.light-mode .lgx-tbl td{border-top-color:rgba(0,0,0,.06) !important}
+/* iOS 27 readability layer: text on glass keeps a soft, uniform legibility scrim */
+.app-tabbar{background:linear-gradient(180deg,rgba(255,255,255,calc(.10 * var(--lg-shine,.4))),rgba(255,255,255,calc(.02 * var(--lg-shine,.4)))),var(--lg-fill) !important;
+  -webkit-backdrop-filter:blur(var(--lg-blur,16px)) saturate(var(--lg-sat,170%)) !important;backdrop-filter:blur(var(--lg-blur,16px)) saturate(var(--lg-sat,170%)) !important;filter:none !important}
+.tab-btn.active{background:rgba(255,255,255,calc(.10 + .12 * var(--lg-shine,.4))) !important}
+body.light-mode .tab-btn.active{background:rgba(255,255,255,.7) !important}
+
+/* ── 2. SETTINGS + APPEARANCE = FULL PAGES ─────────────────────────── */
+.settings-backdrop{display:none !important}
+body .settings-drawer{
+  position:fixed !important;inset:0 !important;left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;
+  width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;
+  border-radius:0 !important;border:none !important;
+  background:var(--bg) !important;
+  -webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+  box-shadow:none !important;transform:none !important;transition:none !important;animation:none !important;
+}
+body .settings-drawer.open{display:flex !important;animation:spPageIn .3s cubic-bezier(.32,.72,0,1) both !important}
+body.light-mode .settings-drawer{background:#f2f2f7 !important}
+.settings-drawer::after,.settings-drawer::before{display:none !important}
+@keyframes spPageIn{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+body .settings-drawer-header{
+  justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 60px 10px !important;min-height:56px;
+}
+body .settings-drawer-title{font-size:18px;font-weight:800;letter-spacing:-.4px}
+body .settings-drawer-close.sp-back{
+  left:10px !important;right:auto !important;top:calc(8px + env(safe-area-inset-top,0px)) !important;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.08) !important;color:var(--text) !important;border:none !important;
+}
+body.light-mode .settings-drawer-close.sp-back{background:rgba(0,0,0,.06) !important;color:#111 !important}
+body .settings-drawer-scroll{padding:8px 16px !important;padding-bottom:max(32px,env(safe-area-inset-bottom)) !important}
+
+/* ── 3. ICON SYSTEM ────────────────────────────────────────────────
+   One tile, one stroke weight, one colour that follows the theme.
+   The only exception is destructive actions (red). */
+.settings-icon-group{
+  background:rgba(255,255,255,.06) !important;border:none !important;box-shadow:none !important;border-radius:20px !important;
+}
+body.light-mode .settings-icon-group{background:#fff !important;box-shadow:0 1px 2px rgba(0,0,0,.05) !important}
+.settings-icon-row{padding:13px 16px !important}
+.settings-icon-divider{margin:0 16px 0 66px !important;height:.5px !important;background:rgba(255,255,255,.08) !important}
+body.light-mode .settings-icon-divider{background:rgba(0,0,0,.08) !important}
+.sp-ico,.settings-icon-circle{
+  width:36px !important;height:36px !important;border-radius:11px !important;flex-shrink:0;
+  display:grid !important;place-items:center;
+  background:rgba(255,255,255,.09) !important;color:#f2f2f7 !important;border:none !important;box-shadow:none !important;
+}
+body.light-mode .sp-ico,body.light-mode .settings-icon-circle{background:rgba(0,0,0,.055) !important;color:#1c1c1e !important}
+.sp-ico svg,.settings-icon-circle svg{width:20px !important;height:20px !important;stroke:currentColor !important}
+.sp-ico svg{fill:none;stroke-width:1.75}
+.sp-ico.danger{background:rgba(255,69,58,.14) !important;color:#ff453a !important}
+body.light-mode .sp-ico.danger{background:rgba(255,59,48,.10) !important;color:#e0352b !important}
+
+/* ── 4. PROFILE ARTIFACTS (gift-style decorations) ───────────────────── */
+.artifact-layer{filter:none !important;overflow:visible !important}
+.profile-avatar-wrap{overflow:visible !important}
+.af-item{position:absolute;width:var(--w);height:var(--w);left:var(--x);top:var(--y);transform:translate(-50%,-50%);pointer-events:none}
+.af-in{width:100%;height:100%;will-change:transform;animation:afBob 3.8s ease-in-out infinite;animation-delay:var(--d,0s);transform-origin:50% 60%}
+.af-in svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.4))}
+.af-tw .af-in{animation-name:afTwinkle;animation-duration:2.6s}
+@keyframes afBob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-7%) rotate(calc(var(--r,0deg) * -1))}}
+@keyframes afTwinkle{0%,100%{transform:scale(.84) rotate(0deg);opacity:.85}50%{transform:scale(1.14) rotate(14deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){.af-in{animation:none !important}}
+.lgf-mini{width:64px !important;height:64px !important;margin:14px 0 !important}
+
+</style>
+<script id="sp-v3-js">
+/* ═══════════════════════════════════════════════════════════════════
+   SOCIAL PLUS v3 — unified back stack + gift-style profile artifacts
+   ═══════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+/* ── A. Missing close function (Announcement page back button did nothing) ── */
+if (typeof window.closeAnnouncementPage !== 'function') {
+  window.closeAnnouncementPage = function(){
+    var el = document.getElementById('announcementPageOverlay');
+    if (el) { el.classList.remove('open'); el.style.display = 'none'; }
+    document.body.style.overflow = '';
+  };
+}
+
+/* ── B. UNIFIED BACK STACK ─────────────────────────────────────────────
+   Rule: exactly ONE history entry per open screen, in the order they were
+   opened. Closing a screen with its own button removes its entry; pressing
+   the phone's back button closes the topmost screen. At the very root the
+   first back press shows a hint and the second one leaves the app. */
+try {
+  var stack = [];          // ids of open screens, oldest -> newest
+  var depth = 0;           // history entries we have pushed for screens
+  var busy = false, pending = false, expectPop = false;
+  var canPush = true, exitArmedAt = 0;
+  var baseline = {};       // screens already visible at startup (ignored)
+  var byId = {};
+
+  var GENERIC = ['explorePageOverlay','announcementPageOverlay','messageRequestsPageOverlay','msgsFilterTrayOverlay',
+    'createCommunitySheet','communityDetailOverlay','createChannelSheet','channelManageSheet','channelBroadcastComposerSheet',
+    'channelSubsSheet','channelMemberActionSheet','editChannelPostSheet','channelPollSheet','suggestedOverlay',
+    'groupChatOverlay','createGroupSheet','personalInfoPageOverlay','navTopicSheetOverlay'];
+
+  function clickClose(el){
+    var b = el.querySelector('[onclick*="close"],[onclick*="Close"],[onclick*="goBack"],[onclick*="hide"],[aria-label*="ack"],[aria-label*="lose"]');
+    if (b) { b.click(); return true; }
+    return false;
+  }
+  function hardHide(el){
+    el.classList.remove('open'); el.style.display = 'none'; document.body.style.overflow = '';
+  }
+
+  function allLayers(){
+    var list = [{ check:'settingsWrapper', kind:'reg', close:function(){ if (typeof toggleSettingsPanel === 'function') toggleSettingsPanel(); } }];
+    (window.__kaLayers || []).forEach(function(l){ list.push({ check:l.check, kind:'reg', close:l.close }); });
+    GENERIC.forEach(function(id){
+      list.push({ check:id, kind:'gen', close:function(){ var el = document.getElementById(id); if (el && !clickClose(el)) hardHide(el); } });
+    });
+    return list;
+  }
+
+  function isOpen(l){
+    var el = document.getElementById(l.check);
+    if (!el) return false;
+    if (l.kind === 'reg') {
+      if (l.check === 'settingsWrapper') return el.classList.contains('open');
+      return typeof window.__kaIsOpen === 'function' ? window.__kaIsOpen(l.check) : false;
+    }
+    var cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position !== 'fixed') return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < 40 || r.height < 40) return false;
+    if (r.left >= innerWidth * .95 || r.top >= innerHeight * .95 || r.right <= innerWidth * .05 || r.bottom <= innerHeight * .05) return false;
+    return true;
+  }
+
+  function strays(known){
+    var out = [], kids = document.body.children;
+    for (var i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      if (el.tagName !== 'DIV' || !el.id || known[el.id] || baseline[el.id]) continue;
+      if (/backdrop|fade|toast|island|loader|splash|gate|screen|lock/i.test(el.id) || !el.children.length) continue;
+      var cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position !== 'fixed') continue;
+      var r = el.getBoundingClientRect();
+      if (r.width >= innerWidth * .9 && r.height >= innerHeight * .6) out.push(el.id);
+    }
+    return out;
+  }
+
+  function zOf(id){ var el = document.getElementById(id); return el ? (parseInt(getComputedStyle(el).zIndex, 10) || 0) : 0; }
+
+  function sync(){
+    if (!ready) return;
+    var layers = allLayers(), known = {}, now = [];
+    layers.forEach(function(l){ known[l.check] = 1; byId[l.check] = l; });
+    layers.forEach(function(l){
+      var open = isOpen(l);
+      if (!open && baseline[l.check]) delete baseline[l.check];
+      if (open && !baseline[l.check] && now.indexOf(l.check) < 0) now.push(l.check);
+    });
+    strays(known).forEach(function(id){
+      byId[id] = { check:id, kind:'stray', close:function(){ var el = document.getElementById(id); if (el && !clickClose(el)) hardHide(el); } };
+      now.push(id);
+    });
+    var next = stack.filter(function(id){ return now.indexOf(id) >= 0; });
+    var added = now.filter(function(id){ return next.indexOf(id) < 0; }).sort(function(a, b){ return zOf(a) - zOf(b); });
+    stack = next.concat(added);
+    reconcile();
+  }
+
+  function reconcile(){
+    if (!canPush) return;
+    if (busy) { pending = true; return; }
+    var diff = stack.length - depth;
+    if (diff > 0) {
+      for (var i = 0; i < diff; i++) {
+        try { history.pushState({ sp: 'layer' }, ''); } catch(e) { canPush = false; return; }
+      }
+      depth = stack.length;
+    } else if (diff < 0) {
+      busy = true; expectPop = true; depth = stack.length;
+      history.go(diff);
+      setTimeout(function(){
+        if (expectPop) { expectPop = false; }
+        busy = false;
+        if (pending) { pending = false; sync(); }
+      }, 400);
+    }
+  }
+
+  function closeLayer(id){
+    var l = byId[id];
+    try { if (l) l.close(); } catch(e) {}
+    setTimeout(function(){
+      var el = document.getElementById(id);
+      // stray / generic screens that ignored their own close button get hidden
+      if (l && l.kind !== 'reg' && el && isOpen(l)) hardHide(el);
+      sync();
+    }, 450);
+  }
+
+  window.addEventListener('popstate', function(){
+    if (!ready || !canPush) return;
+    if (expectPop) {                       // this pop was ours (a screen closed by its own button)
+      expectPop = false; busy = false;
+      if (pending) { pending = false; sync(); }
+      return;
+    }
+    if (depth > 0) {                       // real back press with a screen open: close the newest one
+      depth--;
+      var top = stack.pop();
+      if (top) closeLayer(top);
+      return;
+    }
+    // Root. First press: hint + stay. Second press within 2s: leave.
+    var now = Date.now();
+    if (now - exitArmedAt < 2200) { canPush = false; history.back(); return; }
+    exitArmedAt = now;
+    try { history.pushState({ sp: 'guard' }, ''); } catch(e) { canPush = false; return; }
+    if (typeof showToast === 'function') showToast('Press back again to exit', 'info');
+  });
+
+  var ready = false;
+  function start(){
+    try { history.pushState({ sp: 'guard' }, ''); } catch(e) { canPush = false; return; }
+    // remember anything already on screen so it is never treated as "newly opened"
+    var l = allLayers();
+    l.forEach(function(x){ if (isOpen(x)) baseline[x.check] = 1; });
+    var k = {}; l.forEach(function(x){ k[x.check] = 1; });
+    var kids = document.body.children;
+    for (var i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      if (el.tagName === 'DIV' && el.id && !k[el.id]) {
+        var cs = getComputedStyle(el);
+        if (cs.display !== 'none' && cs.position === 'fixed') baseline[el.id] = 1;
+      }
+    }
+    ready = true;
+    var t = null;
+    new MutationObserver(function(muts){
+      var hit = false;
+      for (var j = 0; j < muts.length; j++) {
+        var tg = muts[j].target;
+        if (tg && (tg.parentNode === document.body || (tg.id && byId[tg.id]))) { hit = true; break; }
+      }
+      if (!hit) return;
+      if (t) return;
+      t = setTimeout(function(){ t = null; sync(); }, 60);
+    }).observe(document.body, { attributes:true, attributeFilter:['style','class'], subtree:true });
+    setInterval(function(){ if (!document.hidden) sync(); }, 1500);
+    sync();
+  }
+
+  if (document.readyState === 'complete') setTimeout(start, 400);
+  else window.addEventListener('load', function(){ setTimeout(start, 400); });
+} catch(e) { console.warn('sp-back-v3 failed', e); }
+
+/* ── C. PROFILE ARTIFACTS: gift-style decorations around the avatar ──── */
+try {
+  var pick = function(c, d){ return c || d; };
+  var G = {
+    bear: function(){ return '<svg viewBox="0 0 32 32"><circle cx="8" cy="8" r="5" fill="#9b6a43"/><circle cx="8" cy="8" r="2.6" fill="#f2b8a8"/><circle cx="24" cy="8" r="5" fill="#9b6a43"/><circle cx="24" cy="8" r="2.6" fill="#f2b8a8"/><circle cx="16" cy="18" r="12.5" fill="#b98255"/><ellipse cx="16" cy="21.5" rx="5.6" ry="4.4" fill="#f1d2a8"/><ellipse cx="16" cy="19.6" rx="2.2" ry="1.5" fill="#3b2416"/><circle cx="11.3" cy="15.6" r="1.5" fill="#2b1a10"/><circle cx="20.7" cy="15.6" r="1.5" fill="#2b1a10"/><path d="M16 21v1.6M14 23.2c.9.8 3.1.8 4 0" stroke="#3b2416" stroke-width="1" fill="none" stroke-linecap="round"/><circle cx="8.8" cy="20.5" r="1.8" fill="#ff8fa3" opacity=".5"/><circle cx="23.2" cy="20.5" r="1.8" fill="#ff8fa3" opacity=".5"/></svg>'; },
+    star: function(c){ return '<svg viewBox="0 0 32 32"><path d="M16 2.8l3.9 8.1 8.9 1.2-6.5 6.2 1.7 8.8L16 22.7l-8 4.4 1.7-8.8-6.5-6.2 8.9-1.2z" fill="' + pick(c,'#ffc83d') + '" stroke="#f0a020" stroke-width="1.2" stroke-linejoin="round"/><path d="M13.2 9.8l1.9-3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/></svg>'; },
+    sparkle: function(c){ return '<svg viewBox="0 0 32 32"><path d="M16 2c1 8 3 12 14 14-11 2-13 6-14 14-1-8-3-12-14-14 11-2 13-6 14-14z" fill="' + pick(c,'#ffffff') + '"/></svg>'; },
+    heart: function(c){ return '<svg viewBox="0 0 32 32"><path d="M16 28C6 21 3 15.5 3 11.2 3 7 6 4.5 9.6 4.5c2.6 0 4.7 1.4 6.4 4 1.7-2.6 3.8-4 6.4-4C26 4.5 29 7 29 11.2 29 15.5 26 21 16 28z" fill="' + pick(c,'#ff4d6d') + '"/><path d="M8.5 10c.8-1.7 2.4-2.4 3.9-1.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none" opacity=".6"/></svg>'; },
+    gift: function(c){ var a = pick(c,'#ff5a7a'); return '<svg viewBox="0 0 32 32"><rect x="4" y="14" width="24" height="14" rx="2.5" fill="' + a + '"/><rect x="3" y="9.5" width="26" height="6" rx="2" fill="' + a + '" opacity=".82"/><rect x="14" y="9.5" width="4" height="18.5" fill="#ffe27a"/><path d="M16 9.5C12 9.5 9 7.5 10 5.2s5 .8 6 4.3c1-3.500 5-6.500 6-4.300s-2 4.300-6 4.300z" fill="#ffe27a"/></svg>'; },
+    crown: function(){ return '<svg viewBox="0 0 32 32"><path d="M4 24L3 10l7 6 6-10 6 10 7-6-1 14z" fill="#ffc83d"/><rect x="4" y="24" width="24" height="3.5" rx="1.5" fill="#f0a020"/><circle cx="3" cy="10" r="1.8" fill="#ffe27a"/><circle cx="16" cy="6" r="1.8" fill="#ffe27a"/><circle cx="29" cy="10" r="1.8" fill="#ffe27a"/><circle cx="16" cy="19" r="2" fill="#ff5a7a"/></svg>'; },
+    gem: function(c){ return '<svg viewBox="0 0 32 32"><path d="M8 5h16l5 7-13 16L3 12z" fill="' + pick(c,'#5ac8fa') + '"/><path d="M3 12h26M12 5l4 7 4-7M16 12v16M9 12l7 16M23 12l-7 16" stroke="#fff" stroke-opacity=".7" stroke-width="1.1" fill="none" stroke-linejoin="round"/></svg>'; },
+    balloon: function(c){ return '<svg viewBox="0 0 32 32"><ellipse cx="16" cy="12" rx="8.5" ry="10" fill="' + pick(c,'#ff5a7a') + '"/><path d="M14.5 21.5h3l-1.5 2.4z" fill="' + pick(c,'#ff5a7a') + '"/><path d="M16 24c-2 2 2 3.500 0 6.500" stroke="#9a9aa6" stroke-width="1" fill="none"/><ellipse cx="12.5" cy="8" rx="2" ry="3.200" fill="#fff" opacity=".4" transform="rotate(20 12.500 8)"/></svg>'; },
+    flower: function(c){ return '<svg viewBox="0 0 32 32"><g fill="' + pick(c,'#ff8fb3') + '"><circle cx="16" cy="8" r="5"/><circle cx="24" cy="14" r="5"/><circle cx="21" cy="23" r="5"/><circle cx="11" cy="23" r="5"/><circle cx="8" cy="14" r="5"/></g><circle cx="16" cy="16" r="4.500" fill="#ffd54a"/></svg>'; },
+    cupcake: function(){ return '<svg viewBox="0 0 32 32"><path d="M7 16h18l-2.500 12h-13z" fill="#e8a765"/><path d="M9.500 16c-3 0-4-3.500-1.500-5.500C6.500 7.500 9 5 12 6c1.200-2.500 6.800-2.500 8 0 3-1 5.500 1.500 4 4.500 2.500 2 1.500 5.500-1.500 5.500z" fill="#ff8fb3"/><circle cx="16" cy="4.400" r="2.400" fill="#e0405f"/></svg>'; },
+    moon: function(){ return '<svg viewBox="0 0 32 32"><path d="M22 4a12.500 12.500 0 1 0 6 20A10.500 10.500 0 0 1 22 4z" fill="#ffe27a"/><circle cx="12" cy="17" r="1.600" fill="#f0c94f"/><circle cx="16.500" cy="23" r="1.100" fill="#f0c94f"/></svg>'; },
+    rocket: function(){ return '<svg viewBox="0 0 32 32"><path d="M16 2c5 3 7 9 6 16H10C9 11 11 5 16 2z" fill="#e8ecf5"/><circle cx="16" cy="11" r="2.800" fill="#5ac8fa"/><path d="M10 18l-4 5 4-1zM22 18l4 5-4-1z" fill="#ff5a7a"/><path d="M13 20h6l-3 8z" fill="#ffa53d"/></svg>'; },
+    ghost: function(){ return '<svg viewBox="0 0 32 32"><path d="M6 28V14C6 7 10 3 16 3s10 4 10 11v14l-3.500-3-3.300 3-3.200-3-3.200 3-3.300-3z" fill="#f4f4ff"/><circle cx="12" cy="14" r="2" fill="#2b2b3a"/><circle cx="20" cy="14" r="2" fill="#2b2b3a"/><ellipse cx="16" cy="19.500" rx="1.800" ry="2.200" fill="#2b2b3a"/></svg>'; },
+    cat: function(){ return '<svg viewBox="0 0 32 32"><path d="M5 4l7 5h8l7-5v13c0 7-5 12-11 12S5 24 5 17z" fill="#ffb86b"/><path d="M7.500 8l3 2.500M24.500 8l-3 2.500" stroke="#f08a5d" stroke-width="1.500" stroke-linecap="round"/><circle cx="12" cy="16" r="1.600" fill="#2b1a10"/><circle cx="20" cy="16" r="1.600" fill="#2b1a10"/><path d="M14.800 20h2.400l-1.200 1.500z" fill="#ff7a90"/><path d="M16 21.500c-.5 1.500-2 1.800-3 1.200M16 21.500c.5 1.500 2 1.800 3 1.200" stroke="#2b1a10" stroke-width="1" fill="none" stroke-linecap="round"/></svg>'; },
+    flake: function(c){ var k = pick(c,'#bfe8ff'); return '<svg viewBox="0 0 32 32"><g stroke="' + k + '" stroke-width="2.200" stroke-linecap="round" fill="none"><path d="M16 3v26M4.700 9.500l22.600 13M27.300 9.500L4.700 22.500"/><path d="M12.500 5.500L16 8.500l3.500-3M12.500 26.500l3.500-3 3.500 3"/></g></svg>'; }
+  };
+
+  var ARTS = [
+    { id:'brand',   name:'Signature',    shape:'sparkle', color:'#E9E9EF', ring:'linear-gradient(135deg,#fafafc,#8d8d99)', items:[['sparkle','M','#ffffff'],['sparkle','S','#d9dbe6'],['sparkle','L','#ffffff'],['sparkle','S','#d9dbe6'],['sparkle','M','#ffffff'],['sparkle','S','#d9dbe6']] },
+    { id:'teddy',   name:'Teddy Bears',  shape:'bear',    color:'#b98255', ring:'linear-gradient(135deg,#f1d2a8,#b98255)', items:[['bear','L'],['heart','S'],['star','M'],['bear','M'],['heart','M','#ff8fb3'],['sparkle','S'],['bear','L'],['heart','S']] },
+    { id:'starlight',name:'Starlight',   shape:'star',    color:'#ffc83d', ring:'linear-gradient(135deg,#ffe27a,#f0a020)', items:[['star','L'],['sparkle','S'],['star','M'],['star','S'],['sparkle','M'],['star','L'],['star','S'],['sparkle','S']] },
+    { id:'love',    name:'Love Notes',   shape:'heart',   color:'#ff4d6d', ring:'linear-gradient(135deg,#ffb3c6,#e0405f)', items:[['heart','L','#ff4d6d'],['heart','S','#ff8fb3'],['heart','M','#ff6b8b'],['heart','S','#ffb3c6'],['heart','L','#e0405f'],['heart','S','#ff8fb3'],['heart','M','#ff4d6d'],['heart','S','#ffb3c6']] },
+    { id:'gifts',   name:'Gift Box',     shape:'gift',    color:'#ff5a7a', ring:'linear-gradient(135deg,#ff8fa5,#e0405f)', items:[['gift','L','#ff5a7a'],['star','S'],['gift','M','#5ac8fa'],['sparkle','S'],['gift','L','#a78bfa'],['star','S'],['gift','M','#34c759'],['sparkle','S']] },
+    { id:'royal',   name:'Royal',        shape:'crown',   color:'#ffc83d', ring:'linear-gradient(135deg,#ffe27a,#b8860b)', items:[['crown','L'],['gem','S','#5ac8fa'],['star','M'],['gem','M','#ff5a7a'],['crown','M'],['gem','S','#5ac8fa'],['star','S'],['gem','M','#a78bfa']] },
+    { id:'sweet',   name:'Sweet Treats', shape:'cupcake', color:'#ff8fb3', ring:'linear-gradient(135deg,#ffc2d6,#e8a765)', items:[['cupcake','L'],['heart','S','#ff8fb3'],['cupcake','M'],['star','S'],['heart','M','#ff6b8b'],['cupcake','L'],['heart','S','#ffb3c6'],['sparkle','S']] },
+    { id:'party',   name:'Party',        shape:'balloon', color:'#ff5a7a', ring:'linear-gradient(135deg,#ff8fa5,#5ac8fa)', items:[['balloon','L','#ff5a7a'],['star','S'],['balloon','M','#5ac8fa'],['sparkle','S'],['balloon','L','#ffc83d'],['star','S'],['balloon','M','#a78bfa'],['gift','S']] },
+    { id:'blossom', name:'Blossom',      shape:'flower',  color:'#ff8fb3', ring:'linear-gradient(135deg,#ffc2d6,#ff8fb3)', items:[['flower','L','#ff8fb3'],['sparkle','S'],['flower','M','#ffd54a'],['flower','S','#ffb3c6'],['flower','L','#c4a7ff'],['sparkle','S'],['flower','M','#ff8fb3'],['flower','S','#ffd54a']] },
+    { id:'moonlit', name:'Moonlit',      shape:'moon',    color:'#ffe27a', ring:'linear-gradient(135deg,#3b3f8f,#ffe27a)', items:[['moon','L'],['star','S'],['sparkle','M'],['star','M'],['sparkle','S'],['star','S'],['sparkle','S'],['star','M']] },
+    { id:'rocket',  name:'Blast Off',    shape:'rocket',  color:'#5ac8fa', ring:'linear-gradient(135deg,#e8ecf5,#5ac8fa)', items:[['rocket','L'],['star','S'],['sparkle','M'],['rocket','M'],['star','M'],['sparkle','S'],['star','S'],['sparkle','S']] },
+    { id:'ghost',   name:'Boo!',         shape:'ghost',   color:'#f4f4ff', ring:'linear-gradient(135deg,#f4f4ff,#8d8d99)', items:[['ghost','L'],['sparkle','S','#ffb86b'],['ghost','M'],['star','S'],['ghost','L'],['sparkle','S','#ffb86b'],['ghost','M'],['star','S']] },
+    { id:'kitty',   name:'Kitty',        shape:'cat',     color:'#ffb86b', ring:'linear-gradient(135deg,#ffd9a8,#ffb86b)', items:[['cat','L'],['heart','S','#ff8fb3'],['cat','M'],['sparkle','S'],['heart','M','#ff6b8b'],['cat','L'],['heart','S','#ffb3c6'],['star','S']] },
+    { id:'frost',   name:'Frost',        shape:'flake',   color:'#bfe8ff', ring:'linear-gradient(135deg,#ffffff,#8fd3ff)', items:[['flake','L'],['sparkle','S','#ffffff'],['flake','M'],['flake','S'],['flake','L'],['sparkle','M','#ffffff'],['flake','M'],['flake','S']] }
+  ];
+  var OLD2NEW = { brand:'brand', gold:'royal', rosegold:'love', platinum:'frost', obsidian:'ghost', emerald:'blossom', sapphire:'moonlit', ruby:'love', glass:'starlight' };
+
+  if (typeof PROFILE_ARTIFACTS !== 'undefined') {
+    PROFILE_ARTIFACTS.length = 0;
+    ARTS.forEach(function(a){ PROFILE_ARTIFACTS.push(a); });
+  }
+  if (typeof LEGACY_ARTIFACT_MAP !== 'undefined') {
+    Object.keys(LEGACY_ARTIFACT_MAP).forEach(function(k){ var v = LEGACY_ARTIFACT_MAP[k]; LEGACY_ARTIFACT_MAP[k] = OLD2NEW[v] || v; });
+    Object.keys(OLD2NEW).forEach(function(k){ if (!ARTS.some(function(a){ return a.id === k; })) LEGACY_ARTIFACT_MAP[k] = OLD2NEW[k]; });
+  }
+  // small inline versions (channel badges, "current artifact" row) use the same drawings
+  if (typeof AF_SHAPES !== 'undefined') {
+    ['bear','gift','crown','gem','heart','star','sparkle','balloon','flower','cupcake','moon','rocket','ghost','cat','flake'].forEach(function(k){
+      AF_SHAPES[k] = function(c, sz){ sz = sz || 16; return G[k](c && c.charAt && c.charAt(0) === '#' ? c : undefined).replace('<svg', '<svg class="af-shape" width="' + sz + '" height="' + sz + '"'); };
+    });
+  }
+
+  var SIZE = { L:30, M:22, S:15 };
+  window.renderArtifactLayer = function(artifactId){
+    var a = (typeof _artifactById === 'function') ? _artifactById(artifactId) : null;
+    if (!a || !a.items) return '';
+    var n = a.items.length, html = '';
+    for (var i = 0; i < n; i++) {
+      var it = a.items[i], ang = (-90 + i * 360 / n) * Math.PI / 180, R = i % 2 ? 51 : 48;
+      var x = 50 + R * Math.cos(ang), y = 50 + R * Math.sin(ang);
+      var tw = (it[0] === 'star' || it[0] === 'sparkle' || it[0] === 'flake') ? ' af-tw' : '';
+      var rot = ((i * 37) % 17) - 8;
+      html += '<div class="af-item' + tw + '" style="--x:' + x.toFixed(1) + '%;--y:' + y.toFixed(1) + '%;--w:' + (SIZE[it[1]] || 20) + '%">' +
+              '<div class="af-in" style="--d:' + (-(i * 0.45)).toFixed(2) + 's;--r:' + rot + 'deg">' + G[it[0]](it[2]) + '</div></div>';
+    }
+    return html;
+  };
+
+  // repaint any avatar that already rendered with the old frame
+  setTimeout(function(){
+    try { if (typeof _applyProfileArtifactToOwnAvatar === 'function') _applyProfileArtifactToOwnAvatar(); } catch(e) {}
+  }, 600);
+} catch(e) { console.warn('sp-artifacts-v3 failed', e); }
+
+})();
+
+</script>
 </body>
 
