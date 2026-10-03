@@ -55080,5 +55080,516 @@ window._lbDownload=function(){S&&dl()};
 })();
 </script>
 
+<style id="sp-lm-fix-v1">
+/* ═ LIGHT-MODE FIX: comment sheet, links/tags, channel pages ═
+   Cause: the "X-style" block hardcodes dark-theme colours (#e7e9ea) with ID selectors + !important,
+   which beat every body.light-mode rule. These overrides come last and are scoped to light mode only. */
+
+/* comment names + text: black; time: readable grey */
+html body.light-mode #commentSheet #commentSheetBody .comment-user,
+html body.light-mode #commentSheet #commentSheetBody .comment-text,
+html body.light-mode #commentSheet #commentSheetTitle{color:#0d0d0d!important}
+html body.light-mode #commentSheet #commentSheetBody .comment-time,
+html body.light-mode #commentSheet .cm-head .comment-time{color:rgba(0,0,0,.5)!important;opacity:1!important}
+html body.light-mode #commentSheet #commentSheetHeader{background:rgba(255,255,255,.92)!important;border-bottom-color:rgba(0,0,0,.08)!important}
+html body.light-mode #commentSheet #commentSheetBody .comment-item{border-bottom-color:rgba(0,0,0,.08)!important}
+html body.light-mode #commentSheet #commentSheetBody .comment-replies-thread{border-left-color:rgba(0,0,0,.12)!important}
+html body.light-mode #commentSheetInputArea{background:#fff!important;border-top-color:rgba(0,0,0,.08)!important}
+html body.light-mode #commentSheetInputArea .comment-input{color:#0d0d0d!important}
+html body.light-mode #commentSheetInputArea .comment-input::placeholder{color:rgba(0,0,0,.45)}
+
+/* action icons (reply / like / edit / delete): solid, darker, crisper strokes instead of 35%-alpha hairlines */
+html body #commentSheet .cm-act svg{width:19px!important;height:19px!important;stroke-width:2;shape-rendering:geometricPrecision}
+html body.light-mode #commentSheet .cm-act{color:rgba(0,0,0,.62)!important}
+html body.light-mode #commentSheet .cm-act span{color:inherit}
+html body.light-mode #commentSheet .comment-like-btn.cm-act.liked{color:#f91880!important}
+html body.light-mode #commentSheet .cm-reply:hover{color:#1d9bf0!important}
+html body.light-mode #commentSheet .cm-del{color:#e0332a!important}
+html body #commentSheet.visible{will-change:auto}
+
+/* links, @mentions, #tags: blue in light mode */
+html body.light-mode .mention,
+html body.light-mode a.hashtag-link,
+html body.light-mode .hashtag-link,
+html body.light-mode #commentSheet .comment-text a,
+html body.light-mode #commentSheetSourcePost a,
+html body.light-mode .post-card a[href^="http"]{color:#1d9bf0!important}
+
+/* channel profile page */
+html body.light-mode #tgProfile{background:#f2f2f7!important;color:#0d0d0d!important}
+html body.light-mode #tgProfile .tp-ib{color:#0d0d0d!important}
+html body.light-mode #tgProfile .tp-av{background:#e5e5ea!important}
+html body.light-mode #tgProfile .tp-n{color:#0d0d0d!important}
+html body.light-mode #tgProfile .tp-s,
+html body.light-mode #tgProfile .tp-card .l{color:#6c6c70!important}
+html body.light-mode #tgProfile .tp-act{background:#fff!important;color:#0d0d0d!important;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+html body.light-mode #tgProfile .tp-card{background:#fff!important;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+html body.light-mode #tgProfile .tp-card div,
+html body.light-mode #tgProfile .tp-row span{color:#0d0d0d!important}
+html body.light-mode #tgProfile .tp-card .l{color:#6c6c70!important}
+html body.light-mode #tgProfile .tp-row b{color:#0a84ff!important}
+
+/* channel chat view (Telegram-style) */
+html body.light-mode #channelDetailOverlay.tg-ch{background-color:#dfe6ee!important}
+html body.light-mode #channelDetailOverlay.tg-ch .subpage-topbar{background:rgba(255,255,255,.95)!important;border-bottom:1px solid rgba(0,0,0,.06)!important}
+html body.light-mode #channelDetailOverlay.tg-ch .tg-hn{color:#0d0d0d!important}
+html body.light-mode #channelDetailOverlay.tg-ch .tg-hs{color:#6c6c70!important}
+html body.light-mode #channelDetailOverlay.tg-ch .subpage-topbar button{color:#0d0d0d!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id]{background:#fff!important;color:#0d0d0d!important;box-shadow:0 1px 1px rgba(0,0,0,.08)!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id] .tg-name{color:#0a84ff!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id] .tg-foot{color:#8e8e93!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id] button[onclick^="_onChannelReactionTap"]{background:rgba(0,0,0,.06)!important;color:#0d0d0d!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id] button[onclick^="_onChannelReactionTap"][data-active="1"]{background:#cfe3f8!important}
+html body.light-mode #channelDetailOverlay.tg-ch [data-channel-post-id] button[id^="cpcbtn-"]{border-top-color:rgba(0,0,0,.08)!important;color:#0a84ff!important}
+html body.light-mode #tgPlusBar{background:#fff!important;border-top:1px solid rgba(0,0,0,.08)}
+html body.light-mode #channelDetailOverlay.tg-ch #channelDetailInfo>button[onclick^="openChannelBroadcastComposer"]{background:#fff!important;border-top:1px solid rgba(0,0,0,.08)!important;color:#6c6c70!important}
+</style>
+
+<style id="sp-gm-css">
+#groupMgmtSheet{--gm-card:rgba(127,127,127,.12);--gm-line:rgba(127,127,127,.2);--gm-blue:#0a84ff;--gm-red:#ff453a}
+#groupMgmtSheet,#groupMgmtSheet *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+#groupMgmtSheet{position:fixed;inset:0;z-index:70000;background:var(--bg);color:var(--text);font-family:var(--font);flex-direction:column;overflow:hidden}
+#groupMgmtSheet .gm-top{display:flex;align-items:center;gap:4px;padding:calc(8px + env(safe-area-inset-top,0px)) 8px 8px;flex:none;border-bottom:.5px solid var(--gm-line);background:var(--bg)}
+#groupMgmtSheet .gm-tt{flex:1;font-size:18px;font-weight:800;letter-spacing:-.3px;padding-left:4px}
+#groupMgmtSheet .gm-ib{width:40px;height:40px;border-radius:50%;border:0;background:none;color:var(--text);display:grid;place-items:center;cursor:pointer}
+#groupMgmtSheet .gm-ib:active{background:var(--gm-card)}
+#groupMgmtSheet .gm-ib svg,#groupMgmtSheet .gm-ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#groupMgmtSheet .gm-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 14px calc(40px + env(safe-area-inset-bottom,0px))}
+#groupMgmtSheet .gm-hero{display:flex;flex-direction:column;align-items:center;padding:22px 0 8px;text-align:center}
+#groupMgmtSheet .gm-av{position:relative;width:104px;height:104px;border-radius:30px;background:var(--gm-card);display:flex;align-items:center;justify-content:center;font-size:52px}
+#groupMgmtSheet .gm-av .gm-avi{width:100%;height:100%;border-radius:30px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#groupMgmtSheet .gm-av img{width:100%;height:100%;object-fit:cover}
+#groupMgmtSheet .gm-cam{position:absolute;right:-6px;bottom:-6px;width:36px;height:36px;border-radius:50%;background:var(--gm-blue);color:#fff;display:grid;place-items:center;border:3px solid var(--bg);cursor:pointer}
+#groupMgmtSheet .gm-cam svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#groupMgmtSheet .gm-cam input{display:none}
+#groupMgmtSheet .gm-name{font-size:24px;font-weight:800;letter-spacing:-.4px;margin-top:14px;display:flex;align-items:center;gap:8px;max-width:100%}
+#groupMgmtSheet .gm-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#groupMgmtSheet .gm-name button{border:0;background:var(--gm-card);width:30px;height:30px;border-radius:50%;color:var(--text2);display:grid;place-items:center;flex:none;cursor:pointer}
+#groupMgmtSheet .gm-name button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#groupMgmtSheet .gm-sub{font-size:14px;color:var(--text2);margin-top:3px}
+#groupMgmtSheet .gm-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 6px}
+#groupMgmtSheet .gm-act{background:var(--gm-card);border:0;border-radius:16px;padding:12px 4px 10px;color:var(--gm-blue);display:flex;flex-direction:column;align-items:center;gap:6px;font:600 12px var(--font);cursor:pointer}
+#groupMgmtSheet .gm-act:active{opacity:.6}
+#groupMgmtSheet .gm-act svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#groupMgmtSheet .gm-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:20px 6px 8px}
+#groupMgmtSheet .gm-card{background:var(--gm-card);border-radius:18px;overflow:hidden}
+#groupMgmtSheet .gm-pad{padding:14px 16px}
+#groupMgmtSheet .gm-row{display:flex;align-items:center;gap:12px;padding:13px 16px;width:100%;border:0;background:none;color:var(--text);font:500 15px var(--font);text-align:left;cursor:pointer;min-height:52px}
+#groupMgmtSheet .gm-row+.gm-row,#groupMgmtSheet .gm-row+.gm-pad,#groupMgmtSheet .gm-pad+.gm-row{border-top:.5px solid var(--gm-line)}
+#groupMgmtSheet button.gm-row:active{background:var(--gm-card)}
+#groupMgmtSheet .gm-row .gm-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+#groupMgmtSheet .gm-row .gm-ic svg{width:18px;height:18px}
+#groupMgmtSheet .gm-row .gm-grow{flex:1;min-width:0}
+#groupMgmtSheet .gm-row small,#groupMgmtSheet .gm-hint{display:block;font-size:12.5px;color:var(--text2);font-weight:400;margin-top:2px;line-height:1.4}
+#groupMgmtSheet .gm-val{color:var(--text2);font-size:14px;flex:none}
+#groupMgmtSheet .gm-chev{width:16px;height:16px;fill:none;stroke:var(--text3);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#groupMgmtSheet .gm-stack{display:flex;flex:none}
+#groupMgmtSheet .gm-stack>div{width:28px;height:28px;margin-left:-8px;border:2px solid var(--bg);overflow:hidden;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--gm-card);border-radius:50%}
+#groupMgmtSheet .gm-stack>div:first-child{margin-left:0}
+#groupMgmtSheet .gm-sw{position:relative;width:51px;height:31px;border-radius:99px;border:0;background:rgba(127,127,127,.35);flex:none;cursor:pointer;transition:background .18s}
+#groupMgmtSheet .gm-sw i{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .18s}
+#groupMgmtSheet .gm-sw.on{background:#30d158}
+#groupMgmtSheet .gm-sw.on i{transform:translateX(20px)}
+#groupMgmtSheet .gm-sw:disabled{opacity:.55}
+#groupMgmtSheet textarea,#groupMgmtSheet input[type=text],#groupMgmtSheet .gm-in{width:100%;background:var(--bg);border:1px solid var(--gm-line);border-radius:12px;padding:11px 13px;font:400 15px var(--font);color:var(--text);outline:none;-webkit-appearance:none}
+#groupMgmtSheet textarea{min-height:76px;resize:vertical;line-height:1.45}
+#groupMgmtSheet .gm-btn{border:0;border-radius:12px;padding:11px 18px;font:700 14px var(--font);cursor:pointer;background:var(--gm-blue);color:#fff}
+#groupMgmtSheet .gm-btn.sec{background:var(--gm-card);color:var(--text)}
+#groupMgmtSheet .gm-btn.red{background:rgba(255,69,58,.14);color:var(--gm-red)}
+#groupMgmtSheet .gm-btn:disabled{opacity:.45}
+#groupMgmtSheet .gm-btn:active{opacity:.7}
+#groupMgmtSheet .gm-link{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--gm-line);border-radius:12px;padding:11px 13px;font-size:14px;color:var(--gm-blue);word-break:break-all}
+#groupMgmtSheet .gm-btns{display:flex;gap:8px;margin-top:10px}
+#groupMgmtSheet .gm-btns .gm-btn{flex:1;padding:11px 8px}
+#groupMgmtSheet .gm-emo{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;margin-top:12px}
+#groupMgmtSheet .gm-emo button{flex:none;width:44px;height:44px;border-radius:50%;border:2px solid transparent;background:var(--bg);font-size:22px;cursor:pointer}
+#groupMgmtSheet .gm-emo button.on{border-color:var(--gm-blue)}
+#groupMgmtSheet .gm-search{display:flex;align-items:center;gap:8px;background:var(--gm-card);border-radius:14px;padding:0 12px;margin:12px 0 8px;height:44px}
+#groupMgmtSheet .gm-search svg{width:18px;height:18px;fill:none;stroke:var(--text2);stroke-width:2.2;stroke-linecap:round;flex:none}
+#groupMgmtSheet .gm-search input{flex:1;min-width:0;border:0!important;background:none!important;padding:0!important;height:100%;font-size:16px!important;border-radius:0!important}
+#groupMgmtSheet .gm-chips{display:flex;gap:8px;margin:2px 0 8px;overflow-x:auto}
+#groupMgmtSheet .gm-chip{flex:none;border:0;border-radius:99px;padding:8px 14px;background:var(--gm-card);color:var(--text);font:600 13px var(--font);cursor:pointer}
+#groupMgmtSheet .gm-chip.on{background:var(--gm-blue);color:#fff}
+#groupMgmtSheet .gm-m{display:flex;align-items:center;gap:12px;padding:10px 4px;width:100%;border:0;background:none;color:var(--text);text-align:left;font-family:var(--font);cursor:pointer;border-bottom:.5px solid var(--gm-line)}
+#groupMgmtSheet .gm-m:active{background:var(--gm-card)}
+#groupMgmtSheet .gm-mav{width:44px;height:44px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex:none;background:var(--gm-card)}
+#groupMgmtSheet .gm-mn{font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:4px;min-width:0}
+#groupMgmtSheet .gm-mn span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#groupMgmtSheet .gm-mh{font-size:13px;color:var(--text2);margin-top:1px}
+#groupMgmtSheet .gm-tag{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px;flex:none}
+#groupMgmtSheet .gm-tag.o{background:rgba(255,159,10,.18);color:#d98200}
+#groupMgmtSheet .gm-tag.a{background:rgba(10,132,255,.16);color:var(--gm-blue)}
+#groupMgmtSheet .gm-ck{width:26px;height:26px;border-radius:50%;border:2px solid var(--gm-line);display:grid;place-items:center;flex:none;color:#fff}
+#groupMgmtSheet .gm-ck svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+#groupMgmtSheet .gm-ck.on{background:var(--gm-blue);border-color:var(--gm-blue)}
+#groupMgmtSheet .gm-ck.on svg{opacity:1}
+#groupMgmtSheet .gm-empty{text-align:center;color:var(--text2);padding:44px 20px;font-size:14.5px}
+#groupMgmtSheet .gm-bar{position:absolute;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:.5px solid var(--gm-line)}
+#groupMgmtSheet .gm-bar .gm-btn{width:100%;padding:14px}
+#groupMgmtSheet .gm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:6px}
+#groupMgmtSheet .gm-grid>div{position:relative;aspect-ratio:1;background:var(--gm-card);overflow:hidden;cursor:pointer;border-radius:4px}
+#groupMgmtSheet .gm-grid img,#groupMgmtSheet .gm-grid video{width:100%;height:100%;object-fit:cover;display:block}
+#groupMgmtSheet .gm-grid b{position:absolute;right:5px;bottom:4px;color:#fff;font-size:11px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#groupMgmtSheet .gm-sh-bg{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:5;animation:gmFade .18s}
+#groupMgmtSheet .gm-sh{width:100%;background:var(--bg);border-radius:24px 24px 0 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom,0px));animation:gmUp .24s cubic-bezier(.32,.72,0,1)}
+#groupMgmtSheet .gm-sh .gm-grab{width:38px;height:4px;border-radius:2px;background:var(--gm-line);margin:0 auto 12px}
+#groupMgmtSheet .gm-sh .gm-row{border-radius:14px}
+@keyframes gmFade{from{opacity:0}}
+@keyframes gmUp{from{transform:translateY(40px);opacity:0}}
+
+/* neutralise the old light-mode sheet rules (they tint every direct child div of #groupMgmtSheet) */
+html body.light-mode #groupMgmtSheet>div,html body #groupMgmtSheet>div{color:var(--text)!important}
+html body.light-mode #groupMgmtSheet>.gm-top,html body.light-mode #groupMgmtSheet>.gm-bar{background:var(--bg)!important;border-color:rgba(127,127,127,.2)!important}
+html body.light-mode #groupMgmtSheet>.gm-body{background:transparent!important;border:0!important}
+html body.light-mode #groupMgmtSheet>.gm-sh-bg{background:rgba(0,0,0,.45)!important;border:0!important}
+html body.light-mode #groupMgmtSheet input,html body.light-mode #groupMgmtSheet textarea{background:var(--bg)!important;color:var(--text)!important;border-color:rgba(127,127,127,.28)!important}
+html body.light-mode #groupMgmtSheet .gm-search input{background:none!important;border:0!important}
+#groupMgmtSheet .gm-btn:not(.sec):not(.red){color:#fff!important}
+</style>
+<script id="sp-gm-v2">
+/* ═══ Group Settings v2 — full-page info, Members page (search), Add page, Shared media ═══ */
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)};
+var enc=encodeURIComponent;
+function E(s){s=String(s==null?'':s);return s.replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}
+function me(){return (localStorage.getItem('ka_username_key')||currentUser||'').toLowerCase()}
+function G(){return _currentGroupId?_groupCache[_currentGroupId]:null}
+var S={view:'main',q:'',filter:'all',tab:'media',sel:{},accts:null,chan:null,sheet:''};
+var IC={
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ dots:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>',
+ cam:'<svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+ pen:'<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+ users:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+ plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+ addu:'<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>',
+ link:'<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+ share:'<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
+ search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+ img:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+ shield:'<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+ mic:'<svg viewBox="0 0 24 24"><path d="M2 2l20 20"/><path d="M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.8"/><path d="M19 10v2a7 7 0 0 1-.9 3.4M5 10v2a7 7 0 0 0 11 5.7M12 19v3"/></svg>',
+ chan:'<svg viewBox="0 0 24 24"><path d="M3 11l18-8v18L3 13z"/><path d="M11 17v4a2 2 0 0 0 2 2h0"/></svg>',
+ out:'<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+ reset:'<svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+ chev:'<svg class="gm-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ chk:'<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
+ star:'<svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>'
+};
+var BADGE='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function acct(uk){try{return (_cache['acct_by_username']||{})[uk]||null}catch(e){return null}}
+function dname(uk){var a=acct(uk);return (a&&a.display_name)||uk}
+function verified(uk){try{return typeof isUserVerified==='function'&&isUserVerified(uk)}catch(e){return false}}
+function avi(uk,size){
+  var pic=null;try{pic=picFor(uk)}catch(e){}
+  try{return _aviHtml(pic,dname(uk),size||44)}catch(e){return E((uk||'?').charAt(0).toUpperCase())}
+}
+function clean(m){return String(m||'').replace(/^@+/,'')}
+function role(g,m){return _groupIsCreator(g,m)?'owner':(_groupIsAdmin(g,m)?'admin':'member')}
+function sortedMembers(g){
+  var rank={owner:0,admin:1,member:2},my=me();
+  return (g.members||[]).map(clean).filter(function(v,i,a){return v&&a.indexOf(v)===i}).sort(function(a,b){
+    var ra=rank[role(g,a)],rb=rank[role(g,b)];if(ra!==rb)return ra-rb;
+    if(a===my)return -1;if(b===my)return 1;
+    return dname(a).toLowerCase()<dname(b).toLowerCase()?-1:1;
+  });
+}
+function groupAvi(g){
+  var av=g.avatar||'👥';
+  return av.indexOf('data:')===0||av.indexOf('http')===0?'<div class="gm-avi"><img src="'+E(av)+'" alt=""></div>':'<div class="gm-avi">'+E(av)+'</div>';
+}
+function stats(g){
+  var media=[],links=[],re=/(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+  (g.messages||[]).forEach(function(m){
+    if(m.mediaUrl&&m.mediaType&&/^(image|video)/.test(m.mediaType))media.push({url:m.mediaUrl,video:/^video/.test(m.mediaType)});
+    else if(m.isChannelBroadcast&&m.media&&m.media[0]&&m.media[0].dataUrl)media.push({url:m.media[0].dataUrl,video:false});
+    if(m.text){var f=String(m.text).match(re);if(f)f.forEach(function(u){links.push({url:u,sender:m.sender||'',time:m.time})})}
+  });
+  return {media:media,links:links.reverse()};
+}
+function toggle(on,act,dis){return '<button class="gm-sw'+(on?' on':'')+'" data-a="'+act+'"'+(dis?' disabled':'')+'><i></i></button>'}
+function row(ic,bg,title,sub,right,act,extra){
+  return '<button class="gm-row" data-a="'+act+'"'+(extra||'')+'><span class="gm-ic" style="background:'+bg+'">'+ic+'</span><span class="gm-grow">'+title+(sub?'<small>'+sub+'</small>':'')+'</span>'+(right||'')+IC.chev+'</button>';
+}
+
+/* ─── views ─── */
+function vMain(g,isAdmin,isCreator){
+  var st=stats(g),members=sortedMembers(g),n=members.length,my=me();
+  var admins=members.filter(function(m){return role(g,m)!=='member'}).length;
+  var url=_groupInviteUrl(g);
+  var h='<div class="gm-top"><button class="gm-ib" data-a="back">'+IC.back+'</button><div class="gm-tt">Group info</div><button class="gm-ib" data-a="menu">'+IC.dots+'</button></div><div class="gm-body" id="gmBody">';
+  h+='<div class="gm-hero"><div class="gm-av">'+groupAvi(g)+(isAdmin?'<label class="gm-cam">'+IC.cam+'<input type="file" accept="image/*" onchange="uploadGroupIcon(event)"></label>':'')+'</div>'
+   +'<div class="gm-name"><span>'+E(g.name||'Group')+'</span>'+(isAdmin?'<button data-a="rename" aria-label="Rename">'+IC.pen+'</button>':'')+'</div>'
+   +'<div class="gm-sub">Group · '+n+' member'+(n===1?'':'s')+(g.is_private?' · Private':'')+'</div></div>';
+  h+='<div class="gm-acts">'
+   +(isAdmin?'<button class="gm-act" data-a="add">'+IC.addu+'Add</button>':'<button class="gm-act" data-a="members">'+IC.users+'Members</button>')
+   +'<button class="gm-act" data-a="search">'+IC.search+'Search</button>'
+   +'<button class="gm-act" data-a="copy">'+IC.link+'Copy link</button>'
+   +'<button class="gm-act" data-a="share">'+IC.share+'Share</button></div>';
+  /* about */
+  h+='<div class="gm-h">About</div><div class="gm-card gm-pad">';
+  if(isAdmin){h+='<textarea id="gcMgmtDescInput" maxlength="200" placeholder="What\'s this group about?">'+E(g.description||'')+'</textarea><div class="gm-btns" style="justify-content:flex-end"><span class="gm-hint" id="gmDescCount" style="flex:1;margin:auto 0">'+(g.description||'').length+'/200</span><button class="gm-btn" style="flex:none" data-a="saveDesc">Save</button></div>'}
+  else h+='<div style="font-size:15px;line-height:1.5;white-space:pre-wrap">'+(g.description?E(g.description):'<span style="color:var(--text2)">No description yet.</span>')+'</div>';
+  h+='</div>';
+  /* linked channel */
+  if(S.chan&&S.chan.groupId===g.id){h+='<div class="gm-h">Linked channel</div><div class="gm-card"><div class="gm-row" style="cursor:default"><span class="gm-ic" style="background:#bf5af2">'+IC.chan+'</span><span class="gm-grow">'+E(S.chan.name)+'<small>Subscribers who tap Comment land in this group</small></span>'+(isAdmin?'<button class="gm-btn red" style="padding:8px 12px;font-size:12.5px" data-a="unlink">Unlink</button>':'')+'</div></div>'}
+  /* members + shared */
+  h+='<div class="gm-h">Members &amp; shared</div><div class="gm-card">';
+  h+='<button class="gm-row" data-a="members"><span class="gm-grow" style="display:flex;align-items:center;gap:12px"><span class="gm-stack">'+members.slice(0,5).map(function(m){return '<div>'+avi(m,24)+'</div>'}).join('')+'</span><span>'+n+' member'+(n===1?'':'s')+'<small>'+admins+' admin'+(admins===1?'':'s')+'</small></span></span>'+IC.chev+'</button>';
+  h+=row(IC.img,'#30b0c7','Media',null,'<span class="gm-val">'+st.media.length+'</span>','media');
+  h+=row(IC.link,'#ff9f0a','Links',null,'<span class="gm-val">'+st.links.length+'</span>','links');
+  h+='</div>';
+  /* icon */
+  if(isAdmin){var EM=['👥','🦁','🐯','🦊','🐺','🦅','🦋','🌟','⚡','🔥','🎯','🎮','⚽','🎵','💬','🚀','💼','🌍'];
+   h+='<div class="gm-h">Group icon</div><div class="gm-card gm-pad"><div class="gm-hint" style="margin:0">Upload a photo with the camera button above, or pick an emoji.</div><div class="gm-emo">'+EM.map(function(e){return '<button data-a="emoji" data-e="'+e+'" class="'+(g.avatar===e?'on':'')+'">'+e+'</button>'}).join('')+'</div></div>'}
+  /* invite */
+  h+='<div class="gm-h">Invite link</div><div class="gm-card gm-pad"><div class="gm-link" data-a="copy">'+IC.link.replace('<svg','<svg width="18" height="18" style="flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"')+'<span style="flex:1;min-width:0">'+E(url.replace(/^https?:\/\//,''))+'</span></div>'
+   +'<div class="gm-btns"><button class="gm-btn" data-a="copy">Copy</button><button class="gm-btn sec" data-a="share">Share</button>'+(isAdmin?'<button class="gm-btn sec" data-a="reset" style="flex:none;width:48px" aria-label="Reset link">'+IC.reset.replace('<svg','<svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"')+'</button>':'')+'</div></div>';
+  /* type & address */
+  h+='<div class="gm-h">Group type</div><div class="gm-card"><div class="gm-row" style="cursor:default"><span class="gm-ic" style="background:#8e8e93">'+IC.lock+'</span><span class="gm-grow">Private group<small>Hidden from search and suggestions. The invite link is the only way in.</small></span>'+toggle(!!g.is_private,'tglPriv',!isAdmin)+'</div>'
+   +'<div class="gm-pad"><div style="font-size:13px;color:var(--text2);margin-bottom:8px">Public address</div><div style="display:flex;align-items:center;gap:6px"><span style="color:var(--text2);font-size:14px;flex:none">plusng.com.ng/</span><input id="gcMgmtUsernameInput" type="text" value="'+E(g.username||'')+'" placeholder="username" maxlength="30" autocapitalize="none" autocomplete="off"'+(isAdmin?'':' disabled')+'></div><div id="gcMgmtUsernameStatus" style="font-size:12px;margin-top:6px;min-height:16px"></div>'+(isAdmin?'<div class="gm-btns" style="justify-content:flex-end"><button class="gm-btn" style="flex:none" data-a="saveUser">Save address</button></div>':'')+'</div></div>';
+  /* permissions */
+  h+='<div class="gm-h">Permissions</div><div class="gm-card"><div class="gm-row" style="cursor:default"><span class="gm-ic" style="background:#ff453a">'+IC.mic+'</span><span class="gm-grow">Restrict messaging<small>Only admins can send messages while this is on.</small></span>'+toggle(!!g.messages_disabled,'tglMsg',!isAdmin)+'</div>'
+   +row(IC.shield,'#0a84ff','Admins',null,'<span class="gm-val">'+admins+'</span>','admins')+'</div>';
+  /* danger */
+  h+='<div class="gm-h"></div><div class="gm-card"><button class="gm-row" data-a="leave" style="color:var(--gm-red)"><span class="gm-ic" style="background:#ff453a">'+IC.out+'</span><span class="gm-grow">Leave group</span></button>'
+   +(isCreator?'<button class="gm-row" data-a="delete" style="color:var(--gm-red)"><span class="gm-ic" style="background:#ff453a">'+IC.trash+'</span><span class="gm-grow">Delete group<small>Removes the group and its messages for everyone.</small></span></button>':'')+'</div>';
+  var made=g.created_by?('Created by @'+E(clean(g.created_by))):'';
+  h+='<div class="gm-hint" style="text-align:center;margin-top:18px">'+made+'</div></div>';
+  return h;
+}
+function memberRowHtml(g,m){
+  var r=role(g,m),my=me();
+  return '<button class="gm-m" data-a="member" data-u="'+E(m)+'"><div class="gm-mav">'+avi(m,44)+'</div><div style="flex:1;min-width:0"><div class="gm-mn"><span class="t">'+E(dname(m))+(m===my?' (You)':'')+'</span>'+(verified(m)?BADGE:'')+'</div><div class="gm-mh">@'+E(m)+'</div></div>'+(r==='owner'?'<span class="gm-tag o">Owner</span>':r==='admin'?'<span class="gm-tag a">Admin</span>':'')+'</button>';
+}
+function filterMembers(g){
+  var q=S.q.trim().toLowerCase().replace(/^@/,'');
+  return sortedMembers(g).filter(function(m){
+    if(S.filter==='admins'&&role(g,m)==='member')return false;
+    if(S.filter==='members'&&role(g,m)!=='member')return false;
+    return !q||m.indexOf(q)>-1||dname(m).toLowerCase().indexOf(q)>-1;
+  });
+}
+function membersListHtml(g){
+  var l=filterMembers(g);
+  return l.length?l.map(function(m){return memberRowHtml(g,m)}).join(''):'<div class="gm-empty">'+(S.q?'No members match “'+E(S.q)+'”.':'Nobody here yet.')+'</div>';
+}
+function vMembers(g,isAdmin){
+  var all=sortedMembers(g),a=all.filter(function(m){return role(g,m)!=='member'}).length;
+  return '<div class="gm-top"><button class="gm-ib" data-a="back">'+IC.back+'</button><div class="gm-tt">Members · '+all.length+'</div>'+(isAdmin?'<button class="gm-ib" data-a="add" aria-label="Add members">'+IC.addu+'</button>':'')+'</div>'
+   +'<div class="gm-body" id="gmBody"><div class="gm-search">'+IC.search+'<input id="gmSearch" type="text" placeholder="Search members" value="'+E(S.q)+'" autocomplete="off" autocapitalize="none"></div>'
+   +'<div class="gm-chips">'+[['all','All ('+all.length+')'],['admins','Admins ('+a+')'],['members','Members ('+(all.length-a)+')']].map(function(c){return '<button class="gm-chip'+(S.filter===c[0]?' on':'')+'" data-a="chip" data-f="'+c[0]+'">'+c[1]+'</button>'}).join('')+'</div>'
+   +(isAdmin?'<button class="gm-row" data-a="add" style="padding-left:4px;color:var(--gm-blue);font-weight:700;border-bottom:.5px solid var(--gm-line)"><span class="gm-ic" style="background:var(--gm-blue)">'+IC.plus+'</span><span class="gm-grow">Add members</span></button>':'')
+   +'<div id="gmList">'+membersListHtml(g)+'</div></div>';
+}
+function eligible(g){
+  var have={};(g.members||[]).forEach(function(m){have[clean(m).toLowerCase()]=1});
+  var q=S.q.trim().toLowerCase().replace(/^@/,'');
+  return (S.accts||[]).filter(function(a){
+    var uk=(a.username||'').toLowerCase();
+    if(!uk||have[uk]||a.is_built_in||uk===OWNER_KEY||uk==='__probe__')return false;
+    return !q||uk.indexOf(q)>-1||(a.display_name||'').toLowerCase().indexOf(q)>-1;
+  }).slice(0,150);
+}
+function addListHtml(g){
+  if(!S.accts)return '<div class="gm-empty">Loading people…</div>';
+  var l=eligible(g);
+  return l.length?l.map(function(a){var uk=(a.username||'').toLowerCase(),on=!!S.sel[uk];
+    return '<button class="gm-m" data-a="pick" data-u="'+E(uk)+'"><div class="gm-mav">'+avi(uk,44)+'</div><div style="flex:1;min-width:0"><div class="gm-mn"><span class="t">'+E(a.display_name||a.username)+'</span>'+(verified(uk)?BADGE:'')+'</div><div class="gm-mh">@'+E(uk)+'</div></div><span class="gm-ck'+(on?' on':'')+'">'+IC.chk+'</span></button>'}).join('')
+   :'<div class="gm-empty">'+(S.q?'No one found for “'+E(S.q)+'”.':'Everyone is already in this group.')+'</div>';
+}
+function vAdd(g){
+  var c=Object.keys(S.sel).length;
+  return '<div class="gm-top"><button class="gm-ib" data-a="back">'+IC.back+'</button><div class="gm-tt">Add members</div></div>'
+   +'<div class="gm-body" id="gmBody" style="padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))"><div class="gm-search">'+IC.search+'<input id="gmSearch" type="text" placeholder="Search people" value="'+E(S.q)+'" autocomplete="off" autocapitalize="none"></div><div id="gmList">'+addListHtml(g)+'</div></div>'
+   +'<div class="gm-bar"><button class="gm-btn" id="gmAddBtn" data-a="addGo"'+(c?'':' disabled')+'>'+(c?'Add '+c+' member'+(c===1?'':'s'):'Select people to add')+'</button></div>';
+}
+function vMedia(g){
+  var st=stats(g),isM=S.tab==='media';
+  var body;
+  if(isM)body=st.media.length?'<div class="gm-grid">'+st.media.slice().reverse().map(function(m,i){return '<div data-a="lb" data-i="'+i+'">'+(m.video?'<video src="'+E(m.url)+'" preload="metadata" muted></video><b>▶</b>':'<img loading="lazy" src="'+E(m.url)+'" alt="">')+'</div>'}).join('')+'</div>':'<div class="gm-empty">No photos or videos shared yet.</div>';
+  else body=st.links.length?'<div class="gm-card" style="margin-top:6px">'+st.links.map(function(l){var href=/^www\./i.test(l.url)?'https://'+l.url:l.url;
+    return '<a class="gm-row" href="'+E(href)+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:var(--text)"><span class="gm-ic" style="background:#ff9f0a">'+IC.link+'</span><span class="gm-grow" style="word-break:break-all"><span style="color:var(--gm-blue)">'+E(l.url)+'</span><small>@'+E(clean(l.sender))+(l.time?' · '+E(typeof formatTime==='function'?formatTime(l.time):''):'')+'</small></span></a>'}).join('')+'</div>':'<div class="gm-empty">No links shared yet.</div>';
+  return '<div class="gm-top"><button class="gm-ib" data-a="back">'+IC.back+'</button><div class="gm-tt">Shared in group</div></div><div class="gm-body" id="gmBody"><div class="gm-chips" style="margin-top:12px"><button class="gm-chip'+(isM?' on':'')+'" data-a="tab" data-t="media">Media ('+st.media.length+')</button><button class="gm-chip'+(!isM?' on':'')+'" data-a="tab" data-t="links">Links ('+st.links.length+')</button></div>'+body+'</div>';
+}
+
+/* ─── render ─── */
+function render(keepScroll){
+  var sh=$('groupMgmtSheet'),g=G();if(!sh||!g)return;
+  var b=$('gmBody'),top=keepScroll&&b?b.scrollTop:0,focusSearch=document.activeElement&&document.activeElement.id==='gmSearch';
+  var my=me(),isAdmin=_groupIsAdmin(g,my),isCreator=_groupIsCreator(g,my);
+  var html=S.view==='members'?vMembers(g,isAdmin):S.view==='add'?vAdd(g):S.view==='media'?vMedia(g):vMain(g,isAdmin,isCreator);
+  sh.innerHTML=html+S.sheet;
+  b=$('gmBody');if(b&&top)b.scrollTop=top;
+  if(S.view==='main'&&isAdmin&&typeof _bindUsernameAvailabilityCheck==='function'){try{_bindUsernameAvailabilityCheck('gcMgmtUsernameInput','gcMgmtUsernameStatus',{excludeGroupId:g.id})}catch(e){}}
+  var si=$('gmSearch');if(si&&focusSearch){si.focus();try{si.setSelectionRange(si.value.length,si.value.length)}catch(e){}}
+}
+function openSheet(html){S.sheet='<div class="gm-sh-bg" data-a="shBg"><div class="gm-sh"><div class="gm-grab"></div>'+html+'</div></div>';render(true)}
+function closeSheet(){S.sheet='';render(true)}
+function fp(g){return JSON.stringify([g.name,g.avatar&&g.avatar.length,g.description,g.username,g.is_private,g.messages_disabled,g.invite_code,(g.members||[]).join(','),(g.admins||[]).join(','),(g.messages||[]).length,S.chan&&S.chan.name])}
+
+window.openGroupMgmt=function(view){
+  if(!_currentGroupId||!G())return;
+  var sh=$('groupMgmtSheet');
+  var wasOpen=sh&&sh.dataset.gm==='1'&&sh.style.display==='flex';
+  if(!sh){sh=document.createElement('div');sh.id='groupMgmtSheet';document.body.appendChild(sh)}
+  if(!sh.dataset.bound){sh.dataset.bound='1';sh.addEventListener('click',onClick);sh.addEventListener('input',onInput)}
+  sh.dataset.gm='1';sh.style.cssText='display:flex';
+  if(typeof view==='string'){S.view=view}
+  else if(!wasOpen){S.view='main';S.q='';S.filter='all';S.sel={};S.sheet='';S.tab='media';S.chan=null}
+  render(wasOpen);
+  refresh();
+};
+async function refresh(){
+  var id=_currentGroupId,old=G();if(!id||!old)return;
+  var before=fp(old);
+  try{var rows=await SB.query('group_chats','?id=eq.'+enc(id)+'&select=*');if(rows&&rows[0]&&_currentGroupId===id)_groupCache[id]=rows[0]}catch(e){}
+  try{var c=await SB.query('channels','?linked_group_id=eq.'+enc(id)+'&select=id,name');S.chan=c&&c[0]?{groupId:id,id:c[0].id,name:c[0].name}:null;window._gcMgmtLinkedChannel=S.chan?{groupId:id,channel:{id:c[0].id,name:c[0].name}}:null}catch(e){}
+  var sh=$('groupMgmtSheet');
+  if(sh&&sh.style.display==='flex'&&_currentGroupId===id&&G()&&fp(G())!==before&&!document.activeElement.matches('textarea,input'))render(true);
+}
+function hide(){var sh=$('groupMgmtSheet');if(sh){sh.style.display='none';sh.dataset.gm='0'}}
+function syncChatHeader(g){var el=$('gcMembers');if(el)el.textContent=(g.members||[]).length+' members — tap to manage';var n=$('gcName');if(n)n.textContent=g.name}
+function go(v){S.view=v;S.q='';render(false)}
+
+/* ─── events ─── */
+function onInput(ev){
+  var t=ev.target,g=G();if(!g)return;
+  if(t.id==='gmSearch'){S.q=t.value;var l=$('gmList');if(l)l.innerHTML=S.view==='add'?addListHtml(g):membersListHtml(g)}
+  else if(t.id==='gcMgmtDescInput'){var c=$('gmDescCount');if(c)c.textContent=t.value.length+'/200'}
+}
+async function onClick(ev){
+  var bg=ev.target.classList&&ev.target.classList.contains('gm-sh-bg');if(bg){closeSheet();return}
+  var t=ev.target.closest('[data-a]');if(!t||t.disabled)return;
+  var a=t.dataset.a,u=t.dataset.u,g=G();if(!g)return;
+  var my=me(),isAdmin=_groupIsAdmin(g,my),isCreator=_groupIsCreator(g,my);
+  switch(a){
+   case 'back':if(S.view==='add')go('members');else if(S.view!=='main')go('main');else hide();break;
+   case 'members':S.filter='all';go('members');break;
+   case 'admins':S.filter='admins';go('members');break;
+   case 'search':S.filter='all';go('members');setTimeout(function(){var i=$('gmSearch');if(i)i.focus()},60);break;
+   case 'media':S.tab='media';go('media');break;
+   case 'links':S.tab='links';go('media');break;
+   case 'tab':S.tab=t.dataset.t;render(true);break;
+   case 'chip':S.filter=t.dataset.f;render(true);break;
+   case 'add':if(!isAdmin){showToast('Only a group admin can add members.','error');break}
+     S.sel={};S.view='add';S.q='';render(false);
+     if(!S.accts){try{S.accts=await getAllAccounts()||[]}catch(e){S.accts=[]}if(S.view==='add'){var l=$('gmList');if(l)l.innerHTML=addListHtml(g)}}break;
+   case 'pick':if(S.sel[u])delete S.sel[u];else S.sel[u]=1;
+     var l2=$('gmList');if(l2){var top=$('gmBody').scrollTop;l2.innerHTML=addListHtml(g);$('gmBody').scrollTop=top}
+     var c=Object.keys(S.sel).length,bt=$('gmAddBtn');if(bt){bt.disabled=!c;bt.textContent=c?'Add '+c+' member'+(c===1?'':'s'):'Select people to add'}break;
+   case 'addGo':await addGo();break;
+   case 'copy':copyGroupInviteLink();break;
+   case 'share':await shareLink(g);break;
+   case 'reset':_resetGroupInviteLinkUI(g.id);break;
+   case 'saveDesc':_saveGroupDescriptionUI();break;
+   case 'saveUser':_saveGroupUsernameUI(g.id);break;
+   case 'tglPriv':_toggleGroupPrivacyUI(g.id);break;
+   case 'tglMsg':_toggleGroupMessagesDisabledUI();break;
+   case 'unlink':_groupUnlinkChannelUI(g.id);break;
+   case 'emoji':setGroupIcon(t.dataset.e);break;
+   case 'leave':leaveGroupChat();break;
+   case 'delete':delGroup(g);break;
+   case 'rename':openSheet('<div style="font-size:17px;font-weight:800;margin:2px 4px 12px">Rename group</div><input id="gmNameInput" type="text" maxlength="40" value="'+E(g.name||'')+'"><div class="gm-btns"><button class="gm-btn sec" data-a="shClose">Cancel</button><button class="gm-btn" data-a="renameGo">Save</button></div>');setTimeout(function(){var i=$('gmNameInput');if(i){i.focus();i.select()}},120);break;
+   case 'renameGo':var nm=($('gmNameInput').value||'').trim();if(nm.length<1){showToast('Give the group a name.','error');break}
+     g.name=nm.slice(0,40);S.sheet='';render(true);try{await _saveGroup(g)}catch(e){}syncChatHeader(g);showToast('Group renamed.','success');break;
+   case 'shClose':closeSheet();break;
+   case 'menu':openSheet(
+      row(IC.link,'#0a84ff','Copy invite link',null,'','copy')+row(IC.share,'#30d158','Share group',null,'','share')+row(IC.out,'#ff453a','Leave group',null,'','leave')+(isCreator?row(IC.trash,'#ff453a','Delete group',null,'','delete'):''));break;
+   case 'member':memberSheet(g,u,isAdmin,isCreator);break;
+   case 'mProfile':hide();setTimeout(function(){try{openUserProfile(u)}catch(e){}},120);break;
+   case 'mAdmin':S.sheet='';render(true);_promoteGroupAdminUI(u);break;
+   case 'mDemote':S.sheet='';render(true);_demoteGroupAdminUI(u);break;
+   case 'mRemove':S.sheet='';render(true);removeGroupMember(u);break;
+   case 'lb':var m=stats(g).media.slice().reverse();var i=+t.dataset.i;if(m[i]&&typeof openLightbox==='function')openLightbox(m[i].url,m[i].video);break;
+  }
+}
+function memberSheet(g,u,isAdmin,isCreator){
+  var my=me(),r=role(g,u),self=u===my;
+  var h='<div style="display:flex;align-items:center;gap:12px;padding:2px 4px 12px"><div class="gm-mav" style="width:52px;height:52px">'+avi(u,52)+'</div><div style="min-width:0"><div class="gm-mn" style="font-size:17px"><span class="t">'+E(dname(u))+'</span>'+(verified(u)?BADGE:'')+'</div><div class="gm-mh">@'+E(u)+' · '+(r==='owner'?'Owner':r==='admin'?'Admin':'Member')+'</div></div></div>';
+  h+=row(IC.users,'#0a84ff','View profile',null,'','mProfile',' data-u="'+E(u)+'"');
+  if(isCreator&&!self&&r!=='owner')h+=r==='admin'?row(IC.shield,'#8e8e93','Remove as admin',null,'','mDemote',' data-u="'+E(u)+'"'):row(IC.star,'#ff9f0a','Make admin','Can add/remove members and change settings','','mAdmin',' data-u="'+E(u)+'"');
+  if(isAdmin&&!self&&r!=='owner')h+=row(IC.out,'#ff453a','Remove from group',null,'','mRemove',' data-u="'+E(u)+'"');
+  openSheet(h);
+}
+async function shareLink(g){
+  var url=_groupInviteUrl(g);
+  if(navigator.share){try{await navigator.share({title:g.name,text:'Join "'+g.name+'" on Social Plus',url:url});return}catch(e){if(e&&e.name==='AbortError')return}}
+  copyGroupInviteLink();
+}
+async function addGo(){
+  var g=G(),picked=Object.keys(S.sel);if(!g||!picked.length)return;
+  var btn=$('gmAddBtn');if(btn){btn.disabled=true;btn.textContent='Adding…'}
+  try{var rows=await SB.query('group_chats','?id=eq.'+enc(g.id)+'&select=*');if(rows&&rows[0]){g=rows[0];_groupCache[g.id]=g}}catch(e){}
+  var have=(g.members||[]).map(function(m){return clean(m).toLowerCase()});
+  var add=picked.filter(function(m){return have.indexOf(m)<0});
+  g.members=(g.members||[]).concat(add);
+  try{await _saveGroup(g)}catch(e){}
+  add.forEach(function(m){try{addNotifForUser(m,'👥 '+(currentUser||me())+' added you to the group "'+g.name+'"')}catch(e){}});
+  S.sel={};syncChatHeader(g);
+  try{if(typeof renderMessagesPageContent==='function')renderMessagesPageContent()}catch(e){}
+  showToast(add.length+' member'+(add.length===1?'':'s')+' added.','success');
+  S.filter='all';go('members');
+}
+function delGroup(g){
+  _islandConfirm('Delete "'+g.name+'" for everyone? This can\'t be undone.',async function(){
+    var id=g.id;
+    try{var ch=await SB.query('channels','?linked_group_id=eq.'+enc(id)+'&select=id');for(var i=0;i<(ch||[]).length;i++)await unlinkChannelGroup(ch[i].id)}catch(e){}
+    try{await SB.delete('group_chats','id=eq.'+enc(id))}catch(e){showToast('Could not delete the group — try again.','error');return}
+    delete _groupCache[id];if(window._gmForced)delete window._gmForced[id];
+    try{var k='ka_groups_'+me();localStorage.setItem(k,JSON.stringify(JSON.parse(localStorage.getItem(k)||'[]').filter(function(x){return x.id!==id})))}catch(e){}
+    hide();try{closeGroupChat()}catch(e){}
+    try{if(typeof renderMessagesPageContent==='function')renderMessagesPageContent()}catch(e){}
+    showToast('Group deleted.','success');
+  },{title:'Delete group?',confirmLabel:'Delete'});
+}
+/* old entry points that hid the sheet / re-rendered still work */
+window.submitAddGroupMembers=function(){window.openGroupMgmt('members')};
+window.toggleGcMgmtMember=function(){};
+var _cg=window.closeGroupChat;
+if(typeof _cg==='function')window.closeGroupChat=function(){hide();return _cg.apply(this,arguments)};
+
+/* ═══ "Group not found" fix ═══
+   openGroupChat only looks through groups whose member list already contains the user. A channel
+   subscriber tapping Comment (or the profile page's Discuss button, which never auto-joined) is not
+   in that list yet — or the join write was refused/stale — so the lookup failed even though the
+   group exists and is linked. Fix: resolve the group by id, join the user to linked discussion
+   groups, and keep the row available even if the write is slow or blocked. */
+window._gmForced=window._gmForced||{};
+var _load=window._loadGroupChats;
+if(typeof _load==='function')window._loadGroupChats=async function(){
+  var r=await _load.apply(this,arguments);r=r||[];
+  var f=window._gmForced,ids=Object.keys(f);
+  for(var i=0;i<ids.length;i++){
+    var id=ids[i];if(r.some(function(g){return g.id===id}))continue;
+    var row=f[id];
+    try{var rows=await SB.query('group_chats','?id=eq.'+enc(id)+'&select=*');if(rows&&rows[0])row=rows[0]}catch(e){}
+    var k=me();if(row&&(row.members||[]).map(function(m){return String(m).toLowerCase()}).indexOf(k)<0)row=Object.assign({},row,{members:(row.members||[]).concat([k])});
+    f[id]=row;r.push(row);
+  }
+  return r;
+};
+async function ensureAccess(id){
+  if(!id||!currentUser)return;
+  var mine=await _loadGroupChats();if(mine.some(function(g){return g.id===id}))return;
+  var rows=await SB.query('group_chats','?id=eq.'+enc(id)+'&select=*').catch(function(){return[]});
+  var g=rows&&rows[0];if(!g)return;
+  var ch=await SB.query('channels','?linked_group_id=eq.'+enc(id)+'&select=id').catch(function(){return[]});
+  if(!(ch&&ch.length))return; /* only linked discussion groups auto-join; others stay invite-only */
+  var k=me();
+  if((g.members||[]).map(function(m){return String(m).toLowerCase()}).indexOf(k)<0){g.members=(g.members||[]).concat([k]);try{await SB.upsert('group_chats',g,'id')}catch(e){}}
+  window._gmForced[id]=g;_groupCache[id]=g;
+}
+var _open=window.openGroupChat;
+if(typeof _open==='function')window.openGroupChat=async function(id){
+  try{await ensureAccess(id)}catch(e){}
+  return _open.apply(this,arguments);
+};
+})();
+</script>
+
 </body>
 
