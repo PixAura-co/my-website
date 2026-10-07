@@ -21,8 +21,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://fonts.gstatic.com">
 <link rel="dns-prefetch" href="https://api.groq.com">
-<link rel="preconnect" href="https://vubxekqmhrmmdaxmnpmz.supabase.co" crossorigin>
-<link rel="dns-prefetch" href="https://vubxekqmhrmmdaxmnpmz.supabase.co">
+<link rel="preconnect" href="https://aqnzcduzpddajjycdone.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://aqnzcduzpddajjycdone.supabase.co">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -6537,8 +6537,8 @@ function _ppUpdateAllCardInstances(postId, likes, reactions, myKey) {
   }, true);
 })();
 
-const _SB_URL_FALLBACK = 'https://vubxekqmhrmmdaxmnpmz.supabase.co';
-const _SB_KEY_FALLBACK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1Ynhla3FtaHJtbWRheG1ucG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODQ3NjMsImV4cCI6MjEwNDU2MDc2M30.X9ZkGKoQmpkYIkr5V4WSQw3UrFtwyI3-uLjPPlpruHE';
+const _SB_URL_FALLBACK = 'https://aqnzcduzpddajjycdone.supabase.co';
+const _SB_KEY_FALLBACK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxbnpjZHV6cGRkYWpqeWNkb25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyOTc2MjYsImV4cCI6MjEwNjg3MzYyNn0.hh5QDz4SxNOkOJSS0McusEEFQ8TimNgRBheZFu5qoik';
 let SB_URL = localStorage.getItem('ps_active_sb_url') || _SB_URL_FALLBACK;
 let SB_KEY = localStorage.getItem('ps_active_sb_key') || _SB_KEY_FALLBACK;
 function _sbRawHeaders(extra) {
@@ -39222,6 +39222,7 @@ function bkHandleRestoreFile(event) {
       const data = JSON.parse(e.target.result);
       if (!data.tables) throw new Error('Missing "tables" key — not a recognized backup file.');
       bkRestorePayload = data;
+      try { bkEnsurePanel(); bkR.analysisFor = null; bkR.tables = {}; bkR.order = []; bkR.failed = {}; bkR.stats = null; bkLog('Loaded '+file.name+' ('+Object.keys(data.tables).length+' tables)'); bkRender(); } catch(e) {}
       const totalRows = Object.values(data.tables).reduce((s, rows) => s + (Array.isArray(rows) ? rows.length : 0), 0);
       previewEl.style.display = 'block';
       previewEl.innerHTML = `<b>${file.name}</b><br>Taken: ${data.taken_at || 'unknown'}<br>From: ${data.source_url || 'unknown'}<br>${totalRows.toLocaleString()} total rows across ${Object.keys(data.tables).length} tables<br><br><span style="color:#ff9f0a;">This restores into the CURRENTLY CONNECTED project (${SB_URL}). Existing rows with matching IDs are left untouched — this only fills in what's missing.</span>`;
@@ -39236,66 +39237,326 @@ function bkHandleRestoreFile(event) {
   reader.readAsText(file);
 }
 
-async function bkInsertRows(table, rows) {
-  if (!rows || !rows.length) return { inserted: 0, failed: 0 };
-  let inserted = 0, failed = 0;
-  for (let i = 0; i < rows.length; i += 200) {
-    const chunk = rows.slice(i, i + 200);
-    try {
-      const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
-        method: 'POST',
-        headers: _sbRawHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' }),
-        body: JSON.stringify(chunk)
-      });
-      if (res.ok) { inserted += chunk.length; }
-      else { failed += chunk.length; }
-    } catch (e) { failed += chunk.length; }
-  }
-  return { inserted, failed };
+/* ===================== Smart Restore v2 ===================== */
+const BK_KEYS = {
+  accounts:['username'], app_config:['key'], premium_users:['username'], wallet_payout_methods:['username'],
+  messages:['chat_key'], device_sessions:['device_id'], mini_app_uploader_privileges:['username'],
+  mini_app_favorites:['username','app_id'], mini_app_ratings:['app_id','username'],
+  post_views:['post_id','viewer'], reel_likes:['reel_id','username'], reel_views:['reel_id','viewer'],
+  group_seen:['group_id','user_key']
+};
+const bkR = { running:false, paused:false, cancelled:false, log:[], tables:{}, order:[], failed:{},
+  analysisFor:null, opts:{ smart:true, par:3, preview:true }, stats:null, wake:null, finished:false };
+let _bkRenderPending = false;
+
+function bkEsc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function bkFmtBytes(n){ if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(1)+' KB'; return (n/1048576).toFixed(2)+' MB'; }
+function bkFmtTime(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); return m ? m+'m '+(s%60)+'s' : s+'s'; }
+function bkSleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+function bkLog(msg, cls){
+  const t = new Date().toLocaleTimeString([], {hour12:false});
+  bkR.log.push({ t, msg, cls: cls||'' });
+  if (bkR.log.length > 500) bkR.log.splice(0, bkR.log.length-500);
+  bkSchedule();
+}
+function bkSchedule(){ if(_bkRenderPending) return; _bkRenderPending = true; setTimeout(()=>{ _bkRenderPending=false; try{ bkRender(); }catch(e){} }, 200); }
+function bkKeyCols(t, rows){
+  const m = BK_KEYS[t];
+  if (m && rows[0] && m.every(c => c in rows[0])) return m;
+  if (rows[0] && 'id' in rows[0]) return ['id'];
+  return null;
+}
+function bkKey(r, cols){ return cols.map(c => String(r[c])).join('\u0001'); }
+function bkPreviewRow(r){
+  try { return JSON.stringify(r, (k,v) => (typeof v==='string' && v.length>36) ? v.slice(0,30)+'…('+v.length+' chars)' : v).slice(0,260); } catch(e){ return ''; }
+}
+async function bkFetch(url, opts, ms){
+  const ac = new AbortController(); const to = setTimeout(()=>ac.abort(), ms||60000);
+  try { return await fetch(url, Object.assign({}, opts, { signal: ac.signal })); } finally { clearTimeout(to); }
+}
+async function bkWaitIfPaused(){ while (bkR.paused && !bkR.cancelled) await bkSleep(300); }
+function bkWaitOnline(){
+  return new Promise(res => {
+    const h = () => { window.removeEventListener('online', h); res(); };
+    window.addEventListener('online', h);
+    setTimeout(() => { window.removeEventListener('online', h); res(); }, 15000);
+  });
 }
 
-async function runFullRestore() {
-  if (!bkRestorePayload) return;
-  const ok = window.confirm('This will insert rows from the backup file into the currently connected project. Existing rows are not overwritten. Continue?');
-  if (!ok) return;
-
-  const btn = document.getElementById('bkRestoreConfirmBtn');
-  const statusEl = document.getElementById('bkRestoreStatus');
-  btn.disabled = true; btn.style.opacity = '0.5';
-
-  const tableNames = Object.keys(bkRestorePayload.tables).filter(t => Array.isArray(bkRestorePayload.tables[t]) && bkRestorePayload.tables[t].length);
-  let totalInserted = 0, totalFailed = 0;
-  const perTableResults = [];
-
-  if (typeof _showIsland === 'function') {
-    _showIsland({ live: true, id: BACKUP_ISLAND_ID, type: 'loading', title: 'Restoring', sub: 'Starting…', progress: 0 });
+/* ---------- panel ---------- */
+function bkEnsurePanel(){
+  let p = document.getElementById('bkRP'); if (p) return p;
+  const st = document.getElementById('bkRestoreStatus'); if (!st) return null;
+  p = document.createElement('div'); p.id = 'bkRP'; p.style.cssText = 'margin-top:10px;font-size:12px;color:var(--text2);';
+  const btn = 'padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:11.5px;font-weight:600;cursor:pointer;';
+  p.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px;">'+
+      '<label style="display:flex;gap:5px;align-items:center;"><input type="checkbox" id="bkOptSmart" checked> Smart skip</label>'+
+      '<label style="display:flex;gap:5px;align-items:center;">Parallel <select id="bkOptPar" style="background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:2px 4px;"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>'+
+      '<label style="display:flex;gap:5px;align-items:center;"><input type="checkbox" id="bkOptPrev" checked> Show data preview</label>'+
+    '</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">'+
+      '<button id="bkBtnAnalyze" style="'+btn+'">🔍 Analyze only</button>'+
+      '<button id="bkBtnPause" style="'+btn+'display:none;">⏸ Pause</button>'+
+      '<button id="bkBtnCancel" style="'+btn+'display:none;">✕ Cancel</button>'+
+      '<button id="bkBtnRetry" style="'+btn+'display:none;">↻ Retry failed</button>'+
+      '<button id="bkBtnDl" style="'+btn+'display:none;">⬇ Failed rows</button>'+
+    '</div>'+
+    '<div id="bkRProg" style="display:none;margin-bottom:10px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;"><b id="bkRPct" style="font-size:22px;color:#ff9f0a;">0%</b><span id="bkRCur" style="font-size:11px;"></span></div>'+
+      '<div style="height:8px;border-radius:6px;background:rgba(255,255,255,0.1);overflow:hidden;margin:6px 0;"><div id="bkRBar" style="height:100%;width:0%;background:#ff9f0a;transition:width .3s;"></div></div>'+
+      '<div id="bkRStats" style="font-size:11px;line-height:1.5;color:var(--text3);"></div>'+
+    '</div>'+
+    '<div id="bkRTables" style="margin-bottom:10px;"></div>'+
+    '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--text3);margin-bottom:4px;">Live activity</div>'+
+    '<pre id="bkRLog" style="margin:0;max-height:240px;overflow:auto;padding:8px;border-radius:9px;background:rgba(0,0,0,0.35);font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-all;"></pre>';
+  st.parentNode.insertBefore(p, st);
+  document.getElementById('bkOptSmart').onchange = e => { bkR.opts.smart = e.target.checked; bkR.analysisFor = null; };
+  document.getElementById('bkOptPar').onchange = e => { bkR.opts.par = parseInt(e.target.value,10)||1; };
+  document.getElementById('bkOptPrev').onchange = e => { bkR.opts.preview = e.target.checked; };
+  document.getElementById('bkBtnAnalyze').onclick = async () => { if(bkR.running||!bkRestorePayload) return; bkR.running=true; bkR.cancelled=false; await bkAnalyze(); bkR.running=false; bkRender(); };
+  document.getElementById('bkBtnPause').onclick = () => { bkR.paused = !bkR.paused; bkLog(bkR.paused ? '⏸ paused' : '▶ resumed','warn'); bkRender(); };
+  document.getElementById('bkBtnCancel').onclick = () => { bkR.cancelled = true; bkR.paused = false; bkLog('✕ cancelling…','warn'); };
+  document.getElementById('bkBtnRetry').onclick = () => bkRetryFailed();
+  document.getElementById('bkBtnDl').onclick = () => bkDownloadFailed();
+  return p;
+}
+function bkRender(){
+  if (!document.getElementById('bkRP')) return;
+  const S = bkR.stats, T = bkR.tables;
+  const prog = document.getElementById('bkRProg');
+  if (S) {
+    prog.style.display = 'block';
+    const pct = S.total ? Math.min(100, Math.round(S.processed / S.total * 100)) : 100;
+    document.getElementById('bkRPct').textContent = pct + '%';
+    document.getElementById('bkRBar').style.width = pct + '%';
+    const el = (Date.now() - S.start) / 1000;
+    const sp = el > 1 ? S.processed / el : 0;
+    const eta = sp > 0 ? (S.total - S.processed) / sp : 0;
+    document.getElementById('bkRCur').textContent = bkR.paused ? '⏸ paused' : (S.current ? S.current : '');
+    document.getElementById('bkRStats').innerHTML =
+      S.processed.toLocaleString()+' / '+S.total.toLocaleString()+' rows · ✓ '+S.ok.toLocaleString()+' new · ≡ '+S.dup+' already there · ✕ '+S.fail+'<br>'+
+      'Sent '+bkFmtBytes(S.bytes)+' · '+(sp ? sp.toFixed(1)+' rows/s' : '—')+' · elapsed '+bkFmtTime(el)+(bkR.running && sp ? ' · ETA '+bkFmtTime(eta) : '');
   }
+  document.getElementById('bkBtnPause').style.display = bkR.running && S ? 'inline-block' : 'none';
+  document.getElementById('bkBtnPause').textContent = bkR.paused ? '▶ Resume' : '⏸ Pause';
+  document.getElementById('bkBtnCancel').style.display = bkR.running && S ? 'inline-block' : 'none';
+  document.getElementById('bkBtnAnalyze').style.display = bkR.running ? 'none' : 'inline-block';
+  const nFail = Object.values(bkR.failed).reduce((s,a)=>s+a.length,0);
+  document.getElementById('bkBtnRetry').style.display = (!bkR.running && nFail) ? 'inline-block' : 'none';
+  document.getElementById('bkBtnDl').style.display = (!bkR.running && nFail) ? 'inline-block' : 'none';
+  const tl = document.getElementById('bkRTables');
+  const names = bkR.order;
+  if (names.length) {
+    const icon = { checking:'⏳', pending:'•', skip:'✓', running:'▶', done:'✓', partial:'⚠', error:'✕' };
+    tl.innerHTML = names.map(n => {
+      const i = T[n]; const done = i.ok + i.dup + i.fail;
+      const detail = i.status==='skip' ? 'complete in DB — skipped'
+        : (i.status==='checking' ? 'checking…'
+        : (i.missing.length+' to send'+(done ? ' · '+done+'/'+i.missing.length : '')+(i.fail ? ' · ✕'+i.fail : '')));
+      const dis = bkR.running ? ' disabled' : '';
+      const chk = i.selected ? ' checked' : '';
+      return '<label style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'+
+        '<input type="checkbox" data-bkt="'+bkEsc(n)+'"'+chk+dis+(i.status==='skip'&&!bkR.opts.smart?'':'')+'>'+
+        '<span style="width:16px;text-align:center;">'+(icon[i.status]||'•')+'</span>'+
+        '<span style="flex:1;font-weight:600;color:var(--text);">'+bkEsc(n)+'</span>'+
+        '<span style="font-size:10.5px;color:var(--text3);text-align:right;">'+detail+(i.remote!=null ? ' · DB '+i.remote : '')+'</span></label>';
+    }).join('');
+    tl.querySelectorAll('input[data-bkt]').forEach(c => { c.onchange = () => { bkR.tables[c.dataset.bkt].selected = c.checked; }; });
+  } else tl.innerHTML = '';
+  const lg = document.getElementById('bkRLog');
+  const atBottom = lg.scrollHeight - lg.scrollTop - lg.clientHeight < 40;
+  const colors = { ok:'#30d158', warn:'#ff9f0a', err:'#ff453a', hdr:'#64d2ff' };
+  lg.innerHTML = bkR.log.slice(-120).map(l => '<div style="color:'+(colors[l.cls]||'inherit')+';">'+bkEsc(l.t)+' '+bkEsc(l.msg)+'</div>').join('');
+  if (atBottom) lg.scrollTop = lg.scrollHeight;
+}
 
-  for (let i = 0; i < tableNames.length; i++) {
-    const table = tableNames[i];
-    statusEl.textContent = `Restoring ${table}… (${i + 1}/${tableNames.length})`;
-    if (typeof _showIsland === 'function') {
-      _showIsland({ live: true, id: BACKUP_ISLAND_ID, type: 'loading', title: 'Restoring', sub: `${table} (${i + 1}/${tableNames.length})`, progress: i / tableNames.length });
+/* ---------- analysis (what is actually missing?) ---------- */
+async function bkRemoteCount(t, col){
+  const res = await bkFetch(SB_URL+'/rest/v1/'+t+'?select='+encodeURIComponent(col)+'&limit=1', { headers: _sbRawHeaders({ 'Prefer':'count=exact' }) }, 30000);
+  if (!res.ok) throw new Error('HTTP '+res.status);
+  const cr = res.headers.get('content-range') || '';
+  const n = parseInt(cr.split('/')[1], 10);
+  return isNaN(n) ? null : n;
+}
+async function bkRemoteKeys(t, cols, expected){
+  const have = new Set(); const sel = cols.map(encodeURIComponent).join(',');
+  for (let off = 0; off < Math.max(expected, 1) + 1000; off += 1000) {
+    if (bkR.cancelled) return null;
+    const res = await bkFetch(SB_URL+'/rest/v1/'+t+'?select='+sel+'&order='+encodeURIComponent(cols[0])+'.asc&limit=1000&offset='+off, { headers: _sbRawHeaders() }, 45000);
+    if (!res.ok) return null;
+    const arr = await res.json();
+    arr.forEach(r => have.add(bkKey(r, cols)));
+    if (arr.length < 1000) break;
+  }
+  return have;
+}
+async function bkAnalyze(){
+  if (!bkRestorePayload) return false;
+  bkEnsurePanel();
+  const names = Object.keys(bkRestorePayload.tables).filter(t => Array.isArray(bkRestorePayload.tables[t]) && bkRestorePayload.tables[t].length);
+  bkR.tables = {}; bkR.order = names; bkR.failed = {}; bkR.stats = null;
+  bkLog('🔍 Comparing backup with database ('+names.length+' tables)…','hdr');
+  for (const t of names) {
+    if (bkR.cancelled) return false;
+    const rows = bkRestorePayload.tables[t];
+    const info = { total: rows.length, remote: null, missing: rows, keyCols: bkKeyCols(t, rows), status:'checking', ok:0, dup:0, fail:0, selected:true, err:'' };
+    bkR.tables[t] = info; bkSchedule();
+    try {
+      const col = (info.keyCols && info.keyCols[0]) || Object.keys(rows[0])[0];
+      info.remote = await bkRemoteCount(t, col);
+      if (bkR.opts.smart) {
+        if (info.remote === 0) info.missing = rows;
+        else if (info.keyCols && info.remote != null) {
+          const have = await bkRemoteKeys(t, info.keyCols, info.remote);
+          if (have) info.missing = rows.filter(r => !have.has(bkKey(r, info.keyCols)));
+        } else if (info.remote != null && info.remote >= rows.length) info.missing = [];
+      }
+      info.status = info.missing.length ? 'pending' : 'skip';
+      info.selected = info.missing.length > 0;
+      bkLog((info.missing.length ? '• ' : '✓ ')+t+': backup '+rows.length+', in DB '+info.remote+' → '+(info.missing.length ? info.missing.length+' missing' : 'complete, skip'), info.missing.length ? '' : 'ok');
+    } catch (e) {
+      info.status = 'pending'; info.err = e.message;
+      bkLog('⚠ could not check '+t+' ('+e.message+') — will send all rows','warn');
     }
-    const { inserted, failed } = await bkInsertRows(table, bkRestorePayload.tables[table]);
-    totalInserted += inserted; totalFailed += failed;
-    perTableResults.push(`${table}: ${inserted} inserted${failed ? `, ${failed} failed` : ''}`);
   }
+  bkR.analysisFor = bkRestorePayload;
+  const miss = names.reduce((s,t)=>s+(bkR.tables[t].missing.length),0);
+  bkLog('Analysis done: '+miss.toLocaleString()+' rows missing across '+names.filter(t=>bkR.tables[t].missing.length).length+' tables','hdr');
+  bkRender();
+  return true;
+}
 
-  btn.disabled = false; btn.style.opacity = '1';
-  statusEl.innerHTML = perTableResults.join('<br>');
-  statusEl.style.color = totalFailed ? '#ff9f0a' : '#30d158';
-
+/* ---------- sending ---------- */
+function bkMakeBatches(rows){
+  const out = []; let cur = [], sz = 0;
+  for (const r of rows) {
+    const s = JSON.stringify(r).length;
+    if (cur.length && (cur.length >= 150 || sz + s > 500000)) { out.push({ rows:cur, size:sz }); cur = []; sz = 0; }
+    cur.push(r); sz += s;
+  }
+  if (cur.length) out.push({ rows:cur, size:sz });
+  return out;
+}
+function bkMerge(a, b){ return { ok:a.ok+b.ok, dup:a.dup+b.dup, fail:a.fail+b.fail, failedRows:a.failedRows.concat(b.failedRows), err:a.err||b.err, cancelled:a.cancelled||b.cancelled }; }
+async function bkSendBatch(table, rows, dropCols){
+  const S = bkR.stats;
+  const body = JSON.stringify(dropCols.size ? rows.map(r => { const c = Object.assign({}, r); dropCols.forEach(k => delete c[k]); return c; }) : rows);
+  let attempt = 0;
+  while (true) {
+    await bkWaitIfPaused();
+    if (bkR.cancelled) return { ok:0, dup:0, fail:0, failedRows:[], err:'', cancelled:true };
+    if (!navigator.onLine) { bkLog('📴 offline — waiting for connection…','warn'); await bkWaitOnline(); }
+    const t0 = performance.now(); let res;
+    try {
+      res = await bkFetch(SB_URL+'/rest/v1/'+table, { method:'POST', headers:_sbRawHeaders({ 'Content-Type':'application/json', 'Prefer':'resolution=ignore-duplicates,missing=default,return=minimal' }), body }, 60000);
+    } catch (e) {
+      attempt++;
+      const why = e.name === 'AbortError' ? 'timeout' : (e.message || 'network');
+      if (attempt > 8) return { ok:0, dup:0, fail:rows.length, failedRows:rows.slice(), err:'network: '+why };
+      const wait = Math.min(30000, 1500 * Math.pow(2, attempt-1));
+      bkLog('⚠ '+table+': '+why+' — retry '+attempt+'/8 in '+Math.round(wait/1000)+'s','warn');
+      await bkSleep(wait); continue;
+    }
+    const dt = ((performance.now()-t0)/1000).toFixed(1);
+    if (res.ok) { S.bytes += body.length; bkLog('← '+res.status+' OK · '+rows.length+' rows · '+dt+'s','ok'); return { ok:rows.length, dup:0, fail:0, failedRows:[], err:'' }; }
+    const msg = await res.text().catch(() => '');
+    if (res.status >= 500 || res.status === 429 || res.status === 408) {
+      attempt++;
+      if (attempt > 8) return { ok:0, dup:0, fail:rows.length, failedRows:rows.slice(), err:'HTTP '+res.status };
+      const wait = Math.min(30000, 1500 * Math.pow(2, attempt-1));
+      bkLog('⚠ '+table+': HTTP '+res.status+' — retry '+attempt+'/8 in '+Math.round(wait/1000)+'s','warn');
+      await bkSleep(wait); continue;
+    }
+    const m = /Could not find the '([^']+)' column/.exec(msg);
+    if (m && !dropCols.has(m[1])) { dropCols.add(m[1]); bkLog('ℹ column "'+m[1]+'" is not in the new DB — dropping it from rows','warn'); return bkSendBatch(table, rows, dropCols); }
+    if (rows.length > 1) {
+      bkLog('✂ '+table+': HTTP '+res.status+' on '+rows.length+' rows — splitting to isolate the problem','warn');
+      const h = Math.ceil(rows.length/2);
+      const a = await bkSendBatch(table, rows.slice(0,h), dropCols);
+      const b = await bkSendBatch(table, rows.slice(h), dropCols);
+      return bkMerge(a, b);
+    }
+    if (/"code":"23505"/.test(msg)) { bkLog('≡ 1 row already exists (unique key) — skipped'); return { ok:0, dup:1, fail:0, failedRows:[], err:'' }; }
+    const reason = res.status+' '+msg.replace(/\s+/g,' ').slice(0,150);
+    bkLog('✕ row rejected: '+reason,'err');
+    return { ok:0, dup:0, fail:1, failedRows:[rows[0]], err:reason };
+  }
+}
+async function bkRunTable(t){
+  const info = bkR.tables[t], S = bkR.stats;
+  const batches = bkMakeBatches(info.missing);
+  info.status = 'running'; S.current = t;
+  bkLog('▶ '+t+': '+info.missing.length+' rows → '+batches.length+' batch'+(batches.length>1?'es':''),'hdr');
+  if (bkR.opts.preview) { bkLog('  columns: '+Object.keys(info.missing[0]).join(', ')); bkLog('  sample: '+bkPreviewRow(info.missing[0])); }
+  const dropCols = new Set(); let idx = 0;
+  const worker = async () => {
+    while (idx < batches.length && !bkR.cancelled) {
+      const i = idx++; const b = batches[i];
+      let range = '';
+      if (info.keyCols) range = ' · '+info.keyCols[0]+' '+String(b.rows[0][info.keyCols[0]]).slice(0,22)+' … '+String(b.rows[b.rows.length-1][info.keyCols[0]]).slice(0,22);
+      bkLog('→ '+t+' batch '+(i+1)+'/'+batches.length+' · '+b.rows.length+' rows · '+bkFmtBytes(b.size)+(bkR.opts.preview ? range : ''));
+      const r = await bkSendBatch(t, b.rows, dropCols);
+      if (r.cancelled) return;
+      info.ok += r.ok; info.dup += r.dup; info.fail += r.fail; if (r.err && !info.err) info.err = r.err;
+      S.ok += r.ok; S.dup += r.dup; S.fail += r.fail; S.processed += r.ok + r.dup + r.fail;
+      if (r.failedRows.length) bkR.failed[t] = (bkR.failed[t] || []).concat(r.failedRows);
+      if (typeof _showIsland === 'function') _showIsland({ live:true, id:BACKUP_ISLAND_ID, type:'loading', title:'Restoring '+Math.round(S.processed/Math.max(1,S.total)*100)+'%', sub:t, progress:S.processed/Math.max(1,S.total) });
+      bkSchedule();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(bkR.opts.par, batches.length) }, worker));
+  info.status = info.fail ? (info.ok+info.dup ? 'partial' : 'error') : 'done';
+}
+async function bkExecute(){
+  const names = bkR.order.filter(t => bkR.tables[t].selected && bkR.tables[t].missing.length);
+  const total = names.reduce((s,t) => s + bkR.tables[t].missing.length, 0);
+  bkR.stats = { start:Date.now(), total, processed:0, ok:0, dup:0, fail:0, bytes:0, current:'' };
+  if (!total) { bkLog('✓ Nothing to restore — everything selected is already in the database','ok'); return; }
+  try { if ('wakeLock' in navigator) bkR.wake = await navigator.wakeLock.request('screen'); } catch(e) {}
+  if (typeof _showIsland === 'function') _showIsland({ live:true, id:BACKUP_ISLAND_ID, type:'loading', title:'Restoring', sub:'Starting…', progress:0 });
+  for (const t of names) { if (bkR.cancelled) break; await bkRunTable(t); }
+  const S = bkR.stats; S.current = bkR.cancelled ? 'cancelled' : 'finished';
+  try { if (bkR.wake) { await bkR.wake.release(); bkR.wake = null; } } catch(e) {}
+  bkLog((bkR.cancelled ? '✕ Cancelled' : '🏁 Finished')+' · '+S.ok+' inserted · '+S.dup+' already there · '+S.fail+' failed · '+bkFmtTime((Date.now()-S.start)/1000), S.fail ? 'warn' : 'ok');
   if (typeof _showIsland === 'function') {
-    _showIsland({
-      live: true, id: BACKUP_ISLAND_ID,
-      type: totalFailed ? 'error' : 'success',
-      title: 'Restore complete',
-      sub: `${totalInserted.toLocaleString()} rows restored${totalFailed ? `, ${totalFailed} failed` : ''}`,
-      progress: 1
-    });
+    _showIsland({ live:true, id:BACKUP_ISLAND_ID, type:S.fail?'error':'success', title:'Restore complete', sub:S.ok.toLocaleString()+' rows restored'+(S.fail?', '+S.fail+' failed':''), progress:1 });
     setTimeout(() => { if (typeof window._endLiveIsland === 'function') window._endLiveIsland(BACKUP_ISLAND_ID); }, 4000);
   }
+}
+async function runFullRestore(){
+  if (!bkRestorePayload || bkR.running) return;
+  bkEnsurePanel();
+  const btn = document.getElementById('bkRestoreConfirmBtn');
+  bkR.running = true; bkR.cancelled = false; bkR.paused = false;
+  btn.disabled = true; btn.style.opacity = '0.5';
+  try {
+    if (bkR.analysisFor !== bkRestorePayload) { if (!(await bkAnalyze())) throw new Error('analysis cancelled'); }
+    const names = bkR.order.filter(t => bkR.tables[t].selected && bkR.tables[t].missing.length);
+    const total = names.reduce((s,t) => s + bkR.tables[t].missing.length, 0);
+    if (total && !window.confirm('Send '+total.toLocaleString()+' missing rows across '+names.length+' table(s) to the connected project? Existing rows are never overwritten.')) { bkLog('Restore not started (not confirmed)'); }
+    else await bkExecute();
+  } catch (e) { bkLog('✕ '+e.message,'err'); }
+  bkR.running = false; btn.disabled = false; btn.style.opacity = '1';
+  const S = bkR.stats; const statusEl = document.getElementById('bkRestoreStatus');
+  if (statusEl) { statusEl.textContent = S ? ('Last run: '+S.ok+' inserted, '+S.dup+' already there, '+S.fail+' failed') : ''; statusEl.style.color = (S && S.fail) ? '#ff9f0a' : '#30d158'; }
+  bkRender();
+}
+async function bkRetryFailed(){
+  if (bkR.running) return;
+  const fails = bkR.failed; const names = Object.keys(fails).filter(t => fails[t].length);
+  if (!names.length) return;
+  bkR.running = true; bkR.cancelled = false; bkR.paused = false;
+  bkR.order = names; const old = bkR.tables; bkR.tables = {}; bkR.failed = {};
+  names.forEach(t => { bkR.tables[t] = { total: fails[t].length, remote: old[t] ? old[t].remote : null, missing: fails[t], keyCols: bkKeyCols(t, fails[t]), status:'pending', ok:0, dup:0, fail:0, selected:true, err:'' }; });
+  bkLog('↻ Retrying '+names.reduce((s,t)=>s+fails[t].length,0)+' failed rows…','hdr');
+  try { await bkExecute(); } catch (e) { bkLog('✕ '+e.message,'err'); }
+  bkR.running = false; bkRender();
+}
+function bkDownloadFailed(){
+  const blob = new Blob([JSON.stringify(bkR.failed, null, 2)], { type:'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'restore-failed-rows.json';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
 function bkRenderSqlExportQuery() {
