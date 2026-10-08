@@ -24,8 +24,8 @@
 <link rel="preconnect" href="https://aqnzcduzpddajjycdone.supabase.co" crossorigin>
 <link rel="dns-prefetch" href="https://aqnzcduzpddajjycdone.supabase.co">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 input, textarea, select { font-size: 16px !important; }
 ._chan-avi-pulse, ._chan-avi-flicker, ._chan-avi-bounce { animation:none; }
@@ -3149,6 +3149,9 @@ body.light-mode #chatDropdownMenu button:hover {
 #chatMenuBtn:active { opacity: 0.7; }
 body.light-mode .chat-msg.theirs .chat-bubble a,
 body.light-mode .chat-msg.theirs .chat-bubble [onclick] { color: inherit; }
+.bk-chk{-webkit-appearance:none;appearance:none;width:20px;height:20px;flex-shrink:0;margin:0;border-radius:6px;border:1.5px solid rgba(255,255,255,.28);background:transparent center/14px no-repeat;transition:background-color .15s,border-color .15s}
+.bk-chk:checked{background-color:var(--gold,#d4a017);border-color:var(--gold,#d4a017);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}
+.bk-chk:disabled{opacity:.5}
 </style>
 <link rel="manifest" href="/manifest.json"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -3724,7 +3727,7 @@ body.light-mode #_island{background:linear-gradient(160deg,rgba(255,255,255,.2),
 (function() {
   var IDB_NAME = 'predict_session_v1';
   var IDB_STORE = 'session';
-  var SESSION_KEYS = ['ka_user','ka_owner','ka_username_key','ka_predict_bot','ka_theme','ka_glass'];
+  var SESSION_KEYS = ['ka_user','ka_owner','ka_username_key','ka_predict_bot','ka_theme','ka_glass','ps_auth_sessions'];
 
   function _openIDB(cb) {
     try {
@@ -3999,19 +4002,43 @@ body.light-mode #_island{background:linear-gradient(160deg,rgba(255,255,255,.2),
 <div id="forgotPasswordModal" style="display:none;position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;">
   <div class="modal" style="max-width:340px;margin:0;">
     <div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px;">Reset Password</div>
-    <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">Enter your username and recovery code.</div>
-    <input class="modal-input" id="fpUsernameInput" placeholder="Username" maxlength="30" style="margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    <input class="modal-input" id="fpRecoveryInput" placeholder="Recovery code" style="margin-bottom:10px;text-transform:uppercase;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    <div class="pw-wrap" style="margin-bottom:6px;">
-      <input class="modal-input" id="fpNewPasswordInput" type="password" placeholder="New password" style="margin-bottom:0;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-      <button class="pw-eye" type="button" onclick="togglePw('fpNewPasswordInput',this)" tabindex="-1">
-        <svg id="eye-fpNewPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
+    <div id="fpEmailSection">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;line-height:1.45;">Enter your username. We'll send a reset link to the email on your account.</div>
+      <input class="modal-input" id="fpEmailInput" placeholder="Username" maxlength="30" style="margin-bottom:10px;" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+    </div>
+    <div id="fpCodeSection" style="display:none;">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">Enter your username and recovery code.</div>
+      <input class="modal-input" id="fpUsernameInput" placeholder="Username" maxlength="30" style="margin-bottom:10px;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+      <input class="modal-input" id="fpRecoveryInput" placeholder="Recovery code" style="margin-bottom:10px;text-transform:uppercase;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+      <div class="pw-wrap" style="margin-bottom:6px;">
+        <input class="modal-input" id="fpNewPasswordInput" type="password" placeholder="New password" style="margin-bottom:0;" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+        <button class="pw-eye" type="button" onclick="togglePw('fpNewPasswordInput',this)" tabindex="-1">
+          <svg id="eye-fpNewPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <div class="modal-error" id="fpError" style="margin-bottom:10px;"></div>
-    <button class="modal-btn" onclick="submitForgotPassword()" style="margin-bottom:10px;font-size:15px;">Reset Password →</button>
+    <button class="modal-btn" id="fpSubmitBtn" onclick="submitForgotPassword()" style="margin-bottom:10px;font-size:15px;">Send reset link</button>
     <button onclick="closeForgotPasswordModal()" style="width:100%;background:var(--surface2);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:14px;cursor:pointer;">Cancel</button>
-    <div style="font-size:11px;color:var(--text3);margin-top:14px;text-align:center;line-height:1.4;">No recovery code saved? Message Dave directly — we can reset it manually.</div>
+    <div id="fpToggle" onclick="_fpSetMode(window._fpMode==='email'?'code':'email')" style="font-size:12px;color:rgba(var(--acc-rgb),0.9);margin-top:14px;text-align:center;line-height:1.4;font-weight:600;cursor:pointer;">Use a recovery code instead</div>
+  </div>
+</div>
+
+<!-- NEW PASSWORD (from email link) MODAL -->
+<div id="newPasswordModal" style="display:none;position:fixed;inset:0;z-index:10102;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;">
+  <div class="modal" style="max-width:340px;margin:0;">
+    <div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px;">Choose a new password</div>
+    <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">At least 6 characters.</div>
+    <div class="pw-wrap" style="margin-bottom:10px;">
+      <input class="modal-input" id="npNewPasswordInput" type="password" placeholder="New password" style="margin-bottom:0;" autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+      <button class="pw-eye" type="button" onclick="togglePw('npNewPasswordInput',this)" tabindex="-1">
+        <svg id="eye-npNewPasswordInput" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <input class="modal-input" id="npConfirmInput" type="password" placeholder="Confirm new password" style="margin-bottom:10px;" autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+    <div class="modal-error" id="npError" style="margin-bottom:10px;"></div>
+    <button class="modal-btn" onclick="submitNewPassword()" style="margin-bottom:10px;font-size:15px;">Save new password</button>
+    <button onclick="document.getElementById('newPasswordModal').style.display='none'" style="width:100%;background:var(--surface2);border:1px solid var(--glass-border);color:var(--text2);font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:14px;cursor:pointer;">Cancel</button>
   </div>
 </div>
 
@@ -4665,6 +4692,227 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
           <div id="psFixKeyStatus" style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4;"></div>
         </div>
       </div>
+
+      <!-- Login security setup (Supabase Auth) -->
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text2);flex-shrink:0;"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div style="font-size:14px;font-weight:800;color:var(--text);">Login security setup</div>
+        </div>
+        <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px;line-height:1.5;">Run this once on every Supabase project you use. Safe to run again. Switches logins to real Supabase Auth and enables email password reset.</div>
+        <input id="psAuthOwnerPw" type="password" placeholder="Owner password (leave empty to generate one)" autocomplete="new-password" style="width:100%;padding:11px 12px;border-radius:10px;background:var(--bg2,var(--bg));border:1px solid var(--card-border);color:var(--text);font-size:13px;margin-bottom:10px;box-sizing:border-box;"/>
+        <div style="display:flex;gap:8px;">
+          <button onclick="psAuthCopySql()" style="flex:1;padding:11px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;">Copy setup SQL</button>
+          <button onclick="psAuthOpenEditor()" style="flex:1;padding:11px;border-radius:12px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;">Open SQL editor</button>
+        </div>
+        <div id="psAuthStatus" style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4;">Copy, open the SQL editor, paste, press Run.</div>
+      </div>
+      <script>
+      var PS_AUTH_SETUP_SQL = String.raw`-- ONE-FILE SETUP. Run once per Supabase project (safe to re-run; run it again after you switch projects).
+-- Deploy the new index.html FIRST, then paste this whole file into SQL Editor and run.
+
+-- STEP 1 (safe, additive): Supabase Auth bridge. Nothing changes for the current page.
+create unique index if not exists accounts_auth_uid_key on public.accounts(auth_uid) where auth_uid is not null;
+
+create or replace function public._mk_auth_user(p_username text, p_email text, p_password text)
+returns uuid language plpgsql security definer set search_path = public, auth, extensions as $$
+declare
+  v_uid uuid := gen_random_uuid();
+  v_email text := lower(trim(coalesce(p_email,'')));
+begin
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or exists (select 1 from auth.users u where lower(u.email)=v_email) then
+    v_email := p_username || '@noemail.socialplus.invalid';
+  end if;
+  insert into auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,
+    raw_app_meta_data,raw_user_meta_data,created_at,updated_at,
+    confirmation_token,recovery_token,email_change_token_new,email_change,email_change_token_current,
+    phone_change,phone_change_token,reauthentication_token,is_sso_user,is_anonymous)
+  values ('00000000-0000-0000-0000-000000000000',v_uid,'authenticated','authenticated',v_email,
+    crypt(lower(p_password), gen_salt('bf',8)), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('username',p_username), now(), now(),
+    '','','','','','','','',false,false);
+  insert into auth.identities (provider_id,user_id,identity_data,provider,last_sign_in_at,created_at,updated_at)
+  values (v_uid::text, v_uid, jsonb_build_object('sub',v_uid::text,'email',v_email,'email_verified',true,'phone_verified',false),'email',now(),now(),now());
+  return v_uid;
+end $$;
+revoke all on function public._mk_auth_user(text,text,text) from public, anon, authenticated;
+
+-- returns the Auth email only to someone who proved the password
+create or replace function public.auth_login_email(p_username text, p_password text)
+returns text language plpgsql security definer set search_path = public, auth, extensions as $$
+declare v_email text;
+begin
+  select u.email into v_email
+  from public.accounts a join auth.users u on u.id = a.auth_uid
+  where a.username = lower(trim(p_username))
+    and u.encrypted_password = crypt(lower(p_password), u.encrypted_password)
+  limit 1;
+  return v_email;
+end $$;
+grant execute on function public.auth_login_email(text,text) to anon, authenticated;
+
+create or replace function public.register_account(p_username text, p_display_name text, p_password text, p_email text,
+  p_recovery_code text, p_referred_by text, p_fingerprint text)
+returns jsonb language plpgsql security definer set search_path = public, auth, extensions as $$
+declare v_u text := lower(trim(p_username)); v_uid uuid;
+begin
+  if v_u !~ '^[a-z0-9_]{2,}$' then return jsonb_build_object('ok',false,'error','bad_username'); end if;
+  if v_u in ('plusofficial','owner') or exists (select 1 from accounts where username=v_u) then
+    return jsonb_build_object('ok',false,'error','taken'); end if;
+  if length(coalesce(p_password,''))<4 then return jsonb_build_object('ok',false,'error','weak_password'); end if;
+  v_uid := public._mk_auth_user(v_u, p_email, p_password);
+  insert into accounts (username,display_name,password,email,bio,profile_pic,is_built_in,recovery_code,referred_by,device_fingerprint,auth_uid)
+  values (v_u, p_display_name, '*', nullif(trim(coalesce(p_email,'')),''), '', '', false, p_recovery_code, nullif(p_referred_by,''), p_fingerprint, v_uid);
+  return jsonb_build_object('ok',true);
+end $$;
+grant execute on function public.register_account(text,text,text,text,text,text,text) to anon, authenticated;
+
+create or replace function public.verify_my_password(p_password text)
+returns boolean language sql stable security definer set search_path = public, auth, extensions as $$
+  select exists (select 1 from auth.users u where u.id = auth.uid() and u.encrypted_password = crypt(lower(p_password), u.encrypted_password));
+$$;
+grant execute on function public.verify_my_password(text) to authenticated;
+
+-- password/email edits made by a signed-in user in Settings flow into Auth automatically
+create or replace function public.accounts_sync_auth() returns trigger language plpgsql security definer
+set search_path = public, auth, extensions as $$
+begin
+  if auth.role() in ('anon','authenticated') and NEW.auth_uid is distinct from OLD.auth_uid then
+    NEW.auth_uid := OLD.auth_uid;
+  end if;
+  if auth.uid() is not null and NEW.auth_uid = auth.uid() then
+    if NEW.password is distinct from OLD.password and NEW.password is not null and NEW.password <> '*' then
+      update auth.users set encrypted_password = crypt(lower(NEW.password), gen_salt('bf',8)), updated_at = now() where id = NEW.auth_uid;
+      NEW.password := '*';
+    end if;
+    if NEW.email is distinct from OLD.email and NEW.email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+       and not exists (select 1 from auth.users u where lower(u.email)=lower(NEW.email) and u.id <> NEW.auth_uid) then
+      update auth.users set email = lower(NEW.email), updated_at = now() where id = NEW.auth_uid;
+    end if;
+  end if;
+  return NEW;
+end $$;
+drop trigger if exists accounts_sync_auth_trg on public.accounts;
+create trigger accounts_sync_auth_trg before update on public.accounts for each row execute function public.accounts_sync_auth();
+
+create or replace function public.reset_password_with_recovery_code(p_username text, p_code text, p_new_password text)
+returns jsonb language plpgsql security definer set search_path = public, auth, extensions as $$
+declare v_acct accounts%rowtype; v_new_code text;
+begin
+  select * into v_acct from accounts where username = lower(trim(p_username));
+  if not found then return jsonb_build_object('ok', false, 'error', 'no_account'); end if;
+  if v_acct.recovery_code is null or upper(trim(v_acct.recovery_code)) <> upper(trim(p_code)) then
+    return jsonb_build_object('ok', false, 'error', 'bad_code'); end if;
+  v_new_code := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+  update accounts set password = lower(p_new_password), recovery_code = v_new_code where username = v_acct.username;
+  if v_acct.auth_uid is not null then
+    update auth.users set encrypted_password = crypt(lower(p_new_password), gen_salt('bf',8)), updated_at = now() where id = v_acct.auth_uid;
+  end if;
+  return jsonb_build_object('ok', true, 'new_code', v_new_code, 'display_name', v_acct.display_name);
+end $$;
+
+-- lets accounts created after the backfill (or by an old cached page) sign in once with their existing password
+create or replace function public.auth_adopt(p_username text, p_password text)
+returns text language plpgsql security definer set search_path = public, auth, extensions as $$
+declare a accounts%rowtype; v_uid uuid; v_email text;
+begin
+  select * into a from accounts
+   where username = lower(trim(p_username))
+     and (auth_uid is null or not exists (select 1 from auth.users u where u.id = accounts.auth_uid))
+     and password is not null and password <> '*' and lower(password) = lower(p_password);
+  if not found then return null; end if;
+  v_uid := public._mk_auth_user(a.username, a.email, p_password);
+  update accounts set auth_uid = v_uid where username = a.username;
+  select email into v_email from auth.users where id = v_uid;
+  return v_email;
+end $$;
+grant execute on function public.auth_adopt(text,text) to anon, authenticated;
+
+-- create Auth users for every existing account (keeps their current passwords)
+do $$
+declare r record; v_uid uuid; v_owner_pw text := 'CHANGE_ME_OWNER_PASSWORD';
+begin
+  if v_owner_pw = 'CHANGE_ME_' || 'OWNER_PASSWORD' then
+    raise exception 'Owner password was not filled in.';
+  end if;
+  for r in select username, email, password from public.accounts a
+           where a.auth_uid is null or not exists (select 1 from auth.users u where u.id = a.auth_uid) loop
+    v_uid := public._mk_auth_user(r.username, r.email,
+      case when r.username = 'plusofficial' then v_owner_pw
+           else coalesce(nullif(r.password,''), encode(gen_random_bytes(9),'hex')) end);
+    update public.accounts set auth_uid = v_uid where username = r.username;
+  end loop;
+end $$;
+
+-- indexes that help speed
+create index if not exists profile_posts_username_ts on public.profile_posts(username, "timestamp" desc);
+
+
+-- password reset by username: finds the email on the account and sends the reset link itself
+create extension if not exists pg_net with schema extensions;
+create table if not exists public.reset_throttle (username text not null, at timestamptz not null default now());
+alter table public.reset_throttle enable row level security;
+create or replace function public.request_password_reset(p_username text, p_redirect text)
+returns jsonb language plpgsql security definer set search_path = public, auth, extensions as $$
+declare a accounts%rowtype; v_email text;
+begin
+  select * into a from accounts where username = lower(trim(p_username));
+  if not found then return jsonb_build_object('status','no_account'); end if;
+  select u.email into v_email from auth.users u where u.id = a.auth_uid;
+  if v_email is null or v_email like '%@noemail.socialplus.invalid' then return jsonb_build_object('status','no_email'); end if;
+  if (select count(*) from reset_throttle t where t.username = a.username and t.at > now() - interval '1 hour') >= 3 then
+    return jsonb_build_object('status','rate_limited'); end if;
+  if p_redirect !~ '^[A-Za-z0-9%._~:/-]+$' then p_redirect := ''; end if;
+  insert into reset_throttle(username) values (a.username);
+  perform net.http_post(
+    url := '__SB_URL__/auth/v1/recover' || case when p_redirect <> '' then '?redirect_to=' || p_redirect else '' end,
+    headers := jsonb_build_object('apikey','__SB_ANON_KEY__','Content-Type','application/json'),
+    body := jsonb_build_object('email', v_email));
+  return jsonb_build_object('status','sent','email_hint', left(split_part(v_email,'@',1),1) || '***@' || split_part(v_email,'@',2));
+end $$;
+grant execute on function public.request_password_reset(text,text) to anon, authenticated;
+
+-- LOCK DOWN: identity now comes only from the signed-in session (the x-app-user header is ignored)
+create or replace function public.request_username() returns text
+language sql stable security definer set search_path = public as $$
+  select a.username from public.accounts a where a.auth_uid = (select auth.uid())
+$$;
+update public.accounts set password = '*' where password is not null and password <> '*';   -- removes plaintext passwords
+drop function if exists public.login_lookup(text, text);                                    -- it returned whole account rows
+create or replace function public.reset_password_with_recovery_code(p_username text, p_code text, p_new_password text)
+returns jsonb language plpgsql security definer set search_path = public, auth, extensions as $$
+declare v_acct accounts%rowtype; v_new_code text;
+begin
+  select * into v_acct from accounts where username = lower(trim(p_username));
+  if not found then return jsonb_build_object('ok', false, 'error', 'no_account'); end if;
+  if v_acct.recovery_code is null or upper(trim(v_acct.recovery_code)) <> upper(trim(p_code)) then
+    return jsonb_build_object('ok', false, 'error', 'bad_code'); end if;
+  v_new_code := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+  update accounts set recovery_code = v_new_code where username = v_acct.username;
+  update auth.users set encrypted_password = crypt(lower(p_new_password), gen_salt('bf',10)), updated_at = now() where id = v_acct.auth_uid;
+  return jsonb_build_object('ok', true, 'new_code', v_new_code, 'display_name', v_acct.display_name);
+end $$;
+`;
+      function psAuthCopySql() {
+        var st = document.getElementById('psAuthStatus');
+        var inp = document.getElementById('psAuthOwnerPw');
+        var pw = (inp.value || '');
+        if (!pw) {
+          var w = ['amber','tulip','river','falcon','cedar','harbor','maple','ember','coral','sprint','lunar','orchid'];
+          var r = new Uint32Array(4); crypto.getRandomValues(r);
+          pw = w[r[0]%w.length] + '-' + w[r[1]%w.length] + '-' + w[r[2]%w.length] + '-' + (1000 + r[3]%9000);
+          inp.value = pw;
+        }
+        if (pw.length < 6) { st.style.color = '#ff9f0a'; st.textContent = 'Owner password must be at least 6 characters.'; return; }
+        var text = PS_AUTH_SETUP_SQL.split('CHANGE_ME_OWNER_PASSWORD').join(pw.replace(/'/g, "''")).split('__SB_URL__').join(SB_URL).split('__SB_ANON_KEY__').join(SB_KEY);
+        function done(ok) { st.style.color = ok ? '#30d158' : '#ff453a'; st.textContent = ok ? 'Copied. Owner password: ' + pw + '  (save it). Now open the SQL editor, paste and Run.' : 'Copy failed. Try again.'; }
+        function fallback() { try { var t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); var ok = document.execCommand('copy'); t.remove(); done(ok); } catch(e) { done(false); } }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ done(true); }).catch(fallback); else fallback();
+      }
+      function psAuthOpenEditor() {
+        try { var ref = new URL(SB_URL).hostname.split('.')[0]; window.open('https://supabase.com/dashboard/project/' + ref + '/sql/new', '_blank'); } catch(e) {}
+      }
+      </script>
 
       <!-- Saved project history -->
       <div style="margin-bottom:14px;">
@@ -5669,7 +5917,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
 
 <script>
 (function() {
-  var SYNC_INTERVAL   = 12000;
+  var SYNC_INTERVAL   = 30000;
   var ACTION_DEBOUNCE = 1200;
   var PP_INTERVAL     = 20000;
 
@@ -5796,7 +6044,7 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
 
 
   function _runSync() {
-    if (_inFlight || typeof SB === 'undefined') return Promise.resolve();
+    if (_inFlight || typeof SB === 'undefined' || document.hidden) return Promise.resolve();
     _inFlight = true;
     _lastSync = Date.now();
 
@@ -6010,7 +6258,6 @@ body.light-mode #navTopicSheet [style*="background:rgba(255,255,255,0.2)"] { bac
   }, { passive: true });
 })();
 const OWNER_USER  = 'Social Plus';
-const OWNER_PASS  = 'Socialplus@';
 
 const VERIFIED_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Verified by Social Plus"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
 const PREMIUM_BADGE_HTML = '<span class="verified" onclick="showVerifiedInfo(event)" style="cursor:pointer;" title="Plus Premium"><span class="v-check"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.39 4.77L18.05 3.8L18.54 7.5L22 9.05L20.47 12.37L22 15.68L18.53 17.22L17.97 20.93L14.33 19.88L12 22.62L9.67 19.88L6.03 20.93L5.47 17.22L2 15.68L3.53 12.37L2 9.05L5.46 7.5L5.95 3.8L9.61 4.77Z" fill="#F5B301"/><path d="M8 12l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>';
@@ -6541,11 +6788,102 @@ const _SB_URL_FALLBACK = 'https://aqnzcduzpddajjycdone.supabase.co';
 const _SB_KEY_FALLBACK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxbnpjZHV6cGRkYWpqeWNkb25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyOTc2MjYsImV4cCI6MjEwNjg3MzYyNn0.hh5QDz4SxNOkOJSS0McusEEFQ8TimNgRBheZFu5qoik';
 let SB_URL = localStorage.getItem('ps_active_sb_url') || _SB_URL_FALLBACK;
 let SB_KEY = localStorage.getItem('ps_active_sb_key') || _SB_KEY_FALLBACK;
+
+/* ===== Supabase Auth (real sessions; replaces the spoofable x-app-user identity) ===== */
+const SBAuth = {
+  _K: 'ps_auth_sessions',
+  _all() { try { return JSON.parse(localStorage.getItem(this._K) || '{}') || {}; } catch(e) { return {}; } },
+  _active() { return (localStorage.getItem('ka_username_key') || '').toLowerCase(); },
+  get(u) { return this._all()[(u || this._active())] || null; },
+  save(u, j) {
+    if (!u || !j || !j.access_token) return;
+    const all = this._all();
+    all[u.toLowerCase()] = { access_token: j.access_token, refresh_token: j.refresh_token,
+      expires_at: j.expires_at || (Math.floor(Date.now()/1000) + (j.expires_in || 3600)) };
+    try { localStorage.setItem(this._K, JSON.stringify(all)); } catch(e) {}
+  },
+  clear(u) {
+    const all = this._all(); delete all[(u || this._active())];
+    try { localStorage.setItem(this._K, JSON.stringify(all)); } catch(e) {}
+  },
+  token() {
+    const x = this.get();
+    return (x && x.access_token && x.expires_at > Date.now()/1000 + 20) ? x.access_token : null;
+  },
+  async signIn(email, password) {
+    try {
+      const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST',
+        headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.access_token) return { ok: true, session: j };
+      return { ok: false, status: r.status };
+    } catch(e) { return { ok: false, network: true }; }
+  },
+  _refreshing: null,
+  refresh() {
+    if (this._refreshing) return this._refreshing;
+    const u = this._active(), x = this.get(u);
+    if (!x || !x.refresh_token) return Promise.resolve(false);
+    this._refreshing = (async () => {
+      try {
+        const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', { method: 'POST',
+          headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: x.refresh_token }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.access_token) { this.save(u, j); return true; }
+        if (r.status === 400 || r.status === 401 || r.status === 403) this.clear(u);
+      } catch(e) {}
+      return false;
+    })().finally(() => { this._refreshing = null; });
+    return this._refreshing;
+  },
+  async ensureFresh() {
+    const x = this.get();
+    if (x && x.expires_at - Date.now()/1000 < 600) await this.refresh();
+  },
+  async signOut() {
+    const x = this.get();
+    try { if (x && x.access_token) fetch(SB_URL + '/auth/v1/logout', { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + x.access_token } }).catch(()=>{}); } catch(e) {}
+    this.clear();
+  },
+  async recover(email) {
+    try {
+      const redirect = encodeURIComponent(location.origin + location.pathname);
+      const r = await fetch(SB_URL + '/auth/v1/recover?redirect_to=' + redirect, { method: 'POST',
+        headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const j = await r.json().catch(() => ({}));
+      return { ok: r.ok, status: r.status, msg: (j && (j.msg || j.message || j.error_description)) || '' };
+    } catch(e) { return { ok: false, network: true }; }
+  }
+};
+setInterval(() => { try { SBAuth.ensureFresh(); } catch(e) {} }, 240000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { SBAuth.ensureFresh(); } catch(e) {} } });
+try { SBAuth.ensureFresh(); } catch(e) {}
+function _sbAnonHeaders() { return { apikey: SB_KEY, Authorization: 'Bearer ' + (SBAuth.token() || SB_KEY), 'Content-Type': 'application/json' }; }
+/* proves the password, then opens a real Supabase Auth session. Falls back to the legacy check only if the
+   auth functions have not been installed in the database yet. */
+async function _authSignInFlow(username, pass) {
+  let email = null;
+  try {
+    let r = await fetch(SB_URL + '/rest/v1/rpc/auth_login_email', { method: 'POST', headers: _sbAnonHeaders(), body: JSON.stringify({ p_username: username, p_password: pass }) });
+    if (r.status === 404) return { ok: true, mode: 'legacy' };
+    if (r.ok) email = await r.json();
+    if (!email) {
+      r = await fetch(SB_URL + '/rest/v1/rpc/auth_adopt', { method: 'POST', headers: _sbAnonHeaders(), body: JSON.stringify({ p_username: username, p_password: pass }) });
+      if (r.ok) email = await r.json();
+    }
+  } catch(e) { return { ok: false, error: 'network' }; }
+  if (!email) return { ok: false, error: 'bad' };
+  const si = await SBAuth.signIn(email, pass.toLowerCase());
+  if (!si.ok) return { ok: false, error: si.network ? 'network' : 'bad' };
+  SBAuth.save(username, si.session);
+  return { ok: true, mode: 'auth' };
+}
+
 function _sbRawHeaders(extra) {
   const key = (localStorage.getItem('ka_username_key') || '').toLowerCase();
   return Object.assign({
     'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
+    'Authorization': 'Bearer ' + (SBAuth.token() || SB_KEY),
     'x-app-user': key
   }, extra || {});
 }
@@ -6641,12 +6979,13 @@ function _syncConnectionBanner() {
   }
 }
 
+const _LS_SKIP_TABLES = new Set(['profile_posts','posts','accounts','accounts_public','group_chats','messages','dm_messages','channel_posts','channels','statuses']);
 const SB = {
   get headers() {
     const key = (localStorage.getItem('ka_username_key') || '').toLowerCase();
     return {
       'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
+      'Authorization': 'Bearer ' + (SBAuth.token() || SB_KEY),
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       'x-app-user': key
@@ -6661,7 +7000,7 @@ const SB = {
       ]);
       if (!r.ok) { console.warn(`[SB] query ${table} failed (${r.status})`); return LS.query(table, params); }
       const data = await r.json();
-      if (Array.isArray(data)) {
+      if (Array.isArray(data) && !_LS_SKIP_TABLES.has(table)) {
         try {
           if (!params.includes('=eq.') && !params.includes('=ilike.') && !params.includes('=in.')) {
             localStorage.setItem('ka_db_' + table, JSON.stringify(data));
@@ -7076,7 +7415,7 @@ async function ensureOwnerRow() {
       await SB.upsert('accounts', {
         username: OWNER_KEY,
         display_name: OWNER_USER,
-        password: OWNER_PASS,
+        password: '*',
         bio: '',
         profile_link: '',
         is_built_in: false
@@ -7117,53 +7456,49 @@ async function joinAsUser() {
 
   const valLow = val.toLowerCase().replace(/[\s_]+/g, '');
   const isOwnerUsername = (valLow === OWNER_KEY || val.toLowerCase() === OWNER_KEY || val === OWNER_USER);
-  const isOwnerAttempt = isOwnerUsername && pass.toLowerCase() === OWNER_PASS.toLowerCase();
+  const loginName = isOwnerUsername ? OWNER_KEY : val.toLowerCase().trim();
 
-  if (isOwnerUsername && !isOwnerAttempt) {
-    _showFormError(errEl, 'Incorrect password.'); return;
+  const flow = await _authSignInFlow(loginName, pass);
+  if (!flow.ok) {
+    if (flow.error === 'network') { _showFormError(errEl, 'Connection error. Try again.'); return; }
+    _showFormError(errEl, 'Incorrect username or password.', { title: 'Sign in failed' });
+    return;
   }
 
-  if (isOwnerAttempt) {
-    let ownerRow = null;
+  let acct = null;
+  if (flow.mode === 'auth') {
+    localStorage.setItem('ka_username_key', loginName);
+    _clearCache();
     try {
-      const r = await fetch(`${SB_URL}/rest/v1/rpc/login_lookup`, {
-        method: 'POST',
-        headers: SB.headers,
-        body: JSON.stringify({ p_username: OWNER_KEY, p_password: OWNER_PASS })
-      });
-      if (!r.ok) throw new Error(`owner row check failed (${r.status})`);
-      const rows = await r.json();
-      if (!rows || !rows.length) {
-        await SB.upsert('accounts', {
-          username: OWNER_KEY, display_name: OWNER_USER,
-          password: OWNER_PASS, bio: '', profile_pic: '', is_built_in: false
-        }, 'username');
-        const fresh = await SB.query('accounts', `?username=eq.${encodeURIComponent(OWNER_KEY)}`);
-        ownerRow = fresh && fresh[0];
-      } else {
-        ownerRow = rows[0];
-        if ((ownerRow.password || '').toLowerCase() !== OWNER_PASS.toLowerCase()) {
-          SB.update('accounts', { password: OWNER_PASS }, `username=eq.${encodeURIComponent(OWNER_KEY)}`).catch(()=>{});
-          ownerRow.password = OWNER_PASS;
-        }
-      }
-    } catch(e) {
-      console.warn('Owner row check failed:', e);
-      _showFormError(errEl, 'Connection error. Try again.');
+      const rows = await SB.query('accounts', `?username=eq.${encodeURIComponent(loginName)}`);
+      acct = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    } catch(e) { acct = null; }
+    if (!acct) { SBAuth.clear(loginName); _showFormError(errEl, 'Could not load your account. Try again.'); return; }
+  } else {
+    try {
+      const rpcRows = await SB.rpc('login_lookup', { p_username: loginName, p_password: pass });
+      acct = Array.isArray(rpcRows) && rpcRows[0] ? rpcRows[0] : null;
+    } catch(e) { acct = null; }
+    if (!acct) { _showFormError(errEl, 'Incorrect username or password.', { title: 'Sign in failed' }); return; }
+    if (acct.password == null) {
+      errEl.textContent = '';
+      if (typeof window._showIsland === 'function') {
+        window._showIsland({ type: 'error', title: 'Set a password for this account', sub: 'This account has no password yet — reset it to sign in.', duration: 6000,
+          buttons: [{ label: 'Reset password', style: 'primary', onClick: function() { if (typeof openForgotPasswordModal === 'function') openForgotPasswordModal(); } }] });
+      } else { errEl.textContent = 'This account has no password yet. Tap "Forgot password?" to set one.'; }
       return;
     }
+  }
 
-    if (ownerRow) {
-      _cache['acct_' + OWNER_KEY] = ownerRow;
-      _cache['acct_' + OWNER_USER.toLowerCase()] = ownerRow;
-      if (!_cache['acct_by_username']) _cache['acct_by_username'] = {};
-      _cache['acct_by_username'][OWNER_KEY] = ownerRow;
-      _cache['acct_by_username'][OWNER_USER.toLowerCase()] = ownerRow;
-      if (!_cache['acct_by_display']) _cache['acct_by_display'] = {};
-      _cache['acct_by_display'][OWNER_USER.toLowerCase()] = ownerRow;
-    }
+  if (acct.username === OWNER_KEY) {
+    _cache['acct_' + OWNER_KEY] = acct;
+    _cache['acct_' + OWNER_USER.toLowerCase()] = acct;
+    if (!_cache['acct_by_username']) _cache['acct_by_username'] = {};
+    _cache['acct_by_username'][OWNER_KEY] = acct;
+    _cache['acct_by_username'][OWNER_USER.toLowerCase()] = acct;
+    if (!_cache['acct_by_display']) _cache['acct_by_display'] = {};
+    _cache['acct_by_display'][OWNER_USER.toLowerCase()] = acct;
     _cache['all_accounts'] = null;
-
     isOwner = true;
     currentUser = OWNER_USER;
     localStorage.setItem('ka_owner', 'true');
@@ -7172,34 +7507,9 @@ async function joinAsUser() {
     errEl.textContent = '';
     closeUserModal(); setOwnerUI(); renderPosts();
     if (typeof _refreshFollowingProfilePosts === 'function') _refreshFollowingProfilePosts();
-    showWelcomeBack(OWNER_USER, ownerRow && ownerRow.profile_pic ? ownerRow.profile_pic : ownerPic());
+    showWelcomeBack(OWNER_USER, acct.profile_pic ? acct.profile_pic : ownerPic());
     if (typeof window._triggerSync === 'function') window._triggerSync();
     registerDeviceSession(OWNER_KEY); startDeviceHeartbeat();
-    return;
-  }
-
-  let acct;
-  try {
-    const rpcRows = await SB.rpc('login_lookup', { p_username: val, p_password: pass });
-    acct = Array.isArray(rpcRows) && rpcRows[0] ? rpcRows[0] : null;
-  } catch(e) { acct = null; }
-  if (!acct) {
-    _showFormError(errEl, 'Incorrect username or password.', { title: 'Sign in failed' });
-    return;
-  }
-  if (acct.password == null) {
-    errEl.textContent = '';
-    if (typeof window._showIsland === 'function') {
-      window._showIsland({
-        type: 'error',
-        title: 'Set a password for this account',
-        sub: 'This account has no password yet — reset it to sign in.',
-        duration: 6000,
-        buttons: [{ label: 'Reset password', style: 'primary', onClick: function() { if (typeof openForgotPasswordModal === 'function') openForgotPasswordModal(); } }],
-      });
-    } else {
-      errEl.textContent = 'This account has no password yet. Tap "Forgot password?" to set one.';
-    }
     return;
   }
 
@@ -7208,6 +7518,7 @@ async function joinAsUser() {
   const bannedViaSupabase = acct.is_banned === true;
   const bannedList = JSON.parse(localStorage.getItem('ka_banned') || '[]');
   if (bannedViaSupabase || bannedList.includes(acct.username)) {
+    SBAuth.clear(acct.username);
     _showFormError(errEl, 'This account has been banned.'); return;
   }
   localStorage.setItem('ka_user', acct.display_name);
@@ -7249,13 +7560,29 @@ async function createAccount() {
   const refInputVal = refInputEl ? refInputEl.value.trim().toLowerCase() : '';
   const referredBy = (refInputVal || window._pendingReferralCode || null);
   if (referredBy === val.toLowerCase()) { _showFormError(errEl, 'You cannot refer yourself.'); signupGoToStep(2); return; }
-  const ok = await SB.upsert('accounts', {
-    username: val.toLowerCase(), display_name: displayName,
-    password: pass.toLowerCase(), bio: '', profile_pic: '', is_built_in: false,
-    email: emailVal, recovery_code: recCode, referred_by: referredBy,
-    device_fingerprint: getDeviceFingerprint()
-  }, 'username');
+  let ok = false, viaRpc = false;
+  try {
+    const rr = await fetch(SB_URL + '/rest/v1/rpc/register_account', { method: 'POST', headers: _sbAnonHeaders(), body: JSON.stringify({
+      p_username: val.toLowerCase(), p_display_name: displayName, p_password: pass, p_email: emailVal,
+      p_recovery_code: recCode, p_referred_by: referredBy || '', p_fingerprint: getDeviceFingerprint() }) });
+    if (rr.status === 404) {
+      ok = await SB.upsert('accounts', {
+        username: val.toLowerCase(), display_name: displayName,
+        password: pass.toLowerCase(), bio: '', profile_pic: '', is_built_in: false,
+        email: emailVal, recovery_code: recCode, referred_by: referredBy,
+        device_fingerprint: getDeviceFingerprint()
+      }, 'username');
+    } else {
+      const jj = await rr.json().catch(() => null);
+      ok = !!(jj && jj.ok); viaRpc = ok;
+      if (!ok && jj && jj.error === 'taken') { _showFormError(errEl, 'That username is already taken.'); signupGoToStep(2); return; }
+    }
+  } catch(e) { ok = false; }
   if (!ok) { _showFormError(errEl, 'Failed to create account. Try again.'); return; }
+  if (viaRpc) {
+    const fl = await _authSignInFlow(val.toLowerCase(), pass);
+    if (!fl.ok) { _showFormError(errEl, 'Account created. Please sign in.'); return; }
+  }
 
   _clearCache();
   currentUser = displayName;
@@ -8287,7 +8614,7 @@ async function saveProfilePosts(username, arr) {
 window._forYouProfilePosts = [];
 async function _refreshForYouProfilePosts() {
   try {
-    let rows = await SB.query('profile_posts', '?order=timestamp.desc&limit=150') || [];
+    let rows = await SB.query('profile_posts', '?order=timestamp.desc&limit=60') || [];
     rows = rows.filter(p => p.id !== '__probe__' && (p.visibility === 'public' || !p.visibility));
     if (!_cache['acct_by_username'] && typeof getAllAccounts === 'function') {
       await getAllAccounts().catch(() => {});
@@ -10981,7 +11308,7 @@ async function handleGenFileAttach(event) {
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', storageUrl, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SB_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + (SBAuth.token() || SB_KEY));
       xhr.setRequestHeader('x-upsert', 'true');
       xhr.setRequestHeader('Content-Type', 'application/octet-stream');
       xhr.upload.onprogress = function(e) {
@@ -11042,7 +11369,7 @@ async function handleApkSelect(input) {
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', storageUrl, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SB_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + (SBAuth.token() || SB_KEY));
       xhr.setRequestHeader('x-upsert', 'true');
       xhr.setRequestHeader('Content-Type', 'application/vnd.android.package-archive');
       xhr.upload.onprogress = function(e) {
@@ -13095,7 +13422,7 @@ async function saveProfileLink() {
         await SB.upsert('accounts', {
           username: usernameKey,
           display_name: isOwner ? OWNER_USER : (currentUser || usernameKey),
-          password: isOwner ? OWNER_PASS : cachedAcct.password,
+          password: cachedAcct.password || '*',
           bio: cachedAcct.bio || '',
           profile_link: linkVal,
           is_built_in: false
@@ -13534,7 +13861,7 @@ async function openProfilePage() {
         await SB.upsert('accounts', {
           username: OWNER_KEY,
           display_name: OWNER_USER,
-          password: OWNER_PASS,
+          password: '*',
           bio: '',
           profile_link: '',
           is_built_in: false
@@ -13827,6 +14154,9 @@ function _switchToSavedAccount(key, display) {
     localStorage.removeItem('ka_predict_bot');
   }
   _clearCache();
+  if (!SBAuth.get(localStorage.getItem('ka_username_key'))) {
+    setTimeout(() => { showToast('Sign in to this account to continue.', 'error'); openUserModal(); switchToLogin(); const _u = document.getElementById('usernameInput'); if (_u) _u.value = display || ''; }, 500);
+  }
   showToast(`Switched to ${currentUser}`, 'success');
   setTimeout(() => {
     if (isOwner) { setOwnerUI(); } else { setUserUI(); }
@@ -13955,7 +14285,7 @@ async function saveBioOnly() {
         await SB.upsert('accounts', {
           username: usernameKey,
           display_name: isOwner ? OWNER_USER : (currentUser || usernameKey),
-          password: isOwner ? OWNER_PASS : cachedAcct.password,
+          password: cachedAcct.password || '*',
           bio: bioVal,
           profile_link: cachedAcct.profile_link || '',
           is_built_in: false
@@ -14180,7 +14510,7 @@ async function saveProfile() {
         } else {
           await SB.upsert('accounts', {
             username: OWNER_KEY,
-            password: newPassword || OWNER_PASS,
+            password: newPassword || '*',
             is_built_in: false,
             ...updatePayload
           }, 'username');
@@ -19107,6 +19437,7 @@ function renderAuthBtn() {
 }
 
 function logout() {
+  try { SBAuth.signOut(); } catch(e) {}
   stopFollowSync();
   stopDeviceHeartbeat();
   deactivateDeviceSession();
@@ -19136,8 +19467,43 @@ function _securityUsernameKey() {
   return isOwner ? OWNER_KEY : (localStorage.getItem('ka_username_key') || (currentUser || '').toLowerCase());
 }
 
+function _fpSetMode(m) {
+  window._fpMode = m;
+  document.getElementById('fpEmailSection').style.display = m === 'email' ? '' : 'none';
+  document.getElementById('fpCodeSection').style.display = m === 'code' ? '' : 'none';
+  document.getElementById('fpSubmitBtn').textContent = m === 'email' ? 'Send reset link' : 'Reset Password →';
+  document.getElementById('fpToggle').textContent = m === 'email' ? 'Use a recovery code instead' : 'Send a link to my email instead';
+  document.getElementById('fpError').textContent = '';
+}
+async function _submitForgotEmail() {
+  const uname = (document.getElementById('fpEmailInput').value || '').trim().toLowerCase().replace(/[\s_]+/g, '');
+  const errEl = document.getElementById('fpError');
+  if (!uname) { _showFormError(errEl, 'Enter your username.'); return; }
+  errEl.textContent = 'Checking…';
+  let res = null, missing = false;
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/rpc/request_password_reset', { method: 'POST', headers: _sbAnonHeaders(),
+      body: JSON.stringify({ p_username: uname, p_redirect: encodeURIComponent(location.origin + location.pathname) }) });
+    if (r.status === 404) missing = true; else if (r.ok) res = await r.json(); else res = { status: 'error' };
+  } catch(e) { errEl.textContent = ''; _showFormError(errEl, 'Connection error. Try again.'); return; }
+  errEl.textContent = '';
+  const toCode = (msg) => { _showFormError(errEl, msg); document.getElementById('fpUsernameInput').value = uname; _fpSetMode('code'); };
+  if (missing) return toCode('Email reset is not available yet. Use your recovery code.');
+  const st = res && res.status;
+  if (st === 'sent') {
+    closeForgotPasswordModal();
+    if (typeof window._showIsland === 'function') window._showIsland({ type: 'success', title: 'Check your email', sub: 'We sent a reset link to ' + (res.email_hint || 'your email') + '. It may land in spam.', duration: 8000 });
+    else showToast('Reset link sent to ' + (res.email_hint || 'your email'), 'success');
+  }
+  else if (st === 'no_email') toCode('This account has no email on file. Use your recovery code instead.');
+  else if (st === 'no_account') _showFormError(errEl, 'No account found with that username.');
+  else if (st === 'rate_limited') _showFormError(errEl, 'Too many reset requests. Try again in an hour or use your recovery code.');
+  else _showFormError(errEl, 'Something went wrong. Try again or use your recovery code.');
+}
 function openForgotPasswordModal() {
+  _fpSetMode('email');
   const prefill = (document.getElementById('usernameInput') || {}).value || '';
+  document.getElementById('fpEmailInput').value = prefill;
   document.getElementById('fpUsernameInput').value = prefill;
   document.getElementById('fpRecoveryInput').value = '';
   document.getElementById('fpNewPasswordInput').value = '';
@@ -19148,6 +19514,10 @@ function closeForgotPasswordModal() {
   document.getElementById('forgotPasswordModal').style.display = 'none';
 }
 async function submitForgotPassword() {
+  if (window._fpMode !== 'code') return _submitForgotEmail();
+  return _submitForgotWithCode();
+}
+async function _submitForgotWithCode() {
   const uname = (document.getElementById('fpUsernameInput').value || '').trim().toLowerCase().replace(/[\s_]+/g, '');
   const code = (document.getElementById('fpRecoveryInput').value || '').trim().toUpperCase();
   const newPass = document.getElementById('fpNewPasswordInput').value;
@@ -19183,6 +19553,53 @@ async function submitForgotPassword() {
     _showFormError(errEl, 'Connection error. Try again.');
   }
 }
+
+
+/* ===== password-reset landing (link from email) + one-time re-sign-in for people already logged in ===== */
+async function submitNewPassword() {
+  const p1 = document.getElementById('npNewPasswordInput').value, p2 = document.getElementById('npConfirmInput').value;
+  const errEl = document.getElementById('npError');
+  if (!p1 || p1.length < 6) { _showFormError(errEl, 'Password must be at least 6 characters.'); return; }
+  if (p1 !== p2) { _showFormError(errEl, 'Passwords do not match.'); return; }
+  const tok = window._recoveryToken;
+  if (!tok) { _showFormError(errEl, 'This reset link has expired. Request a new one.'); return; }
+  errEl.textContent = 'Saving…';
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/user', { method: 'PUT', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: p1.toLowerCase() }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { _showFormError(errEl, (j && (j.msg || j.message)) || 'Could not save the password. Try again.'); return; }
+    const uname = (j.user_metadata && j.user_metadata.username) || '';
+    window._recoveryToken = null;
+    document.getElementById('newPasswordModal').style.display = 'none';
+    showToast('Password updated. Sign in with your new password.', 'success');
+    setTimeout(() => { openUserModal(); switchToLogin(); const u = document.getElementById('usernameInput'); if (u && uname) u.value = uname; }, 400);
+  } catch(e) { _showFormError(errEl, 'Connection error. Try again.'); }
+}
+(function _authBoot() {
+  function run() {
+    try {
+      const h = (location.hash || '').replace(/^#/, '');
+      if (h && h.indexOf('access_token=') > -1 && h.indexOf('type=recovery') > -1) {
+        const q = new URLSearchParams(h);
+        window._recoveryToken = q.get('access_token');
+        history.replaceState(null, '', location.pathname + location.search);
+        const m = document.getElementById('newPasswordModal'); if (m) m.style.display = 'flex';
+        return;
+      }
+      if (h && h.indexOf('error_code=') > -1) {
+        history.replaceState(null, '', location.pathname + location.search);
+        showToast('That reset link has expired. Request a new one.', 'error');
+        return;
+      }
+      const key = (localStorage.getItem('ka_username_key') || '').toLowerCase();
+      if (key && currentUser && !SBAuth.get(key) && localStorage.getItem('ps_relogin_prompted') !== key) {
+        localStorage.setItem('ps_relogin_prompted', key);
+        setTimeout(() => { showToast('For your security, please sign in again.', 'error'); openUserModal(); switchToLogin(); const u = document.getElementById('usernameInput'); if (u) u.value = key; }, 1800);
+      }
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(run, 600)); else setTimeout(run, 600);
+})();
 
 let _pendingRecoveryCode = '';
 function showRecoveryCodeModal(code) {
@@ -19326,6 +19743,7 @@ function stopDeviceHeartbeat() {
   if (_deviceHeartbeatTimer) { clearInterval(_deviceHeartbeatTimer); _deviceHeartbeatTimer = null; }
 }
 function _forceRemoteLogout() {
+  try { SBAuth.clear(); } catch(e) {}
   stopDeviceHeartbeat();
   currentUser = null; isOwner = false;
   localStorage.removeItem('ka_user');
@@ -19443,8 +19861,16 @@ async function submitAppLockPassword() {
   const errEl = document.getElementById('appLockError');
   const usernameKey = localStorage.getItem('ka_username_key') || (isOwner ? OWNER_KEY : '');
   try {
-    const acct = await getAccount(usernameKey);
-    if (!acct || (acct.password || '').toLowerCase() !== (pass || '').toLowerCase()) {
+    let _pwOk = false;
+    try {
+      const vr = await fetch(SB_URL + '/rest/v1/rpc/verify_my_password', { method: 'POST', headers: SB.headers, body: JSON.stringify({ p_password: pass || '' }) });
+      if (vr.ok) _pwOk = (await vr.json()) === true;
+      else if (vr.status === 404 || vr.status === 401) {
+        const acct0 = await getAccount(usernameKey);
+        _pwOk = !!acct0 && (acct0.password || '').toLowerCase() === (pass || '').toLowerCase();
+      }
+    } catch(e) { throw e; }
+    if (!_pwOk) {
       _showFormError(errEl, 'Incorrect password.'); return;
     }
     errEl.textContent = '';
@@ -20541,7 +20967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!ownerRow && Array.isArray(rows)) {
           await SB.upsert('accounts', {
             username: OWNER_KEY, display_name: OWNER_USER,
-            password: OWNER_PASS, bio: '', profile_link: '', profile_pic: '', is_built_in: false
+            password: '*', bio: '', profile_link: '', profile_pic: '', is_built_in: false
           }, 'username');
           const fresh = await SB.query('accounts', `?username=eq.${encodeURIComponent(OWNER_KEY)}`);
           ownerRow = fresh && fresh[0];
@@ -31344,7 +31770,7 @@ window.dmStopVoice = function() { window._voiceStop(); };
 (function() {
   async function _syncVerifiedFromSupabase() {
     try {
-      var accounts = await SB.query('accounts', '?limit=5000');
+      var accounts = await SB.query('accounts_public', '?select=username,display_name,is_verified&is_verified=eq.true&limit=5000');
       if (!accounts || !accounts.length) return;
       var _vBefore = Array.from(_verifiedUsers).sort().join('|');
       var newVerified = new Set([OWNER_KEY]);
@@ -31367,7 +31793,7 @@ window.dmStopVoice = function() { window._voiceStop(); };
   }
   window._syncVerifiedNow = _syncVerifiedFromSupabase;
   setTimeout(_syncVerifiedFromSupabase, 3000);
-  setInterval(_syncVerifiedFromSupabase, 60000);
+  setInterval(function(){ if (!document.hidden) _syncVerifiedFromSupabase(); }, 300000);
 })();
 </script>
 
@@ -33315,7 +33741,7 @@ async function handlePPApkSelect(input) {
     await new Promise(function(resolve, reject) {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', storageUrl, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SB_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + (SBAuth.token() || SB_KEY));
       xhr.setRequestHeader('x-upsert', 'true');
       xhr.setRequestHeader('Content-Type', 'application/vnd.android.package-archive');
       xhr.upload.onprogress = function(e) {
@@ -39348,7 +39774,6 @@ function bkRender(){
   const tl = document.getElementById('bkRTables');
   const names = bkR.order;
   if (names.length) {
-    const icon = { checking:'⏳', pending:'•', skip:'✓', running:'▶', done:'✓', partial:'⚠', error:'✕' };
     tl.innerHTML = names.map(n => {
       const i = T[n]; const done = i.ok + i.dup + i.fail;
       const detail = i.status==='skip' ? 'complete in DB — skipped'
@@ -39356,11 +39781,11 @@ function bkRender(){
         : (i.missing.length+' to send'+(done ? ' · '+done+'/'+i.missing.length : '')+(i.fail ? ' · ✕'+i.fail : '')));
       const dis = bkR.running ? ' disabled' : '';
       const chk = i.selected ? ' checked' : '';
-      return '<label style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'+
-        '<input type="checkbox" data-bkt="'+bkEsc(n)+'"'+chk+dis+(i.status==='skip'&&!bkR.opts.smart?'':'')+'>'+
-        '<span style="width:16px;text-align:center;">'+(icon[i.status]||'•')+'</span>'+
+      const sc = {skip:'var(--text3)',done:'#30d158',running:'#64d2ff',partial:'#ff9f0a',error:'#ff453a'}[i.status] || 'var(--text3)';
+      return '<label style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;">'+
+        '<input type="checkbox" class="bk-chk" data-bkt="'+bkEsc(n)+'"'+chk+dis+'>'+
         '<span style="flex:1;font-weight:600;color:var(--text);">'+bkEsc(n)+'</span>'+
-        '<span style="font-size:10.5px;color:var(--text3);text-align:right;">'+detail+(i.remote!=null ? ' · DB '+i.remote : '')+'</span></label>';
+        '<span style="font-size:10.5px;color:'+sc+';text-align:right;">'+detail+(i.remote!=null ? ' · DB '+i.remote : '')+'</span></label>';
     }).join('');
     tl.querySelectorAll('input[data-bkt]').forEach(c => { c.onchange = () => { bkR.tables[c.dataset.bkt].selected = c.checked; }; });
   } else tl.innerHTML = '';
@@ -40355,7 +40780,7 @@ async function handleAupApkSelect(input) {
     await new Promise(function(resolve, reject) {
       var xhr = new XMLHttpRequest();
       xhr.open('PUT', storageUrl, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + SB_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + (SBAuth.token() || SB_KEY));
       xhr.setRequestHeader('x-upsert', 'true');
       xhr.setRequestHeader('Content-Type', 'application/vnd.android.package-archive');
       xhr.upload.onprogress = function(e) {
