@@ -1,187 +1,139 @@
-// /sw.js — Social Plus service worker
-//
-// WHY THIS FILE EXISTS AS A REAL FILE (not the old blob: URL):
-// Android Chrome/WebView blocks service worker registration from blob:
-// URLs — the previous inline version in index.html silently failed to
-// register for virtually every real user on this app. This is a real file
-// at a real URL (plusng.com.ng/sw.js) so registration actually succeeds.
-//
-// WHAT IT DOES (and deliberately does NOT do):
-//   - Caches the app shell (index.html + this SW file) so reopening the
-//     app after being fully closed shows the UI instantly from cache
-//     instead of a blank screen while a ~3MB file re-downloads over a
-//     slow connection — THEN quietly re-fetches the live version in the
-//     background and updates the cache for next time.
-//   - Caches Google Fonts (genuinely static, safe to cache aggressively).
-//   - Deliberately does NOT touch Supabase API calls or any /rest/v1/
-//     request — the app already has its own localStorage-based caching
-//     and retry logic for that data (see SB.query/_writeWithRetry in
-//     index.html); a service worker double-caching API responses on top
-//     of that would risk serving stale predictions/wallet balances/chat
-//     messages, which is a correctness problem, not just a UX one.
-//   - Deliberately does NOT go "cache-first" on index.html itself, since
-//     index.html ships with `Cache-Control: no-cache, no-store,
-//     must-revalidate` on purpose — Dave iterates fast and doesn't want
-//     stale HTML stuck on someone's phone. Network-first (with a cache
-//     fallback only when the network genuinely fails/times out) respects
-//     that intent while still solving the "blank screen with no signal"
-//     problem.
-//
-// SETUP: drop this file at the project root (same folder as index.html
-// and vercel.json) — Vercel serves it automatically at /sw.js, no config
-// needed beyond what's already in vercel.json's rewrite exclusions.
+/* Social Plus service worker. Must be served from the site root as /sw.js. */
+const VERSION = 'v2026-10-09';
+const SHELL_CACHE = 'sp-shell-' + VERSION;
+const ASSET_CACHE = 'sp-assets-' + VERSION;
+const SHELL_URLS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+const NAV_TIMEOUT_MS = 4000;
 
-const CACHE_NAME = 'social-plus-shell-v1';
-// Bump this string (v1 -> v2 etc) any time you want to force every
-// installed client to drop its old cache and re-fetch everything fresh —
-// e.g. after a major redesign. Not needed for routine content updates,
-// since the network-first strategy already picks those up automatically.
-
-const APP_SHELL_URLS = ['/', '/index.html'];
-
-const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
-
-// Network requests get a hard timeout so a stalled/very slow connection
-// still falls back to cache in a reasonable time instead of hanging the
-// page load indefinitely — mirrors the same pattern already used for
-// Supabase calls in index.html's SB.query (7s timeout there).
-const NETWORK_TIMEOUT_MS = 4000;
-
-self.addEventListener('install', function(event) {
-  self.skipWaiting();
+/* ---------- install / update ---------- */
+self.addEventListener('install', (event) => {
+  // Do not skipWaiting here. The page asks for it, so the user chooses when to update.
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      // Best-effort — if the very first install can't reach the network
-      // yet, that's fine, the fetch handler below will populate the cache
-      // on the first successful real request instead.
-      return cache.addAll(APP_SHELL_URLS).catch(function() {});
-    })
+    caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL_URLS)).catch(() => {})
   );
 });
 
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
-    Promise.all([
-      clients.claim(),
-      // Drop any cache from a previous CACHE_NAME (old version bump) so
-      // storage doesn't accumulate stale shells forever.
-      caches.keys().then(function(names) {
-        return Promise.all(
-          names.filter(function(n) { return n !== CACHE_NAME; }).map(function(n) { return caches.delete(n); })
-        );
-      })
-    ])
-  );
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keep = [SHELL_CACHE, ASSET_CACHE];
+    const names = await caches.keys();
+    await Promise.all(names.filter((n) => n.startsWith('sp-') && !keep.includes(n)).map((n) => caches.delete(n)));
+    if (self.registration.navigationPreload) await self.registration.navigationPreload.enable().catch(() => {});
+    await self.clients.claim();
+  })());
+});
+
+/* ---------- fetch: app shell offline, never touch API or cross-origin traffic ---------- */
+const BYPASS = /^\/(rest|auth|functions|storage|api)\//;
+const STATIC = /\.(png|jpg|jpeg|webp|gif|svg|ico|woff2?|ttf|css|js)$|^\/manifest\.json$/;
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;     // Supabase, Google Fonts, etc. go straight to network
+  if (BYPASS.test(url.pathname)) return;
+
+  if (req.mode === 'navigate') {
+    event.respondWith(networkFirstPage(event));
+    return;
+  }
+  if (STATIC.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(req));
+  }
+});
+
+async function networkFirstPage(event) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const preload = await event.preloadResponse;
+    if (preload) { cache.put('/index.html', preload.clone()).catch(() => {}); return preload; }
+    const net = await withTimeout(fetch(event.request), NAV_TIMEOUT_MS);
+    if (net && net.ok) cache.put('/index.html', net.clone()).catch(() => {});
+    return net;
+  } catch (e) {
+    return (await cache.match('/index.html')) || (await cache.match('/')) ||
+      new Response('<!doctype html><meta charset="utf-8"><title>Social Plus</title><body style="font-family:sans-serif;background:#111;color:#fff;padding:24px">You are offline. Reconnect to continue.</body>', { headers: { 'Content-Type': 'text/html' } });
+  }
+}
+
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(ASSET_CACHE);
+  const cached = await cache.match(req);
+  const fresh = fetch(req).then((res) => { if (res && res.ok) cache.put(req, res.clone()).catch(() => {}); return res; }).catch(() => null);
+  return cached || (await fresh) || Response.error();
+}
 
 function withTimeout(promise, ms) {
-  return new Promise(function(resolve, reject) {
-    const timer = setTimeout(function() { reject(new Error('sw: network timeout')); }, ms);
-    promise.then(function(v) { clearTimeout(timer); resolve(v); }, function(e) { clearTimeout(timer); reject(e); });
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
   });
 }
 
-// Network-first, cache-fallback — used for the app shell itself (index.html
-// and every path-based route like /plusupdates, since those all serve the
-// same index.html per the vercel.json rewrite / SPA behavior). Always tries
-// to get Dave's latest deployed version first; only falls back to whatever
-// was last cached if the network genuinely fails or times out.
-async function networkFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  try {
-    const fresh = await withTimeout(fetch(request), NETWORK_TIMEOUT_MS);
-    if (fresh && fresh.ok) {
-      // Cache under both the real request AND the shell alias '/' so a
-      // fresh load of the root path benefits too, regardless of which
-      // path-based URL happened to trigger this fetch.
-      cache.put(request, fresh.clone());
-    }
-    return fresh;
-  } catch (e) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    // Nothing cached yet (very first visit, offline, no prior success) —
-    // let the request fail through normally so the browser shows its own
-    // standard offline page rather than this SW pretending to succeed.
-    throw e;
-  }
+/* ---------- push: notifications while the app is closed ---------- */
+function actionsFor(type) {
+  if (type === 'call') return [{ action: 'answer', title: 'Answer' }, { action: 'decline', title: 'Decline' }];
+  if (type === 'message') return [{ action: 'open', title: 'Open chat' }];
+  return [];
 }
 
-// Cache-first — used only for Google Fonts, which are safe to treat as
-// effectively immutable. Falls back to network if not yet cached.
-async function cacheFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  const fresh = await fetch(request);
-  if (fresh && fresh.ok) cache.put(request, fresh.clone());
-  return fresh;
-}
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; }
+  catch (e) { data = { body: event.data ? event.data.text() : '' }; }
+  const type = String(data.type || 'alert').slice(0, 32);
+  const title = String(data.title || 'Social Plus').slice(0, 80);
 
-self.addEventListener('fetch', function(event) {
-  const req = event.request;
-  if (req.method !== 'GET') return; // never intercept writes
-
-  const url = new URL(req.url);
-
-  // Never touch API calls (Supabase, the /api/channel-preview edge
-  // function, or anything else under /api/) — see the top-of-file note on
-  // why this app's own data layer already owns caching for that.
-  if (url.pathname.startsWith('/api/') || url.hostname.indexOf('supabase.co') !== -1) {
-    return;
-  }
-
-  // Google Fonts: cache-first.
-  if (FONT_HOSTS.indexOf(url.hostname) !== -1) {
-    event.respondWith(cacheFirst(req));
-    return;
-  }
-
-  // Same-origin navigations and the app shell itself: network-first. This
-  // covers '/', '/index.html', and every username/broadcast path (they're
-  // all the same SPA shell per vercel.json's rewrite), so ANY of those
-  // paths reopening while offline/slow still shows something instantly
-  // instead of a blank tab.
-  if (url.origin === self.location.origin && (req.mode === 'navigate' || APP_SHELL_URLS.indexOf(url.pathname) !== -1)) {
-    event.respondWith(networkFirst(req));
-    return;
-  }
-
-  // Everything else (images, other same-origin static assets not already
-  // handled above) — just pass through untouched, no SW involvement.
-});
-
-// ── Real Web Push handler ──
-// This is the piece that fires even when the app is fully closed — distinct
-// from the in-app Dynamic Island system (_showPushNotif), which only works
-// while a tab/process is alive. Requires a server to actually send a push
-// using the VAPID private key; this listener just displays whatever arrives.
-self.addEventListener('push', function(event) {
-  var data = {};
-  try { data = event.data ? event.data.json() : {}; } catch (e) {
-    data = { title: 'Social Plus', body: event.data ? event.data.text() : '' };
-  }
-  var title = data.title || 'Social Plus';
-  var options = {
-    body: data.body || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: data.tag || 'social-plus-push',
-    data: { url: data.url || '/' }
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-// Tapping a notification did nothing before — no listener existed at all.
-// Kept from the previous inline SW so notification-tap behavior is unchanged.
-self.addEventListener('notificationclick', function(e) {
-  var tag = e.notification.tag;
-  var targetUrl = (e.notification.data && e.notification.data.url) || '/';
-  e.notification.close();
-  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
-    for (var i = 0; i < list.length; i++) {
-      if ('focus' in list[i]) { list[i].postMessage({ type: 'predict-notif-click', tag: tag }); return list[i].focus(); }
+  event.waitUntil((async () => {
+    // If the app is open and visible, let the page show it in-app instead of a system banner.
+    // Calls always show a system notification so they are never missed.
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const visible = wins.some((w) => w.visibilityState === 'visible');
+    if (visible && type !== 'call') {
+      wins.forEach((w) => w.postMessage({ type: 'push-received', payload: { type, title, body: String(data.body || '').slice(0, 180), id: data.id || null, tag: data.tag || null, url: data.url || '/' } }));
+      return;
     }
-    if (clients.openWindow) return clients.openWindow(targetUrl);
-  }));
+    await self.registration.showNotification(title, {
+      body: String(data.body || '').slice(0, 180),
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: String(data.tag || (type + '-' + Date.now())),
+      renotify: !!data.tag,
+      requireInteraction: type === 'call',
+      vibrate: type === 'call' ? [400, 200, 400, 200, 400] : [120, 60, 120],
+      actions: actionsFor(type),
+      data: { type, id: data.id || null, url: data.url || '/' },
+      timestamp: Date.now(),
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', (event) => {
+  const n = event.notification;
+  const d = n.data || {};
+  n.close();
+  if (event.action === 'decline') return;          // nothing to do server side yet
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (wins.length) {
+      const w = wins.find((x) => x.visibilityState === 'visible') || wins[0];
+      await w.focus();
+      w.postMessage({ type: 'notif-click', action: event.action || null, payload: d });
+      return;
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(new URL(d.url || '/', self.location.origin).href);
+  })());
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  // The browser rotated the subscription. Ask an open page to save the new one.
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    wins.forEach((w) => w.postMessage({ type: 'push-resubscribe' }));
+  })());
 });
