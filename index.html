@@ -55474,7 +55474,12 @@ window.closeFlyerStudio = function(){ var o = document.getElementById('flyerStud
 <!-- ═══ SOCIAL PLUS APP HUB (get-app / update / release studio / market listing) ═══ -->
 <script id="sp-build-info">
 /* CLAUDE: every time you edit this file, bump version, set date, and add a changelog entry at the TOP. No permission needed. */
-window.SP_BUILD={version:'1.0.0',date:'2026-10-23',changelog:[
+window.SP_BUILD={version:'1.0.1',date:'2026-10-23',changelog:[
+{v:'1.0.1',date:'2026-10-23',items:[
+{t:'new',text:'Opening animation when you launch the app'},
+{t:'new',text:'Permissions sheet for notifications, camera, microphone and location'},
+{t:'new',text:'Links from all Social Plus websites now open inside the app'},
+{t:'new',text:'Offline notices and a reconnect screen'}]},
 {v:'1.0.0',date:'2026-10-23',items:[
 {t:'new',text:'Official Social Plus app: download it from the menu or the App Market'},
 {t:'new',text:'Brand-new App Update page with live release notes, history and one-tap updating'},
@@ -55530,6 +55535,7 @@ else if(so)h+='<button class="sph-btn" data-a="dl">Download new app file</button
 else if(u)h+='<button class="sph-btn" data-a="upd">Update now to v'+E(L.version)+'</button>';
 else h+='<button class="sph-btn g" data-a="chk" id="sphChk">'+(S.ok?'Checked '+ago(S.ok).replace('today','just now')+' · Check again':'Check for updates')+'</button>';
 h+='</div>';
+if(installed)h+='<div class="sph-card"><h4>App permissions</h4><div class="sph-sm">Notifications, camera, microphone and location</div><button class="sph-btn g" data-a="perm">Manage permissions</button></div>';
 if(!installed)h+='<div class="sph-card"><h4>Install in 3 steps</h4><div class="sph-it">1️⃣ Tap <b>Download official app</b> and keep the file when Chrome asks</div><div class="sph-it">2️⃣ Open the file and allow <b>Install unknown apps</b> for your browser</div><div class="sph-it">3️⃣ Tap Install. Future updates happen right inside the app</div></div>';
 var sh=S.ls.screenshots||[];if(sh.length)h+='<div class="sph-card"><h4>Preview</h4><div class="sph-sh">'+sh.map(function(s){return'<div><img src="'+E(s)+'"></div>'}).join('')+'</div></div>';
 if(L)h+='<div class="sph-card"><h4>What’s new in v'+E(L.version)+(L.title?' · '+E(L.title):'')+'</h4>'+(L.items&&L.items.length?items(L.items):'<div class="sph-it">'+E(L.body||'')+'</div>')+'<div class="sph-sm">Released '+ago(L.date)+'</div></div>';
@@ -55565,7 +55571,7 @@ SB.query('accounts','?select=username').then(function(a){(a||[]).forEach(functio
 function shot(f){return new Promise(function(ok){var r=new FileReader();r.onload=function(){var m=new Image();m.onload=function(){var s=Math.min(1,520/m.width),c=document.createElement('canvas');c.width=m.width*s;c.height=m.height*s;c.getContext('2d').drawImage(m,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.72))};m.src=r.result};r.readAsDataURL(f)})}
 function keep(){S.ls.tagline=V('sphTag');S.ls.description=V('sphD');S.ls.apk_url=V('sphApk')}
 document.addEventListener('click',function(ev){var t=ev.target.closest&&ev.target.closest('[data-a]');if(!t||!$('sphBody')||!$('sphBody').contains(t))return;var a=t.dataset.a;
-if(a==='dl')dl();else if(a==='upd')refresh();else if(a==='pwa'){try{_promptPwaInstall()}catch(e){}}
+if(a==='dl')dl();else if(a==='perm'){if(window.spOpenPerms)window.spOpenPerms()}else if(a==='upd')refresh();else if(a==='pwa'){try{_promptPwaInstall()}catch(e){}}
 else if(a==='chk'){t.textContent='Checking…';load().then(function(){render();T(up()?'Update found':'You’re on the latest version','')})}
 else if(a==='ai')doAi(t);else if(a==='pub')pub(t);
 else if(a==='clr'){put('latest_update',{}).then(function(){S.L=null;try{_pumConfig=null;hideUpdateBanner()}catch(e){}render();labels();T('Update withdrawn','')}).catch(function(x){T(x.message,'error')})}
@@ -55590,6 +55596,54 @@ function hubGo(){try{window._spMkCloseDetail()}catch(e){}window.openAppUpdatesPa
 function seen(){var k='sp_seen_build',p=localStorage.getItem(k);localStorage.setItem(k,B.version);if(!p||p===B.version)return;var c=B.changelog.filter(function(x){return cmp(x.v,p)>0&&cmp(x.v,B.version)<=0});if(!c.length)return;var d=document.createElement('div');d.id='sphNew';d.innerHTML='<div><div style="font-size:24px;font-weight:800">Updated to v'+E(B.version)+' 🎉</div><div class="sph-sm" style="margin-bottom:8px">Here’s what changed</div>'+c.map(function(x){return items(x.items)}).join('')+'<button class="sph-btn" onclick="this.closest(\'#sphNew\').remove()">Got it</button></div>';document.body.appendChild(d)}
 function init(){build();labels();load().then(function(){labels();if(installed)seen();else localStorage.setItem('sp_seen_build',B.version)});setInterval(function(){load()},18e5);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-S.ok>3e5)load()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else setTimeout(init,1200)})();
+</script>
+
+<!-- ═══ SOCIAL PLUS APP SHELL (intro animation, deep links, permissions, offline notices) ═══ -->
+<style id="sp-shell-css">
+#spIntro{position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .45s}
+#spIntro.out{opacity:0;pointer-events:none}
+#spIntro .c{width:104px;height:104px;border-radius:26px;overflow:hidden;animation:spPop .9s cubic-bezier(.2,1.4,.4,1) both;box-shadow:0 0 0 0 rgba(245,197,66,.5),0 10px 40px rgba(245,197,66,.25)}
+#spIntro .c svg{width:100%;height:100%}#spIntro b{margin-top:18px;color:#fff;font:800 22px system-ui,sans-serif;letter-spacing:.5px;animation:spUp .7s .45s both}
+#spIntro i{margin-top:6px;color:#8e8e93;font:500 12px system-ui,sans-serif;font-style:normal;animation:spUp .7s .65s both}
+@keyframes spPop{0%{transform:scale(.3) rotate(-25deg);opacity:0}60%{opacity:1}100%{transform:scale(1) rotate(0)}}
+@keyframes spUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#spPerm{position:fixed;inset:0;z-index:53000;background:#000b;display:flex;align-items:flex-end}
+#spPerm>div{width:100%;max-height:85vh;overflow:auto;background:var(--bg);border-radius:26px 26px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom,0px));color:var(--text);font-family:var(--font)}
+#spPerm .r{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--glass-border)}#spPerm .r span{flex:1;font-size:14px}#spPerm .r small{display:block;color:var(--text3);font-size:12px}
+#spPerm button.a{padding:8px 16px;border-radius:100px;border:0;background:var(--gold);color:#000;font-weight:700}#spPerm button.a.ok{background:rgba(48,209,88,.2);color:#30d158}
+</style>
+<script id="sp-shell-js">
+(function(){'use strict';
+if(!/SocialPlusApp\//.test(navigator.userAgent))return;
+var P=(window.Capacitor&&Capacitor.Plugins)||{},HOME='https://socialps.vercel.app',
+HOSTS=['socialps.vercel.app','plus9ja.vercel.app','plusng.com.ng','www.plusng.com.ng','socialplus-taupe.vercel.app'];
+var T=function(m,t){try{showToast(m,t||'')}catch(e){}};
+/* opening animation */
+if(!sessionStorage.getItem('sp_intro')){sessionStorage.setItem('sp_intro','1');
+var d=document.createElement('div');d.id='spIntro';d.innerHTML='<div class="c"><svg viewBox="0 0 64 64"><defs><linearGradient id="spig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d4a017"/></linearGradient></defs><rect width="64" height="64" fill="#0b0b0f"/><circle cx="32" cy="32" r="23" fill="url(#spig)"/><text x="32" y="43" font-size="30" font-weight="800" text-anchor="middle" fill="#1a1200" font-family="Arial">S</text></svg></div><b>Social Plus</b><i>Post &amp; Earn</i>';
+document.body.appendChild(d);try{P.SplashScreen&&P.SplashScreen.hide({fadeOutDuration:200})}catch(e){}
+setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove()},500)},1500)}
+/* every domain opens inside the app (kept on one origin so you stay logged in) */
+function go(u){try{var x=new URL(u);if(HOSTS.indexOf(x.hostname)<0)return;var t=HOME+x.pathname+x.search+x.hash;if(t!==location.href&&x.pathname+x.search+x.hash!=='/')location.href=t}catch(e){}}
+try{if(P.App){P.App.addListener('appUrlOpen',function(e){go(e.url)});P.App.getLaunchUrl().then(function(r){if(r&&r.url)go(r.url)}).catch(function(){})}}catch(e){}
+/* connection notices */
+window.addEventListener('offline',function(){T('You’re offline. Some features need internet','error')});
+window.addEventListener('online',function(){T('Back online','success')});
+/* permissions */
+function stream(c){return navigator.mediaDevices.getUserMedia(c).then(function(s){s.getTracks().forEach(function(t){t.stop()});return true})}
+var ROWS=[
+{k:'notifications',n:'Notifications',d:'Messages, gifts and updates',go:function(){return P.LocalNotifications?P.LocalNotifications.requestPermissions().then(function(r){return r.display==='granted'}):window.Notification?Notification.requestPermission().then(function(r){return r==='granted'}):false}},
+{k:'camera',n:'Camera',d:'Photos, videos and scanning',go:function(){return stream({video:true})}},
+{k:'microphone',n:'Microphone',d:'Voice notes and calls',go:function(){return stream({audio:true})}},
+{k:'geolocation',n:'Location',d:'Local content and nearby features',go:function(){return new Promise(function(ok){navigator.geolocation.getCurrentPosition(function(){ok(true)},function(){ok(false)},{timeout:15000})})}}];
+window.spOpenPerms=function(){var o=document.getElementById('spPerm');if(o)o.remove();o=document.createElement('div');o.id='spPerm';
+o.innerHTML='<div><div style="font-size:21px;font-weight:800">Allow access</div><div style="font-size:13px;color:var(--text3);margin:4px 0 6px">So everything in Social Plus works. Android will ask once for each. Photos and files use the system picker, so they need no permission.</div>'+ROWS.map(function(r){return'<div class="r"><span><b>'+r.n+'</b><small>'+r.d+'</small></span><button class="a" id="spp-'+r.k+'">Allow</button></div>'}).join('')+'<button class="a" style="width:100%;margin-top:16px;padding:13px;background:var(--glass);color:var(--text)" onclick="this.closest(\'#spPerm\').remove()">Done</button></div>';
+document.body.appendChild(o);ROWS.forEach(function(r){var b=document.getElementById('spp-'+r.k);
+var mark=function(){b.textContent='Allowed';b.className='a ok'};
+try{if(navigator.permissions&&r.k!=='notifications')navigator.permissions.query({name:r.k}).then(function(s){if(s.state==='granted')mark()}).catch(function(){})}catch(e){}
+b.onclick=function(){Promise.resolve().then(r.go).then(function(ok){if(ok)mark();else T(r.n+' was not allowed. You can change it in Android Settings','error')}).catch(function(){T(r.n+' isn’t available right now','error')})}})};
+if(!localStorage.getItem('sp_perm_seen')){localStorage.setItem('sp_perm_seen','1');setTimeout(window.spOpenPerms,2600)}
+})();
 </script>
 
 </body>
