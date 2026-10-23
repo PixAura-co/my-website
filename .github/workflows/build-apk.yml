@@ -23,22 +23,54 @@ jobs:
         run: |
           mkdir shell && cd shell
           npm init -y
-          npm i @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
-          mkdir www && echo '<!doctype html><title>Social Plus</title><body style="background:#000;color:#fff;font-family:sans-serif;text-align:center;padding-top:40vh">Loading Social Plus…</body>' > www/index.html
-          cat > capacitor.config.json <<EOF
+          npm i @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/app@7 @capacitor/splash-screen@7 @capacitor/local-notifications@7
+          mkdir www
+          cat > www/offline.html <<'HTML'
+          <!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>Offline</title><body style="margin:0;background:#000;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center"><div style="font-size:56px">📡</div><h2>You’re offline</h2><p style="color:#999;padding:0 30px">Check your connection. Social Plus reconnects automatically.</p><button onclick="go()" style="padding:12px 28px;border:0;border-radius:14px;background:#f5c542;font-weight:700">Try again</button><script>function go(){location.replace('https://socialps.vercel.app/')}addEventListener('online',go);setInterval(function(){if(navigator.onLine)go()},4000)</script></body>
+          HTML
+          cp www/offline.html www/index.html
+          cat > capacitor.config.json <<EOF2
           {"appId":"com.krisanalysis.socialplus","appName":"Social Plus","webDir":"www",
-           "server":{"url":"$APP_URL","cleartext":false},
-           "android":{"appendUserAgent":"SocialPlusApp/1.0"}}
-          EOF
+           "server":{"url":"$APP_URL","cleartext":false,"errorPath":"offline.html","allowNavigation":["socialps.vercel.app","plus9ja.vercel.app","plusng.com.ng","*.plusng.com.ng","socialplus-taupe.vercel.app"]},
+           "android":{"appendUserAgent":"SocialPlusApp/1.0"},
+           "plugins":{"SplashScreen":{"launchShowDuration":2500,"launchAutoHide":true,"backgroundColor":"#000000","androidScaleType":"CENTER_INSIDE","showSpinner":false,"launchFadeOutDuration":250}}}
+          EOF2
           npx cap add android
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
-      - name: Apply app icon
+      - name: Permissions and app links
+        run: |
+          python3 - <<'PY'
+          p='shell/android/app/src/main/AndroidManifest.xml'
+          s=open(p).read()
+          perms=['ACCESS_NETWORK_STATE','CAMERA','RECORD_AUDIO','MODIFY_AUDIO_SETTINGS','POST_NOTIFICATIONS','VIBRATE','ACCESS_COARSE_LOCATION','ACCESS_FINE_LOCATION','READ_MEDIA_IMAGES','READ_MEDIA_VIDEO','READ_MEDIA_AUDIO','WAKE_LOCK']
+          add=''.join('<uses-permission android:name="android.permission.%s"/>\n'%x for x in perms)
+          add+='<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n'
+          add+=''.join('<uses-feature android:name="android.hardware.%s" android:required="false"/>\n'%x for x in ['camera','microphone','location'])
+          s=s.replace('<application',add+'<application',1)
+          hosts=['socialps.vercel.app','plus9ja.vercel.app','plusng.com.ng','www.plusng.com.ng','socialplus-taupe.vercel.app']
+          f='<intent-filter android:autoVerify="true"><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/>'+''.join('<data android:scheme="https" android:host="%s"/>'%h for h in hosts)+'</intent-filter>'
+          s=s.replace('</activity>',f+'</activity>',1)
+          open(p,'w').write(s)
+          PY
+      - name: Apply app icon and splash
         run: |
           cd shell
           npm i @capacitor/assets
           mkdir -p assets
           cp ../icon-1024.png assets/icon-only.png
-          node -e "const s=require('sharp');(async()=>{const logo=await s('../icon-1024.png').resize(680,680).toBuffer();await s({create:{width:1024,height:1024,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:logo,gravity:'center'}]).png().toFile('assets/icon-foreground.png');await s({create:{width:1024,height:1024,channels:3,background:{r:0,g:0,b:0}}}).png().toFile('assets/icon-background.png')})()"
+          cat > make-assets.js <<'JS'
+          const s=require('sharp');
+          (async()=>{
+            const logo=await s('../icon-1024.png').resize(680,680).toBuffer();
+            await s({create:{width:1024,height:1024,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:logo,gravity:'center'}]).png().toFile('assets/icon-foreground.png');
+            await s({create:{width:1024,height:1024,channels:3,background:{r:0,g:0,b:0}}}).png().toFile('assets/icon-background.png');
+            const big=await s('../icon-1024.png').resize(720,720).toBuffer();
+            const sp=s({create:{width:2732,height:2732,channels:3,background:{r:0,g:0,b:0}}}).composite([{input:big,gravity:'center'}]).png();
+            await sp.clone().toFile('assets/splash.png');
+            await sp.clone().toFile('assets/splash-dark.png');
+          })();
+          JS
+          node make-assets.js
           npx capacitor-assets generate --android
       - name: Signing key
         run: |
