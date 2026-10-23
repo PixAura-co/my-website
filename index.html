@@ -55471,5 +55471,126 @@ window.openFlyerStudio = function(){
 window.closeFlyerStudio = function(){ var o = document.getElementById('flyerStudio'); if (o) o.style.display = 'none'; };
 })();
 </script>
+<!-- ═══ SOCIAL PLUS APP HUB (get-app / update / release studio / market listing) ═══ -->
+<script id="sp-build-info">
+/* CLAUDE: every time you edit this file, bump version, set date, and add a changelog entry at the TOP. No permission needed. */
+window.SP_BUILD={version:'1.0.0',date:'2026-10-23',changelog:[
+{v:'1.0.0',date:'2026-10-23',items:[
+{t:'new',text:'Official Social Plus app: download it from the menu or the App Market'},
+{t:'new',text:'Brand-new App Update page with live release notes, history and one-tap updating'},
+{t:'new',text:'Social Plus now has its own App Market listing by @pixaurastudio'},
+{t:'imp',text:'Menu and Settings now show "Download official app" in a browser and "App update" inside the app'}]}]};
+</script>
+<style id="sp-hub-css">
+#appUpdatesPageOverlay{z-index:52500!important}
+.sph-top{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;background:var(--glass);border-bottom:1px solid var(--glass-border)}
+.sph-top b{flex:1;font-size:17px;color:var(--text)}.sph-top button{background:none;border:0;color:var(--text);font-size:22px;padding:4px 8px}
+.sph-scroll{flex:1;overflow-y:auto;padding:16px 16px 120px;font-family:var(--font);color:var(--text)}
+.sph-hero{text-align:center;padding:22px 16px;border-radius:24px;border:1px solid rgba(var(--acc-rgb),.35);background:linear-gradient(160deg,rgba(var(--acc-rgb),.16),rgba(var(--acc-rgb),.04))}
+.sph-ico{width:84px;height:84px;margin:0 auto 10px;border-radius:21px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35)}.sph-ico svg{width:100%;height:100%}
+.sph-hn{font-size:22px;font-weight:800}.sph-by{font-size:12.5px;color:var(--text3);margin-top:2px}
+.sph-pill{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700}.sph-meta{font-size:12px;color:var(--text3);margin-top:4px}
+.sph-btn{display:block;width:100%;margin-top:14px;padding:14px;border-radius:14px;border:0;font:700 15px var(--font);background:var(--gold);color:#000}
+.sph-btn.g{background:var(--glass);color:var(--text);border:1px solid var(--glass-border);margin-top:8px}.sph-btn:disabled{opacity:.5}
+.sph-card{margin-top:14px;padding:16px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border)}
+.sph-card h4{margin:0 0 10px;font-size:14px;font-weight:800}.sph-it{display:flex;gap:9px;margin:8px 0;font-size:13.5px;line-height:1.45;color:var(--text2)}
+.sph-tag{flex-shrink:0;height:18px;padding:0 7px;border-radius:9px;font-size:10px;font-weight:800;line-height:18px;text-transform:uppercase}
+.sph-tag.new{background:rgba(48,209,88,.18);color:#30d158}.sph-tag.imp{background:rgba(10,132,255,.18);color:#0a84ff}.sph-tag.fix{background:rgba(255,159,10,.18);color:#ff9f0a}
+.sph-in{width:100%;box-sizing:border-box;margin-top:8px;padding:11px 12px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text);font:14px var(--font)}
+.sph-row{display:flex;gap:8px}.sph-row>*{flex:1}.sph-sh{display:flex;gap:8px;overflow-x:auto;padding:4px 0}.sph-sh div{position:relative;flex:0 0 96px;height:208px;border-radius:12px;overflow:hidden;border:1px solid var(--glass-border)}.sph-sh img{width:100%;height:100%;object-fit:cover}
+.sph-sh i{position:absolute;top:4px;right:4px;background:#000a;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-style:normal}
+.sph-sm{font-size:12px;color:var(--text3);margin-top:6px}.sph-chk{display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0;color:var(--text2)}
+#sphNew{position:fixed;inset:0;z-index:52900;background:#000b;display:flex;align-items:flex-end}#sphNew>div{width:100%;max-height:80vh;overflow:auto;background:var(--bg);border-radius:26px 26px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px))}
+</style>
+<script id="sp-hub-js">
+(function(){'use strict';
+var B=window.SP_BUILD,$=function(i){return document.getElementById(i)},V=function(i){var e=$(i);return e?e.value.trim():''};
+var E=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var T=function(m,t){try{showToast(m,t||'')}catch(e){}};
+var shellM=navigator.userAgent.match(/SocialPlusApp\/([\d.]+)/),shellV=shellM?shellM[1]:'0';
+var installed=!!shellM||!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())||matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+var admin=function(){try{return(typeof isOwner!=='undefined'&&isOwner)||v2me()==='plusofficial'}catch(e){return false}};
+var cmp=function(a,b){a=String(a||0).split('.');b=String(b||0).split('.');for(var i=0;i<3;i++){var d=(+a[i]||0)-(+b[i]||0);if(d)return d>0?1:-1}return 0};
+var S={L:null,log:[],ls:{},ok:0,tone:'Friendly',lang:'English'};
+var SVG='<svg viewBox="0 0 64 64"><defs><linearGradient id="sphg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d4a017"/></linearGradient></defs><rect width="64" height="64" fill="#0b0b0f"/><circle cx="32" cy="32" r="23" fill="url(#sphg)"/><text x="32" y="43" font-size="30" font-weight="800" text-anchor="middle" fill="#1a1200" font-family="Arial">S</text></svg>';
+function cfg(k){return fetch(SB_URL+'/rest/v1/app_config?key=eq.'+k+'&limit=1',{headers:_sbRawHeaders()}).then(function(r){return r.ok?r.json():[]}).then(function(a){if(!a[0])return null;var v=a[0].value;try{return typeof v==='object'?v:JSON.parse(v)}catch(e){return null}}).catch(function(){return null})}
+function put(k,v){return fetch(SB_URL+'/rest/v1/app_config?on_conflict=key',{method:'POST',headers:_sbRawHeaders({'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'}),body:JSON.stringify({key:k,value:JSON.stringify(v)})}).then(function(r){if(!r.ok)throw new Error('Save failed ('+r.status+')')})}
+function load(){return Promise.all([cfg('latest_update'),cfg('release_log'),cfg('app_listing')]).then(function(a){S.L=a[0]&&a[0].version?a[0]:null;S.log=Array.isArray(a[1])?a[1]:[];S.ls=a[2]||{};S.ok=Date.now();labels();return S})}
+var up=function(){return S.L&&cmp(S.L.version,B.version)>0},shellOld=function(){return S.L&&S.L.minShell&&cmp(S.L.minShell,shellV)>0};
+function labels(){document.querySelectorAll('.settings-icon-row[onclick*="openAppUpdatesPage"]').forEach(function(r){var l=r.querySelector('.settings-icon-label'),d=r.querySelector('.settings-icon-desc'),k=r.querySelector('.sph-dot');if(l)l.textContent=installed?'App update':'Download official app';if(d)d.textContent=installed?'Version '+B.version+' · tap to check':'Get the Social Plus app for Android';if(installed&&(up()||shellOld())){if(!k){k=document.createElement('span');k.className='sph-dot';k.style.cssText='width:9px;height:9px;border-radius:50%;background:#ff453a;margin-right:6px;flex-shrink:0';r.insertBefore(k,r.lastElementChild)}}else if(k)k.remove()})}
+function ago(d){if(!d)return'';var s=(Date.now()-new Date(d))/864e5;return s<1?'today':s<2?'yesterday':Math.floor(s)+' days ago'}
+function items(a){return(a||[]).map(function(i){return'<div class="sph-it"><span class="sph-tag '+E(i.t)+'">'+({new:'New',imp:'Better',fix:'Fixed'}[i.t]||'Better')+'</span><span>'+E(i.text)+'</span></div>'}).join('')}
+function dl(){var u=(S.L&&S.L.url&&S.L.url!==location.origin&&S.L.url)||S.ls.apk_url;if(!u){T('Download link is not ready yet','error');return}window.open(u,'_blank')}
+function refresh(){T('Updating…');var p=[];try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}));if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}))}catch(e){}Promise.all(p).catch(function(){}).then(function(){location.reload()})}
+function render(){var el=$('sphBody');if(!el)return;var L=S.L,u=up(),so=shellOld(),h='';
+var st=!installed?'Not installed':so?'New app file needed':u?'Update available':'Up to date',col=!installed?'var(--text3)':(u||so)?'#ff9f0a':'#30d158';
+h+='<div class="sph-hero"><div class="sph-ico">'+SVG+'</div><div class="sph-hn">Social Plus</div><div class="sph-by">by @pixaurastudio</div><div class="sph-pill" style="color:'+col+'">● '+st+'</div><div class="sph-meta">'+(installed?'This build v'+B.version+(L?' · Latest v'+L.version:''):(L?'Latest v'+L.version+' · '+ago(L.date):''))+'</div>';
+if(!installed)h+='<button class="sph-btn" data-a="dl">Download official app</button>'+(window._pwaPrompt||typeof _pwaPrompt!=='undefined'&&_pwaPrompt?'<button class="sph-btn g" data-a="pwa">Install as web app instead</button>':'');
+else if(so)h+='<button class="sph-btn" data-a="dl">Download new app file</button>';
+else if(u)h+='<button class="sph-btn" data-a="upd">Update now to v'+E(L.version)+'</button>';
+else h+='<button class="sph-btn g" data-a="chk" id="sphChk">'+(S.ok?'Checked '+ago(S.ok).replace('today','just now')+' · Check again':'Check for updates')+'</button>';
+h+='</div>';
+if(!installed)h+='<div class="sph-card"><h4>Install in 3 steps</h4><div class="sph-it">1️⃣ Tap <b>Download official app</b> and keep the file when Chrome asks</div><div class="sph-it">2️⃣ Open the file and allow <b>Install unknown apps</b> for your browser</div><div class="sph-it">3️⃣ Tap Install. Future updates happen right inside the app</div></div>';
+var sh=S.ls.screenshots||[];if(sh.length)h+='<div class="sph-card"><h4>Preview</h4><div class="sph-sh">'+sh.map(function(s){return'<div><img src="'+E(s)+'"></div>'}).join('')+'</div></div>';
+if(L)h+='<div class="sph-card"><h4>What’s new in v'+E(L.version)+(L.title?' · '+E(L.title):'')+'</h4>'+(L.items&&L.items.length?items(L.items):'<div class="sph-it">'+E(L.body||'')+'</div>')+'<div class="sph-sm">Released '+ago(L.date)+'</div></div>';
+var old=S.log.slice().reverse().filter(function(r){return!L||r.version!==L.version}).slice(0,10);
+if(old.length)h+='<div class="sph-card"><h4>Version history</h4>'+old.map(function(r){return'<details style="margin:6px 0"><summary style="font-size:13.5px;font-weight:700">v'+E(r.version)+' <span style="font-weight:400;color:var(--text3)">· '+ago(r.date)+'</span></summary>'+items(r.items)+'</details>'}).join('')+'</div>';
+if(admin())h+=studio();
+el.innerHTML=h}
+function studio(){var lv=S.L?S.L.version:'0',un=B.changelog.filter(function(c){return cmp(c.v,lv)>0}),sg=un.length?un[0].v:bump(lv,'patch'),h='';
+h+='<div class="sph-card" style="border-color:rgba(var(--acc-rgb),.5)"><h4>🛠 Release Studio <span class="sph-sm">admin</span></h4>';
+h+='<div class="sph-sm">'+(un.length?un.length+' unreleased change group'+(un.length>1?'s':'')+' recorded in the code:':'Nothing unreleased in the code. You can still write notes by hand.')+'</div>';
+un.forEach(function(c){h+='<div style="margin-top:6px"><b style="font-size:12px">v'+E(c.v)+'</b>'+items(c.items)+'</div>'});
+h+='<div class="sph-row"><input class="sph-in" id="sphV" placeholder="Version" value="'+E(sg)+'"><select class="sph-in" id="sphTone"><option>Friendly</option><option>Professional</option><option>Hype</option></select></div>';
+h+='<select class="sph-in" id="sphLang"><option>English</option><option>Naija Pidgin</option></select><input class="sph-in" id="sphT" placeholder="Release title">';
+h+='<textarea class="sph-in" id="sphN" rows="5" placeholder="Notes, one per line. Start with new: / fix: / imp:  (or tap AI write)"></textarea>';
+h+='<input class="sph-in" id="sphU" placeholder="APK link (GitHub release link)" value="'+E((S.L&&S.L.url!==location.origin&&S.L.url)||S.ls.apk_url||'')+'">';
+h+='<label class="sph-chk"><input type="checkbox" id="sphM"> Force update (can’t be dismissed)</label><label class="sph-chk"><input type="checkbox" id="sphS"> Needs a new app file (APK), not just a web refresh</label>';
+h+='<button class="sph-btn g" data-a="ai">✨ AI write notes from changes</button><button class="sph-btn" data-a="pub">Publish release to everyone</button>';
+h+='<div class="sph-sm" id="sphErr" style="color:#ff453a"></div>'+(S.L?'<button class="sph-btn g" data-a="clr">Withdraw current update</button>':'')+'</div>';
+var sh=S.ls.screenshots||[];
+h+='<div class="sph-card"><h4>🏪 App Market listing <span class="sph-sm">@pixaurastudio</span></h4><input class="sph-in" id="sphTag" placeholder="Tagline" value="'+E(S.ls.tagline||'')+'"><textarea class="sph-in" id="sphD" rows="4" placeholder="Description">'+E(S.ls.description||'')+'</textarea><input class="sph-in" id="sphApk" placeholder="Default APK link" value="'+E(S.ls.apk_url||'')+'">';
+h+='<div class="sph-sh" style="margin-top:8px">'+sh.map(function(s,i){return'<div><img src="'+E(s)+'"><i data-a="rm" data-i="'+i+'">×</i></div>'}).join('')+'</div><input type="file" id="sphF" accept="image/*" multiple style="display:none"><button class="sph-btn g" data-a="add">Add screenshots ('+sh.length+'/5)</button><button class="sph-btn" data-a="sl">Save listing</button></div>';return h}
+function bump(v,k){var a=String(v||'0.0.0').split('.').map(Number);while(a.length<3)a.push(0);if(k==='major')return(a[0]+1)+'.0.0';if(k==='minor')return a[0]+'.'+(a[1]+1)+'.0';return a[0]+'.'+a[1]+'.'+(a[2]+1)}
+function parse(t){return t.split('\n').map(function(l){l=l.trim();if(!l)return null;var m=l.match(/^(new|fix|imp)\s*:\s*(.+)$/i);return m?{t:m[1].toLowerCase(),text:m[2]}:{t:'imp',text:l}}).filter(Boolean)}
+function ai(sys,usr){return fetch('/api/groq',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:window.GROQ_TEXT_MODEL,reasoning_effort:'low',max_tokens:900,messages:[{role:'system',content:sys},{role:'user',content:usr}]})}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){return String(d.choices[0].message.content||'').replace(/```json|```/g,'').trim()})}
+function doAi(b){var lv=S.L?S.L.version:'0',raw=[];B.changelog.filter(function(c){return cmp(c.v,lv)>0}).forEach(function(c){c.items.forEach(function(i){raw.push(i.t+': '+i.text)})});raw=raw.concat(V('sphN').split('\n').filter(Boolean));
+if(!raw.length){T('Add some notes or changes first','error');return}b.disabled=true;b.textContent='✨ Writing…';
+ai('You write app release notes for Social Plus, a Nigerian social and sports prediction app. Tone: '+$('sphTone').value+'. Language: '+$('sphLang').value+'. Merge duplicates, drop internal jargon, keep each item under 14 words. Reply ONLY JSON: {"title":"short title","bump":"patch|minor|major","items":[{"t":"new|imp|fix","text":""}]}',raw.join('\n')).then(function(t){var j=JSON.parse(t);$('sphT').value=j.title||'';$('sphN').value=(j.items||[]).map(function(i){return i.t+': '+i.text}).join('\n');$('sphV').value=bump(lv==='0'?B.version:lv,j.bump||'patch');if(lv==='0')$('sphV').value=B.version}).catch(function(){$('sphN').value=raw.join('\n');T('AI is busy. Used your raw notes instead','')}).then(function(){b.disabled=false;b.textContent='✨ AI write notes from changes'})}
+function pub(b){var v=V('sphV'),it=parse(V('sphN')),e=$('sphErr'),er=!/^\d+\.\d+\.\d+$/.test(v)?'Version must look like 1.2.3':S.L&&cmp(v,S.L.version)<=0?'Version must be higher than v'+S.L.version:!it.length?'Add at least one note':'';if(er){e.textContent=er;return}e.textContent='';b.disabled=true;
+var rel={version:v,title:V('sphT'),items:it,body:it.map(function(i){return i.text}).join('\n'),url:V('sphU')||location.origin,date:new Date().toISOString(),mandatory:$('sphM').checked,minShell:$('sphS').checked?v:(S.L&&S.L.minShell)||'0'};
+S.log.push({version:v,title:rel.title,items:it,date:rel.date});S.log=S.log.slice(-30);
+Promise.all([put('latest_update',rel),put('release_log',S.log)]).then(function(){S.L=rel;T('Release v'+v+' is live','success');try{_pumConfig=rel;_showUpdateIsland(rel)}catch(x){}
+SB.query('accounts','?select=username').then(function(a){(a||[]).forEach(function(x){if(x.username)addNotifForUser(x.username,'🚀 New version v'+v+(rel.title?' · '+rel.title:'')+'. Tap to see what’s new.',null,null).catch(function(){})})}).catch(function(){});render();labels()}).catch(function(x){S.log.pop();e.textContent=x.message||'Publish failed';b.disabled=false})}
+function shot(f){return new Promise(function(ok){var r=new FileReader();r.onload=function(){var m=new Image();m.onload=function(){var s=Math.min(1,520/m.width),c=document.createElement('canvas');c.width=m.width*s;c.height=m.height*s;c.getContext('2d').drawImage(m,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.72))};m.src=r.result};r.readAsDataURL(f)})}
+function keep(){S.ls.tagline=V('sphTag');S.ls.description=V('sphD');S.ls.apk_url=V('sphApk')}
+document.addEventListener('click',function(ev){var t=ev.target.closest&&ev.target.closest('[data-a]');if(!t||!$('sphBody')||!$('sphBody').contains(t))return;var a=t.dataset.a;
+if(a==='dl')dl();else if(a==='upd')refresh();else if(a==='pwa'){try{_promptPwaInstall()}catch(e){}}
+else if(a==='chk'){t.textContent='Checking…';load().then(function(){render();T(up()?'Update found':'You’re on the latest version','')})}
+else if(a==='ai')doAi(t);else if(a==='pub')pub(t);
+else if(a==='clr'){put('latest_update',{}).then(function(){S.L=null;try{_pumConfig=null;hideUpdateBanner()}catch(e){}render();labels();T('Update withdrawn','')}).catch(function(x){T(x.message,'error')})}
+else if(a==='add'){$('sphF').click()}else if(a==='rm'){keep();S.ls.screenshots.splice(+t.dataset.i,1);render()}
+else if(a==='sl'){keep();put('app_listing',S.ls).then(function(){T('Market listing saved','success');if(window._spV2Apps)inject(window._spV2Apps)}).catch(function(x){T(x.message,'error')})}});
+document.addEventListener('change',function(ev){if(ev.target.id!=='sphF')return;keep();var fs=[].slice.call(ev.target.files).slice(0,5-(S.ls.screenshots||[]).length);Promise.all(fs.map(shot)).then(function(r){S.ls.screenshots=(S.ls.screenshots||[]).concat(r);render()})});
+function build(){var o=$('appUpdatesPageOverlay');if(!o||o.dataset.sph)return;o.dataset.sph=1;o.innerHTML='<div class="sph-top"><button onclick="closeAppUpdatesPage()" aria-label="Back">‹</button><b id="sphTitle"></b></div><div class="sph-scroll" id="sphBody"></div>'}
+window.openAppUpdatesPage=function(){build();var o=$('appUpdatesPageOverlay');if(!o)return;$('sphTitle').textContent=installed?'App update':'Get the app';o.style.display='flex';document.body.style.overflow='hidden';render();load().then(render)};
+window.closeAppUpdatesPage=function(){var o=$('appUpdatesPageOverlay');if(o)o.style.display='none';document.body.style.overflow=''};
+window._renderAppUpdatesPage=function(){return load().then(render)};
+/* App Market listing */
+var LOGO='data:image/svg+xml,'+encodeURIComponent(SVG);
+function official(){var L=S.L,l=S.ls||{};return{id:'official_social_plus',owner:'pixaurastudio',name:'Social Plus',description:(l.tagline?l.tagline+'\n\n':'')+(l.description||'Post, predict and earn. The official Social Plus app.')+(L?'\n\nWhat’s new in v'+L.version+(L.title?' · '+L.title:'')+'\n'+(L.items||[]).map(function(i){return'• '+i.text}).join('\n'):''),category:'Social',logo:LOGO,screenshots:l.screenshots||[],visibility:'public',status:'published',review_status:'published',is_official:false,launches:0,slug:'social-plus',updated_at:L?L.date:new Date().toISOString()}}
+function inject(a){if(!Array.isArray(a))return a;var o=official(),i=a.findIndex(function(x){return x&&x.id===o.id});if(i<0)a.unshift(o);else a[i]=Object.assign(a[i],o);return a}
+var V2=window.v2LoadApps;if(V2)window.v2LoadApps=function(){var a=arguments,s=this;return(S.ok?Promise.resolve():load()).then(function(){return V2.apply(s,a)}).then(inject)};
+var D=window._spMkDetail;if(D)window._spMkDetail=async function(id){var r=await D.apply(this,arguments);if(id==='official_social_plus')setTimeout(patch,40);return r};
+function patch(){var p=$('spMkDetailPage');if(!p)return;var b=$('spMkInstallBtn');if(b){b.textContent=installed?(up()?'Update':'Open update page'):'Get app';b.onclick=hubGo;var n=b.nextElementSibling;if(n)n.style.display='none'}
+if(S.log.length){var d=document.createElement('div');d.style.cssText='padding:0 20px 40px';d.innerHTML='<div style="font-size:14px;font-weight:800;margin-bottom:6px">Version history</div>'+S.log.slice().reverse().slice(0,6).map(function(r){return'<div style="margin-bottom:10px"><b style="font-size:13px">v'+E(r.version)+'</b> <span style="font-size:11px;color:var(--text3)">'+ago(r.date)+'</span>'+items(r.items)+'</div>'}).join('');p.appendChild(d)}}
+function hubGo(){try{window._spMkCloseDetail()}catch(e){}window.openAppUpdatesPage()}
+['_spMkInstall','_spMkOpen'].forEach(function(n){var f=window[n];if(f)window[n]=function(id){if(id==='official_social_plus'){hubGo();return}return f.apply(this,arguments)}});
+/* first launch of a new build: show what changed */
+function seen(){var k='sp_seen_build',p=localStorage.getItem(k);localStorage.setItem(k,B.version);if(!p||p===B.version)return;var c=B.changelog.filter(function(x){return cmp(x.v,p)>0&&cmp(x.v,B.version)<=0});if(!c.length)return;var d=document.createElement('div');d.id='sphNew';d.innerHTML='<div><div style="font-size:24px;font-weight:800">Updated to v'+E(B.version)+' 🎉</div><div class="sph-sm" style="margin-bottom:8px">Here’s what changed</div>'+c.map(function(x){return items(x.items)}).join('')+'<button class="sph-btn" onclick="this.closest(\'#sphNew\').remove()">Got it</button></div>';document.body.appendChild(d)}
+function init(){build();labels();load().then(function(){labels();if(installed)seen();else localStorage.setItem('sp_seen_build',B.version)});setInterval(function(){load()},18e5);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-S.ok>3e5)load()})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else setTimeout(init,1200)})();
+</script>
+
 </body>
 
