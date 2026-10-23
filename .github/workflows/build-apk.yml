@@ -33,14 +33,13 @@ jobs:
           npx cap add android
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
       - name: Apply app icon
-        continue-on-error: true
         run: |
-          if [ -f icon-1024.png ]; then
-            cd shell
-            mkdir -p assets && cp ../icon-1024.png assets/icon-only.png
-            npm i @capacitor/assets
-            npx capacitor-assets generate --android --iconBackgroundColor '#000000'
-          fi
+          cd shell
+          npm i @capacitor/assets
+          mkdir -p assets
+          cp ../icon-1024.png assets/icon-only.png
+          node -e "const s=require('sharp');(async()=>{const logo=await s('../icon-1024.png').resize(680,680).toBuffer();await s({create:{width:1024,height:1024,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:logo,gravity:'center'}]).png().toFile('assets/icon-foreground.png');await s({create:{width:1024,height:1024,channels:3,background:{r:0,g:0,b:0}}}).png().toFile('assets/icon-background.png')})()"
+          npx capacitor-assets generate --android
       - name: Signing key
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
