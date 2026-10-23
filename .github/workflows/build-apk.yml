@@ -8,7 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP_URL: https://socialps.vercel.app
+      KS_PASS: socialplus-keystore
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -29,18 +32,48 @@ jobs:
           EOF
           npx cap add android
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
-      - name: Restore signing key
-        uses: actions/cache@v4
+      - name: Apply app icon
+        continue-on-error: true
+        run: |
+          if [ -f icon-1024.png ]; then
+            cd shell
+            mkdir -p assets && cp ../icon-1024.png assets/icon-only.png
+            npm i @capacitor/assets
+            npx capacitor-assets generate --android --iconBackgroundColor '#000000'
+          fi
+      - name: Signing key
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ks.jks
+            echo "Using your saved signing key"
+          else
+            keytool -genkeypair -keystore ks.jks -alias socialplus -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=Social Plus, O=Kris Analysis LTD, C=NG"
+            mkdir keyout && base64 -w0 ks.jks > keyout/KEYSTORE_B64.txt
+            echo "NEW KEY CREATED. Download the KEEP-PRIVATE-signing-key artifact and save its text as the KEYSTORE_B64 secret." >> $GITHUB_STEP_SUMMARY
+          fi
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('keyout/KEYSTORE_B64.txt') != ''
         with:
-          path: ~/.android/debug.keystore
-          key: sp-debug-keystore-v1
-      - name: Build APK
+          name: KEEP-PRIVATE-signing-key
+          path: keyout/KEYSTORE_B64.txt
+          retention-days: 1
+      - name: Build and sign APK
         run: |
           cd shell/android
           chmod +x gradlew
-          ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk ../../SocialPlus.apk
+          ./gradlew assembleRelease
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          $BT/apksigner sign --ks ../../ks.jks --ks-key-alias socialplus --ks-pass pass:$KS_PASS --key-pass pass:$KS_PASS --out ../../SocialPlus.apk aligned.apk
       - uses: actions/upload-artifact@v4
         with:
           name: SocialPlus-APK
           path: SocialPlus.apk
+      - name: Publish direct download link
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Social Plus app ${{ github.run_number }}
+          files: SocialPlus.apk
+          fail_on_unmatched_files: true
+          make_latest: true
